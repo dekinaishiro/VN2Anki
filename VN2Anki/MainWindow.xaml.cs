@@ -82,6 +82,7 @@ namespace VN2Anki
             if (int.TryParse(_currentConfig.MaxSlots, out int parsedMax) && parsedMax > 0) _miningService.MaxSlots = parsedMax;
             if (double.TryParse(_currentConfig.IdleTime, out double parsedIdle) && parsedIdle > 0) _miningService.IdleTimeoutFixo = parsedIdle;
             _miningService.UseDynamicTimeout = _currentConfig.UseDynamicTimeout;
+            _miningService.MaxImageWidth = _currentConfig.MaxImageWidth;
         }
 
         private void BtnOpenSettings_Click(object sender, RoutedEventArgs e)

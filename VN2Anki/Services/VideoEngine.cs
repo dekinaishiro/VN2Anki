@@ -6,6 +6,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Drawing.Drawing2D;
 
 namespace VN2Anki.Services
 {
@@ -46,7 +47,7 @@ namespace VN2Anki.Services
             return windows;
         }
 
-        public byte[] CaptureWindow(string processName)
+        public byte[] CaptureWindow(string processName, int maxWidth = 0)
         {
             if (string.IsNullOrEmpty(processName)) return null;
 
@@ -76,6 +77,28 @@ namespace VN2Anki.Services
                     gfxBmp.ReleaseHdc(hdcBitmap);
                     if (!success) return null;
                 }
+
+                if (maxWidth > 0 && bmp.Width > maxWidth)
+                {
+                    int newWidth = maxWidth;
+                    int newHeight = (int)((float)bmp.Height * ((float)newWidth / bmp.Width)); // Mantém a proporção
+
+                    using (Bitmap resizedBmp = new Bitmap(newWidth, newHeight))
+                    {
+                        using (Graphics g = Graphics.FromImage(resizedBmp))
+                        {
+                            // Alta qualidade na redução
+                            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                            g.DrawImage(bmp, 0, 0, newWidth, newHeight);
+                        }
+                        using (MemoryStream ms = new MemoryStream())
+                        {
+                            resizedBmp.Save(ms, ImageFormat.Jpeg);
+                            return ms.ToArray();
+                        }
+                    }
+                }
+
                 using (MemoryStream ms = new MemoryStream())
                 {
                     bmp.Save(ms, ImageFormat.Jpeg);

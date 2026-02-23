@@ -34,6 +34,7 @@ namespace VN2Anki.Services
         public int MaxSlots { get; set; } = 25;
         public double IdleTimeoutFixo { get; set; } = 30.0;
         public bool UseDynamicTimeout { get; set; } = true;
+        public int MaxImageWidth { get; set; } = 1280;
 
         public MiningService(
             AudioEngine audio, VideoEngine video, ClipboardMonitor clipboard, AnkiHandler anki, SessionTracker tracker)
@@ -80,7 +81,7 @@ namespace VN2Anki.Services
 
                 SealAllOpenSlots(DateTime.Now);
 
-                byte[] imgBytes = string.IsNullOrEmpty(TargetVideoWindow) ? null : Video.CaptureWindow(TargetVideoWindow);
+                byte[] imgBytes = string.IsNullOrEmpty(TargetVideoWindow) ? null : Video.CaptureWindow(TargetVideoWindow, MaxImageWidth);
                 string safeText = text.Length > 1000 ? text.Substring(0, 1000) + " [...]" : text;
 
                 var newSlot = new MiningSlot

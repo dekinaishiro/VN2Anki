@@ -43,6 +43,10 @@ namespace VN2Anki
             ChkDynamicTimeout.IsChecked = _config.UseDynamicTimeout;
             ChkOpenSettings.IsChecked = _config.OpenSettingsOnStartup;
             ComboLanguage.SelectedItem = ComboLanguage.Items.Cast<ComboBoxItem>().FirstOrDefault(x => x.Tag.ToString() == _config.Language);
+
+            string tagTarget = _config.MaxImageWidth.ToString();
+            ComboImageRes.SelectedItem = ComboImageRes.Items.Cast<ComboBoxItem>().FirstOrDefault(x => x.Tag.ToString() == tagTarget)
+                                         ?? ComboImageRes.Items[2];
         }
 
         private async Task RefreshAudioAsync()
@@ -121,6 +125,10 @@ namespace VN2Anki
             _config.MaxSlots = TxtMaxSlots.Text;
             _config.UseDynamicTimeout = ChkDynamicTimeout.IsChecked ?? true;
             _config.OpenSettingsOnStartup = ChkOpenSettings.IsChecked ?? false;
+            if (ComboImageRes.SelectedItem is ComboBoxItem resItem && int.TryParse(resItem.Tag.ToString(), out int parsedWidth))
+            {
+                _config.MaxImageWidth = parsedWidth;
+            }
 
             ConfigManager.Save(_config);
 

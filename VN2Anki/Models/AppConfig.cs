@@ -15,5 +15,7 @@
         public string Language { get; set; } = "en-US";
         public double MainWindowTop { get; set; } = double.NaN;
         public double MainWindowLeft { get; set; } = double.NaN;
+
+        public int MaxImageWidth { get; set; } = 1280;
     }
 }
