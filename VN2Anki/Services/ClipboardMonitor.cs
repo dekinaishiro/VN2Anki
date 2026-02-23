@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Threading.Tasks;
+using System.Windows;
 using WK.Libraries.SharpClipboardNS;
 
 namespace VN2Anki.Services
@@ -11,7 +13,7 @@ namespace VN2Anki.Services
         private DateTime _lastTime = DateTime.MinValue;
         private DateTime _startTime;
 
-        private bool _isFirstEvent = true;      
+        private bool _isFirstEvent = true;
         private bool _isListening = false;
 
         public ClipboardMonitor()
@@ -23,7 +25,7 @@ namespace VN2Anki.Services
         public void Start()
         {
             _isFirstEvent = true;
-            _isListening = true; 
+            _isListening = true;
             _startTime = DateTime.Now;
         }
 
@@ -32,32 +34,71 @@ namespace VN2Anki.Services
             _isListening = false;
         }
 
-        private void Clipboard_Changed(object sender, SharpClipboard.ClipboardChangedEventArgs e)
+        private async void Clipboard_Changed(object sender, SharpClipboard.ClipboardChangedEventArgs e)
         {
-            
             if (!_isListening) return;
 
             if (_isFirstEvent)
             {
                 _isFirstEvent = false;
-                if (e.ContentType == SharpClipboard.ContentTypes.Text)
-                    _lastText = e.Content?.ToString()?.Trim() ?? string.Empty;
+                _lastText = await GetClipboardTextSafeAsync(); // gets initial state
                 return;
             }
 
             if ((DateTime.Now - _startTime).TotalMilliseconds < 500) return;
 
-            if (e.ContentType == SharpClipboard.ContentTypes.Text)
+            string text = await GetClipboardTextSafeAsync();
+
+            if (!string.IsNullOrWhiteSpace(text))
             {
-                string text = e.Content?.ToString()?.Trim();
-                if (!string.IsNullOrWhiteSpace(text))
-                {
-                    if (text == _lastText && (DateTime.Now - _lastTime).TotalMilliseconds < 1000) return;
-                    _lastText = text;
-                    _lastTime = DateTime.Now;
-                    OnTextCopied?.Invoke(text, DateTime.Now);
-                }
+                if (text == _lastText && (DateTime.Now - _lastTime).TotalMilliseconds < 1000) return;
+
+                _lastText = text;
+                _lastTime = DateTime.Now;
+                OnTextCopied?.Invoke(text, DateTime.Now);
             }
+        }
+
+        private async Task<string> GetClipboardTextSafeAsync(int maxRetries = 5, int delayMs = 50)
+        {
+            for (int i = 0; i < maxRetries; i++)
+            {
+                string text = null;
+                bool success = false;
+
+                // Dispatcher since clipboard uses sta
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    try
+                    {
+                        if (Clipboard.ContainsText())
+                        {
+                            text = Clipboard.GetText();
+                        }
+                        success = true; 
+                    }
+                    catch (System.Runtime.InteropServices.COMException)
+                    {
+                        // other process is using the clipboard
+                        success = false;
+                    }
+                    catch (Exception)
+                    {
+                        // generic error
+                        success = false;
+                    }
+                });
+
+                if (success)
+                {
+                    return text?.Trim() ?? string.Empty;
+                }
+
+                await Task.Delay(delayMs);
+            }
+
+            // avoid endless loop
+            return string.Empty;
         }
     }
 }
