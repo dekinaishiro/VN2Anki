@@ -17,5 +17,7 @@
         public double MainWindowLeft { get; set; } = double.NaN;
 
         public int MaxImageWidth { get; set; } = 1280;
+
+        public int AudioBitrate { get; set; } = 128;
     }
 }

@@ -47,6 +47,10 @@ namespace VN2Anki
             string tagTarget = _config.MaxImageWidth.ToString();
             ComboImageRes.SelectedItem = ComboImageRes.Items.Cast<ComboBoxItem>().FirstOrDefault(x => x.Tag.ToString() == tagTarget)
                                          ?? ComboImageRes.Items[2];
+
+            string tagAudio = _config.AudioBitrate.ToString();
+            ComboAudioRes.SelectedItem = ComboAudioRes.Items.Cast<ComboBoxItem>().FirstOrDefault(x => x.Tag.ToString() == tagAudio)
+                                         ?? ComboAudioRes.Items[2];
         }
 
         private async Task RefreshAudioAsync()
@@ -128,6 +132,10 @@ namespace VN2Anki
             if (ComboImageRes.SelectedItem is ComboBoxItem resItem && int.TryParse(resItem.Tag.ToString(), out int parsedWidth))
             {
                 _config.MaxImageWidth = parsedWidth;
+            }
+            if (ComboAudioRes.SelectedItem is ComboBoxItem audioItem && int.TryParse(audioItem.Tag.ToString(), out int parsedBitrate))
+            {
+                _config.AudioBitrate = parsedBitrate;
             }
 
             ConfigManager.Save(_config);

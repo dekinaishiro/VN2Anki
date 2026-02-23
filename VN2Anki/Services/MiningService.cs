@@ -35,6 +35,7 @@ namespace VN2Anki.Services
         public double IdleTimeoutFixo { get; set; } = 30.0;
         public bool UseDynamicTimeout { get; set; } = true;
         public int MaxImageWidth { get; set; } = 1280;
+        public int AudioBitrate { get; set; } = 128;
 
         public MiningService(
             AudioEngine audio, VideoEngine video, ClipboardMonitor clipboard, AnkiHandler anki, SessionTracker tracker)
@@ -167,6 +168,26 @@ namespace VN2Anki.Services
             slot.AudioBytes = Audio.ExportSegment(startAgo, endAgo) ?? Array.Empty<byte>();
         }
 
+        private byte[] ConvertWavToMp3(byte[] wavBytes, int bitrate)
+        {
+            try
+            {
+                using (var retMs = new System.IO.MemoryStream())
+                using (var wavMs = new System.IO.MemoryStream(wavBytes))
+                using (var rdr = new NAudio.Wave.WaveFileReader(wavMs))
+                using (var wtr = new NAudio.Lame.LameMP3FileWriter(retMs, rdr.WaveFormat, bitrate))
+                {
+                    rdr.CopyTo(wtr);
+                    wtr.Flush(); // Garante que tudo foi escrito no memory stream
+                    return retMs.ToArray();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[MP3 Encode Error] {ex.Message}");
+                return wavBytes; // Mecanismo de defesa: se o MP3 falhar, devolve o WAV original para não perder o card
+            }
+        }
         private void HandleAudioError(string msg)
         {
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
@@ -186,13 +207,25 @@ namespace VN2Anki.Services
             if (slot.IsOpen) SealSlotAudio(slot, DateTime.Now);
 
             string uniqueId = Guid.NewGuid().ToString("N").Substring(0, 8);
-            string audioFilename = $"miner_{uniqueId}.wav";
+            string audioExt = AudioBitrate > 0 ? "mp3" : "wav";
+            string audioFilename = $"miner_{uniqueId}.{audioExt}";
             string imageFilename = $"miner_{uniqueId}.jpg";
 
             bool hasAudio = slot.AudioBytes != null && slot.AudioBytes.Length > 0;
             bool hasImage = slot.ScreenshotBytes != null && slot.ScreenshotBytes.Length > 0;
 
-            if (hasAudio) await Anki.StoreMediaAsync(audioFilename, slot.AudioBytes);
+            if (hasAudio)
+            {
+                byte[] finalAudioBytes = slot.AudioBytes;
+
+                if (AudioBitrate > 0)
+                {
+                    OnStatusChanged?.Invoke($"Convertendo áudio para MP3 {AudioBitrate}kbps...");
+                    finalAudioBytes = await Task.Run(() => ConvertWavToMp3(slot.AudioBytes, AudioBitrate));
+                }
+
+                await Anki.StoreMediaAsync(audioFilename, finalAudioBytes);
+            }
             if (hasImage) await Anki.StoreMediaAsync(imageFilename, slot.ScreenshotBytes);
 
             var result = await Anki.UpdateLastCardAsync(deck, audioField, imageField, hasAudio ? audioFilename : null, hasImage ? imageFilename : null);

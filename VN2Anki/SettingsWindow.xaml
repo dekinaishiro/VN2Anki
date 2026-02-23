@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:VN2Anki.Locales"
-        Title="Configurações - VN Miner" Height="650" Width="480"
+        Title="Configurações - VN Miner" Height="700" Width="560"
         Background="#252526" Foreground="White" WindowStartupLocation="CenterScreen" WindowStyle="ToolWindow">
 
     <Window.Resources>
@@ -35,6 +35,7 @@
             <GroupBox Header="{x:Static loc:Strings.HeaderConfig}" Foreground="#007ACC" FontWeight="Bold" Grid.Row="0" Padding="10">
                 <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -95,7 +96,15 @@
                         <ComboBoxItem Content="360p (LD)" Tag="640"/>
                     </ComboBox>
 
-                    <CheckBox x:Name="ChkOpenSettings" Content="{x:Static loc:Strings.LblOpenSettingsOnStartup}" Foreground="White" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" VerticalAlignment="Center" Checked="ChkOpenSettings_Checked"/>
+                    <TextBlock Text="{x:Static loc:Strings.LblAudioQuality}" Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                    <ComboBox x:Name="ComboAudioRes" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2">
+                        <ComboBoxItem Content="WAV (Original sem compressão)" Tag="0"/>
+                        <ComboBoxItem Content="MP3 192 kbps (Alta Qualidade)" Tag="192"/>
+                        <ComboBoxItem Content="MP3 128 kbps (Padrão)" Tag="128"/>
+                        <ComboBoxItem Content="MP3 64 kbps (Voz Leve)" Tag="64"/>
+                    </ComboBox>
+
+                    <CheckBox x:Name="ChkOpenSettings" Content="{x:Static loc:Strings.LblOpenSettingsOnStartup}" Foreground="White" Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" VerticalAlignment="Center" Checked="ChkOpenSettings_Checked"/>
                 </Grid>
             </GroupBox>
 

@@ -222,4 +222,7 @@
   <data name="LblImageQuality" xml:space="preserve">
     <value>Qualidad de la imagen</value>
   </data>
+  <data name="LblAudioQuality" xml:space="preserve">
+    <value>Formato del audio</value>
+  </data>
 </root>

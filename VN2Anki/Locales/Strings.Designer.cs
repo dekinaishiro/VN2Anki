@@ -169,6 +169,15 @@ namespace VN2Anki.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Audio Format.
+        /// </summary>
+        public static string LblAudioQuality {
+            get {
+                return ResourceManager.GetString("LblAudioQuality", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Audio Source:.
         /// </summary>
         public static string LblAudioSource {
