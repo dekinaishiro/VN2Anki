@@ -19,12 +19,16 @@
             </Grid.RowDefinitions>
 
             <Grid Grid.Row="0">
-                <Border Background="#444" CornerRadius="4,4,0,0" MouseLeftButtonDown="DragBar_MouseLeftButtonDown" Cursor="SizeAll" Height="14"/>
-                <TextBlock Text="⋮⋮⋮⋮⋮⋮⋮⋮" Foreground="#888" FontSize="9" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-3,0,0" IsHitTestVisible="False"/>
-                <Button Content="✕" Foreground="#CCC" Background="Transparent" BorderThickness="0" HorizontalAlignment="Right" VerticalAlignment="Center" Width="25" Height="14" FontSize="9" Click="BtnExitApp_Click" ToolTip="Fechar VN Miner" Cursor="Arrow"/>
+                <Border Background="#444" CornerRadius="4,4,0,0" MouseLeftButtonDown="DragBar_MouseLeftButtonDown" Cursor="SizeAll" Height="18"/>
+                <TextBlock Text="⋮⋮⋮⋮⋮⋮⋮⋮" Foreground="#888" FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-3,0,0" IsHitTestVisible="False"/>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button Content="—" Foreground="#CCC" Background="Transparent" BorderThickness="0" Width="40" Height="18" FontSize="11" Click="BtnMinimize_Click" ToolTip="Minimizar" Cursor="Arrow"/>
+                    <Button Content="✕" Foreground="#CCC" Background="Transparent" BorderThickness="0" Width="30" Height="18" FontSize="11" Click="BtnExitApp_Click" ToolTip="Fechar VN Miner" Cursor="Arrow"/>
+                </StackPanel>
             </Grid>
 
-            <Grid x:Name="MiniStatsPanel" Grid.Row="1" Visibility="Collapsed" Margin="15,10,15,10">
+            <Grid x:Name="MiniStatsPanel" Grid.Row="1" Visibility="Visible" Margin="15,10,15,10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
@@ -42,7 +46,7 @@
                     <TextBlock Text="{Binding SpeedCharsPerHour}" FontSize="18" FontWeight="Black" Foreground="White" HorizontalAlignment="Right"/>
                     <TextBlock Text="char/h" FontSize="14" Foreground="#AAAAAA" HorizontalAlignment="Right" Margin="0,-2,0,0"/>
                 </StackPanel>
-            </Grid>
+            </Grid> 
 
             <TextBlock x:Name="TxtStatus" Grid.Row="2" Foreground="#AAAAAA" FontSize="10" HorizontalAlignment="Center" Margin="5,0,5,2" MaxWidth="250" TextTrimming="CharacterEllipsis" Visibility="Collapsed"/>
 

@@ -199,6 +199,11 @@ namespace VN2Anki
             Application.Current.Shutdown();
         }
 
+        private void BtnMinimize_Click(object sender, RoutedEventArgs e)
+        {
+            this.WindowState = WindowState.Minimized;
+        }
+
         private void HandleUnexpectedBufferStop()
         {
             Dispatcher.Invoke(() =>
