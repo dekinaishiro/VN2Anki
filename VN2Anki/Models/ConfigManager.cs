@@ -30,14 +30,16 @@ namespace VN2Anki.Models
             try
             {
                 if (!Directory.Exists(AppDataFolder))
+                {
                     Directory.CreateDirectory(AppDataFolder);
+                }
 
                 string json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(ConfigFilePath, json);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error when saving config: {ex.Message}");
+                System.Windows.MessageBox.Show($"Could not save the settings: {ex.Message}");
             }
         }
 
