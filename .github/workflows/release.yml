@@ -5,7 +5,6 @@ on:
     tags:
       - 'v*'
 
-# 1. ADICIONADO: Dá permissão para o workflow criar a Release
 permissions:
   contents: write
 
@@ -14,27 +13,27 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout do código
+    - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Configurar o .NET
+    - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x' 
 
-    - name: Restaurar dependências
+    - name: Restore dependencies
       run: dotnet restore
 
-    - name: Publicar a aplicação
-      run: dotnet publish "VNMiner/VNMiner.csproj" -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish_output
+    - name: Publish application
+      run: dotnet publish "VN2Anki/VN2Anki.csproj" -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish_output
 
-    - name: Compactar os arquivos
-      run: Compress-Archive -Path ./publish_output/* -DestinationPath VNMiner-Windows64.zip
+    - name: Compress files
+      run: Compress-Archive -Path ./publish_output/* -DestinationPath VN2Anki-Windows64.zip
 
-    - name: Criar a Release no GitHub
+    - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        files: VNMiner-Windows64.zip
+        files: VN2Anki-Windows64.zip
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
