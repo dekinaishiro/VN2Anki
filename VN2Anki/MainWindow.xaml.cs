@@ -84,6 +84,7 @@ namespace VN2Anki
             _miningService.UseDynamicTimeout = _currentConfig.UseDynamicTimeout;
             _miningService.MaxImageWidth = _currentConfig.MaxImageWidth;
             _miningService.AudioBitrate = _currentConfig.AudioBitrate;
+            _miningService.Anki.UpdateSettings(_currentConfig.AnkiUrl, _currentConfig.AnkiTimeout);
         }
 
         private void BtnOpenSettings_Click(object sender, RoutedEventArgs e)

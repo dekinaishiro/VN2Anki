@@ -23,7 +23,7 @@ namespace VN2Anki
             var audioEngine = new AudioEngine();
             var videoEngine = new VideoEngine();
             var clipboardMonitor = new ClipboardMonitor();
-            var ankiHandler = new AnkiHandler();
+            var ankiHandler = new AnkiHandler(config.AnkiUrl, config.AnkiTimeout);
             var sessionTracker = new SessionTracker();
 
             var miningService = new MiningService(

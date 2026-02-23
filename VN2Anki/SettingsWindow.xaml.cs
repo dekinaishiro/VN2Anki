@@ -38,8 +38,8 @@ namespace VN2Anki
             if (!string.IsNullOrEmpty(_config.Model) && ComboModel.Items.Contains(_config.Model))
                 ComboModel.SelectedItem = _config.Model;
 
-            TxtIdleTime.Text = _config.IdleTime ?? "30";
-            TxtMaxSlots.Text = _config.MaxSlots ?? "50";
+            TxtIdleTime.Text = _config.IdleTime ?? "15";
+            TxtMaxSlots.Text = _config.MaxSlots ?? "30";
             ChkDynamicTimeout.IsChecked = _config.UseDynamicTimeout;
             ChkOpenSettings.IsChecked = _config.OpenSettingsOnStartup;
             ComboLanguage.SelectedItem = ComboLanguage.Items.Cast<ComboBoxItem>().FirstOrDefault(x => x.Tag.ToString() == _config.Language);
@@ -51,6 +51,9 @@ namespace VN2Anki
             string tagAudio = _config.AudioBitrate.ToString();
             ComboAudioRes.SelectedItem = ComboAudioRes.Items.Cast<ComboBoxItem>().FirstOrDefault(x => x.Tag.ToString() == tagAudio)
                                          ?? ComboAudioRes.Items[2];
+
+            TxtAnkiUrl.Text = string.IsNullOrEmpty(_config.AnkiUrl) ? "http://127.0.0.1:8765" : _config.AnkiUrl;
+            TxtAnkiTimeout.Text = _config.AnkiTimeout > 0 ? _config.AnkiTimeout.ToString() : "15";
         }
 
         private async Task RefreshAudioAsync()
@@ -129,6 +132,8 @@ namespace VN2Anki
             _config.MaxSlots = TxtMaxSlots.Text;
             _config.UseDynamicTimeout = ChkDynamicTimeout.IsChecked ?? true;
             _config.OpenSettingsOnStartup = ChkOpenSettings.IsChecked ?? false;
+
+            // video & audio
             if (ComboImageRes.SelectedItem is ComboBoxItem resItem && int.TryParse(resItem.Tag.ToString(), out int parsedWidth))
             {
                 _config.MaxImageWidth = parsedWidth;
@@ -137,7 +142,18 @@ namespace VN2Anki
             {
                 _config.AudioBitrate = parsedBitrate;
             }
+            // anki
+            _config.AnkiUrl = TxtAnkiUrl.Text.Trim();
+            if (int.TryParse(TxtAnkiTimeout.Text.Trim(), out int timeout) && timeout > 0)
+            {
+                _config.AnkiTimeout = timeout;
+            }
+            else
+            {
+                _config.AnkiTimeout = 15;
+            }
 
+            // saves
             ConfigManager.Save(_config);
 
             this.Close();
