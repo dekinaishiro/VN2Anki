@@ -98,7 +98,7 @@
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Text="{x:Static loc:Strings.LblAudioSource}" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <ComboBox x:Name="ComboAudio" Grid.Row="0" Grid.Column="1" DisplayMemberPath="Name"/>
+                        <ComboBox x:Name="ComboAudio" Grid.Row="0" Grid.Column="1" DisplayMemberPath="DisplayName"/>
                         <Button Content="🔄" Grid.Row="0" Grid.Column="2" Width="35" Click="BtnRefreshAudio_Click"/>
 
                         <TextBlock Text="{x:Static loc:Strings.LblVideoSource}" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>

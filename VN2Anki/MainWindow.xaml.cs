@@ -89,13 +89,28 @@ namespace VN2Anki
 
         private void BtnOpenSettings_Click(object sender, RoutedEventArgs e)
         {
-            var sw = new SettingsWindow(_miningService, _currentConfig);
+            // temporary fix: audio source swap
+            string oldAudioDevice = _currentConfig.AudioDevice;
 
+            var sw = new SettingsWindow(_miningService, _currentConfig);
             sw.Owner = this; // ensures that Settings stays abnove the main window
 
-            sw.Closed += (s, args) => LoadConfig();
+            // temporary fix: audio source swap
+            sw.Closed += (s, args) =>
+            {
+                LoadConfig();
+
+                // Se o buffer estava ativo e o dispositivo de áudio mudou, reiniciamos!
+                if (_isBufferActive && oldAudioDevice != _currentConfig.AudioDevice)
+                {
+                    BtnToggleBuffer_Click(null, null); // Desliga (faz o StopBuffer e sela os slots)
+                    BtnToggleBuffer_Click(null, null); // Liga novamente com o novo ID de áudio
+                }
+            };
 
             sw.Show(); // instead of ShowDialog so the windows are independent
+
+
         }
 
         private void BtnToggleBuffer_Click(object sender, RoutedEventArgs e)

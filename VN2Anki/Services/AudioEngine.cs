@@ -12,6 +12,7 @@ namespace VN2Anki.Services
         public string Id { get; set; }
         public string Name { get; set; }
         public DataFlow Flow { get; set; }
+        public string DisplayName => Flow == DataFlow.Render ? $"🔊 {Name}" : $"🎤 {Name} (Input)";
     }
 
     public class AudioEngine
@@ -39,13 +40,14 @@ namespace VN2Anki.Services
         {
             var devices = new List<AudioDeviceItem>();
 
-            // 'using' keyword here prevents leaking audio device Handles on each call to GetDevices
             using (var enumerator = new MMDeviceEnumerator())
             {
-                foreach (var endpoint in enumerator.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active))
+                // 1º: Outputs (Render) - Fones, Caixas de som e Cabos Virtuais (Prioridade máxima)
+                foreach (var endpoint in enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active))
                     devices.Add(new AudioDeviceItem { Id = endpoint.ID, Name = endpoint.FriendlyName, Flow = endpoint.DataFlow });
 
-                foreach (var endpoint in enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active))
+                // 2º: Inputs (Capture) - Microfones (Vão para o fim da lista)
+                foreach (var endpoint in enumerator.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active))
                     devices.Add(new AudioDeviceItem { Id = endpoint.ID, Name = endpoint.FriendlyName, Flow = endpoint.DataFlow });
             }
 
