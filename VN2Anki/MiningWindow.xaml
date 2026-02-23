@@ -31,6 +31,7 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
                             <Image Source="{Binding Thumbnail}" Width="150" Stretch="Uniform" Grid.Column="0" Margin="0,0,15,0" VerticalAlignment="Center"/>
@@ -59,11 +60,15 @@
                                 </TextBlock>
                             </Grid>
 
-                            <Button Content="⛏" Grid.Column="2" VerticalAlignment="Center" Cursor="Hand"
+                            <Button Content="▶" Grid.Column="2" VerticalAlignment="Center" Cursor="Hand"
+        Padding="12,8" Background="#28A745" Foreground="White" FontWeight="Bold" BorderThickness="0"
+        Click="BtnPlay_Click" Tag="{Binding}" Margin="0,0,5,0" ToolTip="Ouvir Áudio"/>
+                            
+                            <Button Content="⛏" Grid.Column="3" VerticalAlignment="Center" Cursor="Hand"
         Padding="12,8" Background="#007ACC" Foreground="White" FontWeight="Bold" BorderThickness="0"
         Click="BtnMiner_Click" Tag="{Binding}" Margin="0,0,5,0" ToolTip="Enviar para o Anki"/>
 
-                            <Button Content="🗑" Grid.Column="3" VerticalAlignment="Center" Cursor="Hand"
+                            <Button Content="🗑" Grid.Column="4" VerticalAlignment="Center" Cursor="Hand"
         Padding="12,8" Background="#DC3545" Foreground="White" FontWeight="Bold" BorderThickness="0"
         Click="BtnDelete_Click" Tag="{Binding}" ToolTip="Excluir slot"/>
 
