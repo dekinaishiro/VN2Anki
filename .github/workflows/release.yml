@@ -1,0 +1,40 @@
+name: Build and Release WPF App
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+# 1. ADICIONADO: Dá permissão para o workflow criar a Release
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout do código
+      uses: actions/checkout@v4
+
+    - name: Configurar o .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x' 
+
+    - name: Restaurar dependências
+      run: dotnet restore
+
+    - name: Publicar a aplicação
+      run: dotnet publish "VNMiner/VNMiner.csproj" -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./publish_output
+
+    - name: Compactar os arquivos
+      run: Compress-Archive -Path ./publish_output/* -DestinationPath VNMiner-Windows64.zip
+
+    - name: Criar a Release no GitHub
+      uses: softprops/action-gh-release@v2
+      with:
+        files: VNMiner-Windows64.zip
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
