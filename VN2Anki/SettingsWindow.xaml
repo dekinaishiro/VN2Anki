@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:VN2Anki.Locales"
-        Title="Configurações - VN Miner" Height="700" Width="560"
+        Title="Configurações - VN Miner" Height="560" Width="550"
         Background="#252526" Foreground="White" WindowStartupLocation="CenterScreen" WindowStyle="ToolWindow">
 
     <Window.Resources>
@@ -27,125 +27,172 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <Grid Margin="15">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <GroupBox Header="{x:Static loc:Strings.HeaderConfig}" Foreground="#007ACC" FontWeight="Bold" Grid.Row="0" Padding="10">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+            <TabControl Background="Transparent" BorderThickness="0" Grid.Row="0">
+                <TabControl.Resources>
+                    <Style TargetType="TabItem">
+                        <Setter Property="Background" Value="#3F3F46"/>
+                        <Setter Property="Foreground" Value="#EAEAEA"/>
+                        <Setter Property="Padding" Value="20,10"/>
+                        <Setter Property="Margin" Value="0,0,2,0"/>
+                        <Setter Property="FontSize" Value="14"/>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                        <Setter Property="Cursor" Value="Hand"/>
 
-                    <TextBlock Text="{x:Static loc:Strings.LblAudioSource}" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                    <ComboBox x:Name="ComboAudio" Grid.Row="0" Grid.Column="1" DisplayMemberPath="Name"/>
-                    <Button Content="🔄" Grid.Row="0" Grid.Column="2" Width="35" Click="BtnRefreshAudio_Click"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="TabItem">
+                                    <Border Name="TabBorder" 
+                                        Background="{TemplateBinding Background}" 
+                                        BorderThickness="0" 
+                                        CornerRadius="4,4,0,0" 
+                                        Padding="{TemplateBinding Padding}" 
+                                        Margin="{TemplateBinding Margin}">
+                                        <ContentPresenter HorizontalAlignment="Center" 
+                                                      VerticalAlignment="Center" 
+                                                      ContentSource="Header"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
 
-                    <TextBlock Text="{x:Static loc:Strings.LblVideoSource}" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                    <ComboBox x:Name="ComboVideo" Grid.Row="1" Grid.Column="1" DisplayMemberPath="DisplayName" SelectedValuePath="ProcessName"/>
-                    <Button Content="🔄" Grid.Row="1" Grid.Column="2" Width="35" Click="BtnRefreshVideo_Click"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#007ACC"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#4d4d53"/>
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsSelected" Value="True"/>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <Setter Property="Background" Value="#007ACC"/>
+                            </MultiTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TabControl.Resources>
 
-                    <TextBlock Text="{x:Static loc:Strings.LblSlotLimit}" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                    <TextBox x:Name="TxtMaxSlots" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5"/>
+                <TabItem Header="{x:Static loc:Strings.HeaderConfig}">
+                    <Grid Margin="0,15,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
-                    <TextBlock Text="{x:Static loc:Strings.LblTimeout}" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                    <TextBox x:Name="TxtIdleTime" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5">
-                        <TextBox.Style>
-                            <Style TargetType="TextBox">
-                                <Setter Property="IsEnabled" Value="True"/>
-                                <Setter Property="Background" Value="White"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsChecked, ElementName=ChkDynamicTimeout}" Value="True">
-                                        <Setter Property="IsEnabled" Value="False"/>
-                                        <Setter Property="Background" Value="#444444"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBox.Style>
-                    </TextBox>
+                        <TextBlock Text="{x:Static loc:Strings.LblAudioSource}" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <ComboBox x:Name="ComboAudio" Grid.Row="0" Grid.Column="1" DisplayMemberPath="Name"/>
+                        <Button Content="🔄" Grid.Row="0" Grid.Column="2" Width="35" Click="BtnRefreshAudio_Click"/>
 
-                    <CheckBox x:Name="ChkDynamicTimeout" Content="{x:Static loc:Strings.LblDynamicTimeout}" Foreground="White" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" VerticalAlignment="Center"/>
+                        <TextBlock Text="{x:Static loc:Strings.LblVideoSource}" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <ComboBox x:Name="ComboVideo" Grid.Row="1" Grid.Column="1" DisplayMemberPath="DisplayName" SelectedValuePath="ProcessName"/>
+                        <Button Content="🔄" Grid.Row="1" Grid.Column="2" Width="35" Click="BtnRefreshVideo_Click"/>
 
-                    <TextBlock Text="Idioma / Language:" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                    <ComboBox x:Name="ComboLanguage" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="ComboLanguage_SelectionChanged">
-                        <ComboBoxItem Content="Português" Tag="pt-BR"/>
-                        <ComboBoxItem Content="English" Tag="en-US"/>
-                        <ComboBoxItem Content="Español" Tag="es-ES"/>
-                    </ComboBox>
+                        <TextBlock Text="{x:Static loc:Strings.LblSlotLimit}" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <TextBox x:Name="TxtMaxSlots" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5"/>
 
-                    <TextBlock Text="{x:Static loc:Strings.LblImageQuality}" Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                    <ComboBox x:Name="ComboImageRes" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2">
-                        <ComboBoxItem Content="Tamanho Original" Tag="0"/>
-                        <ComboBoxItem Content="1080p (FHD)" Tag="1920"/>
-                        <ComboBoxItem Content="720p (HD)" Tag="1280"/>
-                        <ComboBoxItem Content="480p (SD)" Tag="854"/>
-                        <ComboBoxItem Content="360p (LD)" Tag="640"/>
-                    </ComboBox>
+                        <TextBlock Text="{x:Static loc:Strings.LblTimeout}" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <TextBox x:Name="TxtIdleTime" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5">
+                            <TextBox.Style>
+                                <Style TargetType="TextBox">
+                                    <Setter Property="IsEnabled" Value="True"/>
+                                    <Setter Property="Background" Value="White"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsChecked, ElementName=ChkDynamicTimeout}" Value="True">
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                            <Setter Property="Background" Value="#444444"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
 
-                    <TextBlock Text="{x:Static loc:Strings.LblAudioQuality}" Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                    <ComboBox x:Name="ComboAudioRes" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2">
-                        <ComboBoxItem Content="WAV (Original sem compressão)" Tag="0"/>
-                        <ComboBoxItem Content="MP3 192 kbps (Alta Qualidade)" Tag="192"/>
-                        <ComboBoxItem Content="MP3 128 kbps (Padrão)" Tag="128"/>
-                        <ComboBoxItem Content="MP3 64 kbps (Voz Leve)" Tag="64"/>
-                    </ComboBox>
+                        <CheckBox x:Name="ChkDynamicTimeout" Content="{x:Static loc:Strings.LblDynamicTimeout}" Foreground="White" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" VerticalAlignment="Center"/>
 
-                    <CheckBox x:Name="ChkOpenSettings" Content="{x:Static loc:Strings.LblOpenSettingsOnStartup}" Foreground="White" Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" VerticalAlignment="Center" Checked="ChkOpenSettings_Checked"/>
-                </Grid>
-            </GroupBox>
+                        <TextBlock Text="Idioma / Language:" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <ComboBox x:Name="ComboLanguage" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="ComboLanguage_SelectionChanged">
+                            <ComboBoxItem Content="Português" Tag="pt-BR"/>
+                            <ComboBoxItem Content="English" Tag="en-US"/>
+                            <ComboBoxItem Content="Español" Tag="es-ES"/>
+                        </ComboBox>
 
-            <GroupBox Header="{x:Static loc:Strings.HeaderAnki}" Foreground="#007ACC" FontWeight="Bold" Grid.Row="1" Padding="10" Margin="0,15,0,0">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+                        <TextBlock Text="Qualidade de Imagem:" Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <ComboBox x:Name="ComboImageRes" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2">
+                            <ComboBoxItem Content="Tamanho Original" Tag="0"/>
+                            <ComboBoxItem Content="1080p (FHD)" Tag="1920"/>
+                            <ComboBoxItem Content="720p (HD)" Tag="1280"/>
+                            <ComboBoxItem Content="480p (SD)" Tag="854"/>
+                            <ComboBoxItem Content="360p (LD)" Tag="640"/>
+                        </ComboBox>
 
-                    <TextBlock Text="{x:Static loc:Strings.LblDeck}" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                    <ComboBox x:Name="ComboDeck" Grid.Row="0" Grid.Column="1"/>
-                    <Button Content="🔄" Grid.Row="0" Grid.Column="2" Width="35" Click="BtnRefreshAnki_Click"/>
+                        <TextBlock Text="Qualidade de Áudio:" Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <ComboBox x:Name="ComboAudioRes" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2">
+                            <ComboBoxItem Content="WAV (Original sem compressão)" Tag="0"/>
+                            <ComboBoxItem Content="MP3 192 kbps (Alta Qualidade)" Tag="192"/>
+                            <ComboBoxItem Content="MP3 128 kbps (Padrão)" Tag="128"/>
+                            <ComboBoxItem Content="MP3 64 kbps (Voz Leve)" Tag="64"/>
+                        </ComboBox>
 
-                    <TextBlock Text="{x:Static loc:Strings.LblNoteType}" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                    <ComboBox x:Name="ComboModel" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="ComboModel_SelectionChanged"/>
+                        <CheckBox x:Name="ChkOpenSettings" Content="{x:Static loc:Strings.LblOpenSettingsOnStartup}" Foreground="White" Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2" Margin="5,15,5,5" VerticalAlignment="Center" Checked="ChkOpenSettings_Checked"/>
+                    </Grid>
+                </TabItem>
 
-                    <TextBlock Text="{x:Static loc:Strings.LblAudioField}" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                    <ComboBox x:Name="ComboFieldAudio" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"/>
+                <TabItem Header="{x:Static loc:Strings.HeaderAnki}">
+                    <Grid Margin="0,15,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
-                    <TextBlock Text="{x:Static loc:Strings.LblImageField}" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                    <ComboBox x:Name="ComboFieldImage" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2"/>
+                        <TextBlock Text="{x:Static loc:Strings.LblDeck}" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <ComboBox x:Name="ComboDeck" Grid.Row="0" Grid.Column="1"/>
+                        <Button Content="🔄" Grid.Row="0" Grid.Column="2" Width="35" Click="BtnRefreshAnki_Click"/>
 
-                    <TextBlock Text="AnkiConnect URL:" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                    <TextBox x:Name="TxtAnkiUrl" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5"/>
+                        <TextBlock Text="{x:Static loc:Strings.LblNoteType}" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <ComboBox x:Name="ComboModel" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="ComboModel_SelectionChanged"/>
 
-                    <TextBlock Text="Timeout (segundos):" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                    <TextBox x:Name="TxtAnkiTimeout" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5"/>
-                </Grid>
-            </GroupBox>
+                        <TextBlock Text="{x:Static loc:Strings.LblAudioField}" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <ComboBox x:Name="ComboFieldAudio" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"/>
 
-            <Button Content="{x:Static loc:Strings.BtnSaveClose}" Background="#28A745" Grid.Row="2" Margin="0,20,0,0" Height="40" FontSize="14" Click="BtnSave_Click"/>
+                        <TextBlock Text="{x:Static loc:Strings.LblImageField}" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <ComboBox x:Name="ComboFieldImage" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2"/>
+
+                        <TextBlock Text="AnkiConnect URL:" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <TextBox x:Name="TxtAnkiUrl" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5"/>
+
+                        <TextBlock Text="Timeout (segundos):" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <TextBox x:Name="TxtAnkiTimeout" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5"/>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+
+            <Button Content="{x:Static loc:Strings.BtnSaveClose}" Background="#28A745" Grid.Row="1" Margin="0,20,0,0" Height="40" FontSize="14" Click="BtnSave_Click"/>
         </Grid>
     </ScrollViewer>
 </Window>
