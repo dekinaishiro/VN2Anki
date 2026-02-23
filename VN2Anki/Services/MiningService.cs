@@ -193,7 +193,7 @@ namespace VN2Anki.Services
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
                 StopBuffer();
-                OnStatusChanged?.Invoke($"⚠️ ERRO: {msg}");
+                OnStatusChanged?.Invoke($"⚠️ ERROR: {msg}");
                 OnBufferStoppedUnexpectedly?.Invoke(); // notifies ui
             });
         }

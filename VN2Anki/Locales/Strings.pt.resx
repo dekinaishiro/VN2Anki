@@ -225,4 +225,19 @@
   <data name="LblAudioQuality" xml:space="preserve">
     <value>Formato do Áudio</value>
   </data>
+  <data name="LblLanguage" xml:space="preserve">
+    <value>Idioma</value>
+  </data>
+  <data name="LblSettingsWindow" xml:space="preserve">
+    <value>VN2Anki - Configurações</value>
+  </data>
+  <data name="CardUpdated" xml:space="preserve">
+    <value>Carta Atualizada!</value>
+  </data>
+  <data name="LangRestartNow" xml:space="preserve">
+    <value>O aplicativo precisa ser reiniciado para que a alteração de idioma tenha efeito.</value>
+  </data>
+  <data name="TitleHistoryWindow" xml:space="preserve">
+    <value>Histórico</value>
+  </data>
 </root>

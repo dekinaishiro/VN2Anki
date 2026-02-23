@@ -91,7 +91,7 @@ namespace VN2Anki.Services
 
                     if (!_isManualStop)
                     {
-                        string errorMsg = e.Exception != null ? e.Exception.Message : "Dispositivo desconectado.";
+                        string errorMsg = e.Exception != null ? e.Exception.Message : "Disconnected Device.";
                         OnRecordingError?.Invoke(errorMsg);
                     }
                 };
@@ -99,7 +99,7 @@ namespace VN2Anki.Services
                 _captureDevice.StartRecording();
                 _isRecording = true;
             }
-            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[AudioEngine] Erro: {ex.Message}"); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[AudioEngine] Error: {ex.Message}"); }
         }
 
         public void Stop()

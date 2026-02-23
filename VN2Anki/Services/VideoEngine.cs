@@ -81,13 +81,12 @@ namespace VN2Anki.Services
                 if (maxWidth > 0 && bmp.Width > maxWidth)
                 {
                     int newWidth = maxWidth;
-                    int newHeight = (int)((float)bmp.Height * ((float)newWidth / bmp.Width)); // Mantém a proporção
+                    int newHeight = (int)((float)bmp.Height * ((float)newWidth / bmp.Width)); 
 
                     using (Bitmap resizedBmp = new Bitmap(newWidth, newHeight))
                     {
                         using (Graphics g = Graphics.FromImage(resizedBmp))
                         {
-                            // Alta qualidade na redução
                             g.InterpolationMode = InterpolationMode.HighQualityBicubic;
                             g.DrawImage(bmp, 0, 0, newWidth, newHeight);
                         }

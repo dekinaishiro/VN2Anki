@@ -164,8 +164,7 @@ namespace VN2Anki
                 if (_isBufferActive) BtnToggleBuffer_Click(null, null);
                 _miningService.Tracker.Reset();
 
-                // Chama o Dispose em vez de apenas limpar a mídia
-                foreach (var slot in _miningService.HistorySlots)
+               foreach (var slot in _miningService.HistorySlots)
                 {
                     slot.Dispose();
                 }

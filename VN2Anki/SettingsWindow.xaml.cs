@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using Microsoft.VisualBasic;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -38,7 +39,7 @@ namespace VN2Anki
             if (!string.IsNullOrEmpty(_config.Model) && ComboModel.Items.Contains(_config.Model))
                 ComboModel.SelectedItem = _config.Model;
 
-            TxtIdleTime.Text = _config.IdleTime ?? "15";
+            TxtIdleTime.Text = _config.IdleTime ?? "20";
             TxtMaxSlots.Text = _config.MaxSlots ?? "30";
             ChkDynamicTimeout.IsChecked = _config.UseDynamicTimeout;
             ChkOpenSettings.IsChecked = _config.OpenSettingsOnStartup;
@@ -107,8 +108,8 @@ namespace VN2Anki
                 ConfigManager.Save(_config);
 
                 var result = MessageBox.Show(
-                    "O aplicativo precisa ser reiniciado para aplicar o novo idioma. Reiniciar agora?\n\nThe application needs to restart to apply the new language. Restart now?",
-                    "Idioma / Language",
+                    Locales.Strings.LangRestartNow,
+                    Locales.Strings.LblLanguage,
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Question);
 

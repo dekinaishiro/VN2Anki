@@ -8,8 +8,8 @@
         public string Model { get; set; }
         public string AudioField { get; set; }
         public string ImageField { get; set; }
-        public string IdleTime { get; set; } = "30";
-        public string MaxSlots { get; set; } = "50";
+        public string IdleTime { get; set; } = "20";
+        public string MaxSlots { get; set; } = "30";
         public bool UseDynamicTimeout { get; set; } = true;
         public bool OpenSettingsOnStartup { get; set; } = false;
         public string Language { get; set; } = "en-US";

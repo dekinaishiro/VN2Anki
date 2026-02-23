@@ -133,6 +133,15 @@ namespace VN2Anki.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Card updated!.
+        /// </summary>
+        public static string CardUpdated {
+            get {
+                return ResourceManager.GetString("CardUpdated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Anki.
         /// </summary>
         public static string HeaderAnki {
@@ -156,6 +165,15 @@ namespace VN2Anki.Locales {
         public static string HeaderControls {
             get {
                 return ResourceManager.GetString("HeaderControls", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The app needs to be restarted for the language change to take effect..
+        /// </summary>
+        public static string LangRestartNow {
+            get {
+                return ResourceManager.GetString("LangRestartNow", resourceCulture);
             }
         }
         
@@ -223,6 +241,15 @@ namespace VN2Anki.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Language.
+        /// </summary>
+        public static string LblLanguage {
+            get {
+                return ResourceManager.GetString("LblLanguage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Note Type:.
         /// </summary>
         public static string LblNoteType {
@@ -237,6 +264,15 @@ namespace VN2Anki.Locales {
         public static string LblOpenSettingsOnStartup {
             get {
                 return ResourceManager.GetString("LblOpenSettingsOnStartup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to VN2Anki - Settings.
+        /// </summary>
+        public static string LblSettingsWindow {
+            get {
+                return ResourceManager.GetString("LblSettingsWindow", resourceCulture);
             }
         }
         
@@ -381,6 +417,15 @@ namespace VN2Anki.Locales {
         public static string StatusStopped {
             get {
                 return ResourceManager.GetString("StatusStopped", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to History.
+        /// </summary>
+        public static string TitleHistoryWindow {
+            get {
+                return ResourceManager.GetString("TitleHistoryWindow", resourceCulture);
             }
         }
     }

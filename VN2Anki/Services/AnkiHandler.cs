@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http;
+using System.Resources;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -61,12 +62,11 @@ namespace VN2Anki.Services
             }
             catch (TaskCanceledException)
             {
-                // Aqui capturamos o Timeout!
-                return (default, "Tempo limite esgotado. O Anki está fazendo backup ou sincronizando?");
+                return (default, "Anki Timeout");
             }
             catch (HttpRequestException)
             {
-                return (default, "Falha de conexão. O Anki e o add-on AnkiConnect estão abertos?");
+                return (default, "Failed to connect to Anki");
             }
             catch (Exception ex)
             {
@@ -100,20 +100,20 @@ namespace VN2Anki.Services
             // Propaga o erro de Timeout ou Conexão imediatamente para a UI!
             if (!string.IsNullOrEmpty(error)) return (false, error);
 
-            if (noteIds == null || noteIds.Count == 0) return (false, "Nenhuma carta adicionada hoje neste deck.");
+            if (noteIds == null || noteIds.Count == 0) return (false, "No card added recently in this dekck.");
 
             long lastNoteId = noteIds[noteIds.Count - 1];
             var fieldsToUpdate = new Dictionary<string, string>();
 
             if (!string.IsNullOrEmpty(audioField) && !string.IsNullOrEmpty(audioFilename)) fieldsToUpdate[audioField] = $"[sound:{audioFilename}]";
             if (!string.IsNullOrEmpty(imageField) && !string.IsNullOrEmpty(imageFilename)) fieldsToUpdate[imageField] = $"<img src=\"{imageFilename}\">";
-            if (fieldsToUpdate.Count == 0) return (false, "Nenhum campo para atualizar.");
+            if (fieldsToUpdate.Count == 0) return (false, "No fields to update.");
 
             var (_, updateError) = await InvokeWithDetailsAsync<object>("updateNoteFields", new { note = new { id = lastNoteId, fields = fieldsToUpdate } });
 
             if (!string.IsNullOrEmpty(updateError)) return (false, updateError);
 
-            return (true, "Carta atualizada!");
+            return (true, Locales.Strings.CardUpdated);
         }
     }
 }

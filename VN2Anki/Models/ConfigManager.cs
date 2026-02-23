@@ -37,7 +37,7 @@ namespace VN2Anki.Models
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Erro ao salvar config: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Error when saving config: {ex.Message}");
             }
         }
 

@@ -15,7 +15,7 @@ namespace VN2Anki
             const string appName = "VN2Anki_SingleInstance_Mutex";
             bool createdNew;
 
-            // Tenta criar o Mutex. Se createdNew for false, já existe outro app rodando.
+            // check if app is running
             _mutex = new Mutex(true, appName, out createdNew);
 
             if (!createdNew)

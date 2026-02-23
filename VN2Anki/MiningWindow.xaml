@@ -1,7 +1,8 @@
 ﻿<Window x:Class="VN2Anki.MiningWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Histórico de Mineração" Height="600" Width="800"
+        xmlns:loc="clr-namespace:VN2Anki.Locales"
+        Title="{x:Static loc:Strings.TitleHistoryWindow}" Height="600" Width="800"
         Background="#1E1E1E" Foreground="White" WindowStartupLocation="CenterScreen">
 
     <Grid Margin="10">
