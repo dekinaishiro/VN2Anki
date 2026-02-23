@@ -24,7 +24,7 @@ VN2Anki is a simple and lightweight tool designed to streamline the process of m
 5. Mine your words normally (e.g., using Yomitan to create a card in Anki).
 6. Click **ADD** (Quick Add) on VN2Anki to automatically update that last created card with the current sentence's screenshot and audio.
 
-**Extra Controls:**
+**Controls:**
 
 * Click **LIST** to open the history window and view/manage your recent captured slots.
 * Click **RES** to end and restart the current Session (this clears the history and resets the characters-read stats).
