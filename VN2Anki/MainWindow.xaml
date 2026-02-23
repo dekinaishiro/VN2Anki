@@ -23,8 +23,8 @@
                 <TextBlock Text="⋮⋮⋮⋮⋮⋮⋮⋮" Foreground="#888" FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-3,0,0" IsHitTestVisible="False"/>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <Button Content="—" Foreground="#CCC" Background="Transparent" BorderThickness="0" Width="40" Height="18" FontSize="11" Click="BtnMinimize_Click" ToolTip="Minimizar" Cursor="Arrow"/>
-                    <Button Content="✕" Foreground="#CCC" Background="Transparent" BorderThickness="0" Width="30" Height="18" FontSize="11" Click="BtnExitApp_Click" ToolTip="Fechar VN Miner" Cursor="Arrow"/>
+                    <Button Content="—" Foreground="#CCC" Background="Transparent" BorderThickness="0" Width="40" Height="18" FontSize="11" Click="BtnMinimize_Click" ToolTip="Minimize" Cursor="Arrow"/>
+                    <Button Content="✕" Foreground="#CCC" Background="Transparent" BorderThickness="0" Width="30" Height="18" FontSize="11" Click="BtnExitApp_Click" ToolTip="Shutdown" Cursor="Arrow"/>
                 </StackPanel>
             </Grid>
 
@@ -60,13 +60,33 @@
                     <ColumnDefinition Width="30"/>
                 </Grid.ColumnDefinitions>
 
-                <Button x:Name="BtnToggleBuffer" Content="OFF" Background="#DC3545" Grid.Column="0" Margin="2" Padding="8,5" FontWeight="Bold" Foreground="White" BorderThickness="0" Click="BtnToggleBuffer_Click"/>
-                <Button Content="RES" Background="Orange" Grid.Column="1" Margin="2" Padding="8,5" FontWeight="Bold" Foreground="White" BorderThickness="0" Click="BtnEndSession_Click" ToolTip="Encerrar Sessão"/>
-                <Button x:Name="BtnMiniQuickAdd" Content="ADD" Background="#FF12A0DC" Grid.Column="2" Margin="2" Padding="10,5,10,5" FontWeight="Bold" Foreground="White" BorderThickness="0" Click="BtnMiniQuickAdd_Click"/>
-                <Button x:Name="BtnMiniList" Content="LIST" Background="#FF642EC8" Grid.Column="3" Margin="2" Padding="8,5" FontWeight="Bold" Foreground="White" BorderThickness="0" Click="BtnOpenHistory_Click"/>
+                <Button x:Name="BtnToggleBuffer" Content="OFF" Background="#DC3545" Grid.Column="0" Margin="2" Padding="8,5" FontWeight="Bold" Foreground="White" BorderThickness="0" Click="BtnToggleBuffer_Click" ToolTip="Toggle Buffer"/>
+                <Button Content="RES" Background="Orange" Grid.Column="1" Margin="2" Padding="8,5" FontWeight="Bold" Foreground="White" BorderThickness="0" Click="BtnEndSession_Click" ToolTip="Finish Season"/>
+                <Button x:Name="BtnMiniQuickAdd" Content="ADD" Background="#FF12A0DC" Grid.Column="2" Margin="2" Padding="10,5,10,5" FontWeight="Bold" Foreground="White" BorderThickness="0" Click="BtnMiniQuickAdd_Click" ToolTip="Update with current sentence"/>
+                <Button x:Name="BtnMiniList" Content="LIST" Background="#FF642EC8" Grid.Column="3" Margin="2" Padding="8,5" FontWeight="Bold" Foreground="White" BorderThickness="0" Click="BtnOpenHistory_Click" ToolTip="History"/>
 
-                <Button Content="⏱" Background="#FF929292" Grid.Column="4" Margin="2" BorderThickness="0" Foreground="White" Click="BtnToggleStats_Click" ToolTip="Relógio"/>
-                <Button Content="⚙️" Background="#444" Grid.Column="5" Margin="2" BorderThickness="0" Foreground="White" Click="BtnOpenSettings_Click" ToolTip="Configurações"/>
+                <Button  Background="#FF929292" Grid.Column="4" Margin="2" BorderThickness="0" Foreground="White" Click="BtnToggleStats_Click" ToolTip="Toggle Stats">
+                    <Viewbox Width="16" Height="16">
+                        <Path Fill="White">
+                            <Path.Data>
+                                <GeometryGroup>
+                                    <PathGeometry Figures="M12.5 7.25a.75.75 0 00-1.5 0v5.5c0 .27.144.518.378.651l3.5 2a.75.75 0 00.744-1.302L12.5 12.315V7.25z"/>
+                                    <PathGeometry Figures="
+                    M12 1C5.925 1 1 5.925 1 12s4.925 11 11 11 11-4.925 11-11S18.075 1 12 1z
+                    M2.5 12a9.5 9.5 0 1119 0 9.5 9.5 0 01-19 0z"/>
+                                </GeometryGroup>
+                            </Path.Data>
+                        </Path>
+                    </Viewbox>
+                </Button>
+
+
+
+                <Button Background="#FF929292" Grid.Column="5" Margin="2" BorderThickness="0" Foreground="White" Click="BtnOpenSettings_Click" ToolTip="Settings">
+                <Viewbox Width="16" Height="16">
+                    <Path Fill="White" Data="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+                </Viewbox>
+                </Button>
             </Grid>
         </Grid>
     </Border>
