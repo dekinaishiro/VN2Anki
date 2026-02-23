@@ -24,6 +24,10 @@ namespace VN2Anki.Services
         private readonly object _bufferLock = new object();
         private bool _isRecording = false;
 
+        // event to notify errors from silent audio dc
+        public event Action<string> OnRecordingError;
+        private bool _isManualStop = false; // <-- Nova flag
+
         public int DurationSeconds { get; }
 
         public AudioEngine(int durationSeconds = 120)
@@ -51,24 +55,24 @@ namespace VN2Anki.Services
         public void Start(string deviceId)
         {
             if (_isRecording) Stop();
+
+            _isManualStop = false;
+
             try
             {
-                //
-                // ('using' prevents leaking audio Handles on each Start click)
-                using (var enumerator = new MMDeviceEnumerator())
+                using (var enumerator = new NAudio.CoreAudioApi.MMDeviceEnumerator())
                 {
                     var device = enumerator.GetDevice(deviceId);
 
-                    if (device.DataFlow == DataFlow.Render)
-                        _captureDevice = new WasapiLoopbackCapture(device);
+                    if (device.DataFlow == NAudio.CoreAudioApi.DataFlow.Render)
+                        _captureDevice = new NAudio.Wave.WasapiLoopbackCapture(device);
                     else
-                        _captureDevice = new WasapiCapture(device);
+                        _captureDevice = new NAudio.CoreAudioApi.WasapiCapture(device);
                 }
 
                 _waveFormat = _captureDevice.WaveFormat;
                 int newBufferLength = _waveFormat.AverageBytesPerSecond * DurationSeconds;
 
-                // (only creates the 21MB array if it doesn't exist or if the headphone changes)
                 if (_circularBuffer == null || _circularBuffer.Length != newBufferLength)
                 {
                     _circularBuffer = new byte[newBufferLength];
@@ -78,16 +82,28 @@ namespace VN2Anki.Services
                 _writePosition = 0;
 
                 _captureDevice.DataAvailable += OnDataAvailable;
-                _captureDevice.RecordingStopped += (s, e) => _isRecording = false;
+
+                _captureDevice.RecordingStopped += (s, e) =>
+                {
+                    _isRecording = false;
+
+                    if (!_isManualStop)
+                    {
+                        string errorMsg = e.Exception != null ? e.Exception.Message : "Dispositivo desconectado.";
+                        OnRecordingError?.Invoke(errorMsg);
+                    }
+                };
 
                 _captureDevice.StartRecording();
                 _isRecording = true;
             }
-            catch (Exception ex) { Debug.WriteLine($"[AudioEngine] Erro: {ex.Message}"); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[AudioEngine] Erro: {ex.Message}"); }
         }
 
         public void Stop()
         {
+            _isManualStop = true; 
+
             if (_captureDevice != null)
             {
                 _captureDevice.StopRecording();

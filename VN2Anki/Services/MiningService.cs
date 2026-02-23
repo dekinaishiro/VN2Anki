@@ -27,6 +27,8 @@ namespace VN2Anki.Services
         public event Action<string> OnStatusChanged;
         public event Action<MiningSlot> OnSlotCaptured;
 
+        public event Action OnBufferStoppedUnexpectedly;
+
         // 
         public string TargetVideoWindow { get; set; }
         public int MaxSlots { get; set; } = 25;
@@ -48,6 +50,7 @@ namespace VN2Anki.Services
             _idleTimer.Tick += IdleTimer_Tick;
 
             Clipboard.OnTextCopied += ProcessCaptureSequence;
+            Audio.OnRecordingError += HandleAudioError;
         }
 
         public void StartBuffer(string audioDeviceId)
@@ -68,7 +71,6 @@ namespace VN2Anki.Services
             Tracker.Pause();
             OnStatusChanged?.Invoke("Buffer Parado.");
         }
-
 
         private void ProcessCaptureSequence(string text, DateTime timestamp)
         {
@@ -162,6 +164,16 @@ namespace VN2Anki.Services
             // temp: fix persisten audio slots being open
             // slot.AudioBytes = Audio.ExportSegment(startAgo, endAgo);
             slot.AudioBytes = Audio.ExportSegment(startAgo, endAgo) ?? Array.Empty<byte>();
+        }
+
+        private void HandleAudioError(string msg)
+        {
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            {
+                StopBuffer();
+                OnStatusChanged?.Invoke($"⚠️ ERRO: {msg}");
+                OnBufferStoppedUnexpectedly?.Invoke(); // notifies ui
+            });
         }
 
         public async Task<(bool success, string message)> ProcessMiningToAnki(MiningSlot slot, string deck, string model, string audioField, string imageField)

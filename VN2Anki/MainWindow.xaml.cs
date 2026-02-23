@@ -25,6 +25,7 @@ namespace VN2Anki
             _miningService = miningService;
             this.DataContext = _miningService.Tracker;
             _miningService.OnStatusChanged += msg => Dispatcher.Invoke(() => TxtStatus.Text = msg);
+            _miningService.OnBufferStoppedUnexpectedly += HandleUnexpectedBufferStop;
 
             this.Loaded += Window_Loaded;
 
@@ -193,6 +194,16 @@ namespace VN2Anki
         private void BtnExitApp_Click(object sender, RoutedEventArgs e)
         {
             Application.Current.Shutdown();
+        }
+
+        private void HandleUnexpectedBufferStop()
+        {
+            Dispatcher.Invoke(() =>
+            {
+                _isBufferActive = false;
+                BtnToggleBuffer.Content = "OFF";
+                BtnToggleBuffer.Background = System.Windows.Media.Brushes.Crimson;
+            });
         }
     }
 }
