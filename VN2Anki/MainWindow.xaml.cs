@@ -16,6 +16,7 @@ namespace VN2Anki
     public partial class MainWindow : Window
     {
         private readonly MiningService _miningService;
+        private SettingsWindow _settingsWindowInstance;
         private AppConfig _currentConfig = new AppConfig();
         private bool _isBufferActive = false;
 
@@ -89,28 +90,35 @@ namespace VN2Anki
 
         private void BtnOpenSettings_Click(object sender, RoutedEventArgs e)
         {
-            // temporary fix: audio source swap
+            // 
+            if (_settingsWindowInstance != null)
+            {
+                if (_settingsWindowInstance.WindowState == WindowState.Minimized)
+                    _settingsWindowInstance.WindowState = WindowState.Normal;
+                _settingsWindowInstance.Activate();
+                return;
+            }
+
+            // temporary fix (audio switch)
             string oldAudioDevice = _currentConfig.AudioDevice;
 
-            var sw = new SettingsWindow(_miningService, _currentConfig);
-            sw.Owner = this; // ensures that Settings stays abnove the main window
+            _settingsWindowInstance = new SettingsWindow(_miningService, _currentConfig);
+            _settingsWindowInstance.Owner = this;
 
-            // temporary fix: audio source swap
-            sw.Closed += (s, args) =>
+            _settingsWindowInstance.Closed += (s, args) =>
             {
+                _settingsWindowInstance = null;
                 LoadConfig();
 
-                // Se o buffer estava ativo e o dispositivo de áudio mudou, reiniciamos!
+                // temporary fix (audio switch)
                 if (_isBufferActive && oldAudioDevice != _currentConfig.AudioDevice)
                 {
-                    BtnToggleBuffer_Click(null, null); // Desliga (faz o StopBuffer e sela os slots)
-                    BtnToggleBuffer_Click(null, null); // Liga novamente com o novo ID de áudio
+                    BtnToggleBuffer_Click(null, null); 
+                    BtnToggleBuffer_Click(null, null); 
                 }
             };
 
-            sw.Show(); // instead of ShowDialog so the windows are independent
-
-
+            _settingsWindowInstance.Show();
         }
 
         private void BtnToggleBuffer_Click(object sender, RoutedEventArgs e)

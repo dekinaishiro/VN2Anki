@@ -178,14 +178,14 @@ namespace VN2Anki.Services
                 using (var wtr = new NAudio.Lame.LameMP3FileWriter(retMs, rdr.WaveFormat, bitrate))
                 {
                     rdr.CopyTo(wtr);
-                    wtr.Flush(); // Garante que tudo foi escrito no memory stream
+                    wtr.Flush(); // ensures memory stream writting
                     return retMs.ToArray();
                 }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[MP3 Encode Error] {ex.Message}");
-                return wavBytes; // Mecanismo de defesa: se o MP3 falhar, devolve o WAV original para não perder o card
+                return wavBytes;
             }
         }
         private void HandleAudioError(string msg)
@@ -248,7 +248,6 @@ namespace VN2Anki.Services
 
         private int SealAllOpenSlots(DateTime endTime)
         {
-            // Pega todos os abertos (o ToList() evita erros de modificação de coleção durante o loop)
             var openSlots = HistorySlots.Where(s => s.IsOpen).ToList();
 
             foreach (var slot in openSlots)
@@ -256,7 +255,7 @@ namespace VN2Anki.Services
                 SealSlotAudio(slot, endTime);
             }
 
-            return openSlots.Count; // Retorna quantos foram selados
+            return openSlots.Count; 
         }
 
         public void DeleteSlot(MiningSlot slot)

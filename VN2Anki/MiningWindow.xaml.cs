@@ -73,7 +73,7 @@ namespace VN2Anki
 
         private void PlayAudio(byte[] audioBytes)
         {
-            // Para qualquer áudio que já esteja tocando
+            
             StopAudio();
 
             if (audioBytes == null || audioBytes.Length == 0) return;
@@ -86,7 +86,6 @@ namespace VN2Anki
 
                 _waveOut.Init(_waveReader);
 
-                // Garante a liberação de recursos assim que o áudio terminar naturalmente
                 _waveOut.PlaybackStopped += (s, e) => StopAudio();
 
                 _waveOut.Play();
@@ -100,7 +99,6 @@ namespace VN2Anki
 
         private void StopAudio()
         {
-            // A ordem importa: primeiro para a reprodução, depois libera os leitores
             if (_waveOut != null)
             {
                 _waveOut.Stop();
