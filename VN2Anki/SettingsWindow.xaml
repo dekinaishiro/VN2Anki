@@ -86,13 +86,13 @@
                         <ComboBoxItem Content="Español" Tag="es-ES"/>
                     </ComboBox>
 
-                    <TextBlock Text="Qualidade da Imagem:" Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                    <TextBlock Text="{x:Static loc:Strings.LblImageQuality}" Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
                     <ComboBox x:Name="ComboImageRes" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2">
                         <ComboBoxItem Content="Tamanho Original" Tag="0"/>
-                        <ComboBoxItem Content="1920px (FHD)" Tag="1920"/>
-                        <ComboBoxItem Content="1280px (HD)" Tag="1280"/>
-                        <ComboBoxItem Content="720px (SD)" Tag="720"/>
-                        <ComboBoxItem Content="360px (SD)" Tag="360"/>
+                        <ComboBoxItem Content="1080p (FHD)" Tag="1920"/>
+                        <ComboBoxItem Content="720p (HD)" Tag="1280"/>
+                        <ComboBoxItem Content="480p (SD)" Tag="854"/>
+                        <ComboBoxItem Content="360p (LD)" Tag="640"/>
                     </ComboBox>
 
                     <CheckBox x:Name="ChkOpenSettings" Content="{x:Static loc:Strings.LblOpenSettingsOnStartup}" Foreground="White" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" VerticalAlignment="Center" Checked="ChkOpenSettings_Checked"/>

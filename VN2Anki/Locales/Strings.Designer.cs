@@ -205,6 +205,15 @@ namespace VN2Anki.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Image Quality.
+        /// </summary>
+        public static string LblImageQuality {
+            get {
+                return ResourceManager.GetString("LblImageQuality", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Note Type:.
         /// </summary>
         public static string LblNoteType {

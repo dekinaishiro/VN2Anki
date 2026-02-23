@@ -219,4 +219,7 @@
   <data name="BtnSaveClose" xml:space="preserve">
     <value>SALVAR E FECHAR</value>
   </data>
+  <data name="LblImageQuality" xml:space="preserve">
+    <value>Qualidade da Imagem</value>
+  </data>
 </root>
