@@ -11,12 +11,18 @@ namespace VN2Anki
     {
         private readonly MiningService _miningService;
         private readonly IConfigurationService _configService;
+        private readonly AudioEngine _audio;
+        private readonly VideoEngine _video;
+        private readonly AnkiHandler _anki;
 
-        public SettingsWindow(MiningService miningService, IConfigurationService configService)
+        public SettingsWindow(MiningService miningService, IConfigurationService configService, AudioEngine audio, VideoEngine video, AnkiHandler anki)
         {
             InitializeComponent();
             _miningService = miningService;
             _configService = configService;
+            _audio = audio;
+            _video = video;
+            _anki = anki;
 
             this.Loaded += async (s, e) => await InitializeDataAsync();
         }
@@ -58,24 +64,24 @@ namespace VN2Anki
 
         private async Task RefreshAudioAsync()
         {
-            var audioDevices = await Task.Run(() => _miningService.Audio.GetDevices());
+            var audioDevices = await Task.Run(() => _audio.GetDevices()); 
             ComboAudio.ItemsSource = audioDevices;
         }
         private void BtnRefreshAudio_Click(object sender, RoutedEventArgs e) => _ = RefreshAudioAsync();
 
         private void RefreshVideo()
         {
-            var windows = _miningService.Video.GetWindows();
+            var windows = _video.GetWindows();
             ComboVideo.ItemsSource = windows;
         }
         private void BtnRefreshVideo_Click(object sender, RoutedEventArgs e) => RefreshVideo();
 
         private async Task LoadAnkiDataAsync()
         {
-            if (await _miningService.Anki.IsConnectedAsync())
+            if (await _anki.IsConnectedAsync()) // <-- Mudou aqui
             {
-                ComboDeck.ItemsSource = await _miningService.Anki.GetDecksAsync();
-                ComboModel.ItemsSource = await _miningService.Anki.GetModelsAsync();
+                ComboDeck.ItemsSource = await _anki.GetDecksAsync(); // <-- Mudou aqui
+                ComboModel.ItemsSource = await _anki.GetModelsAsync(); // <-- Mudou aqui
             }
         }
         private void BtnRefreshAnki_Click(object sender, RoutedEventArgs e) => _ = LoadAnkiDataAsync();
@@ -84,7 +90,7 @@ namespace VN2Anki
         {
             if (ComboModel.SelectedItem is string modelName)
             {
-                var fields = await _miningService.Anki.GetModelFieldsAsync(modelName);
+                var fields = await _anki.GetModelFieldsAsync(modelName);
                 ComboFieldAudio.ItemsSource = fields;
                 ComboFieldImage.ItemsSource = fields;
 

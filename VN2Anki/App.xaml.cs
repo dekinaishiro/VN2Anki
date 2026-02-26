@@ -51,6 +51,9 @@ namespace VN2Anki
             services.AddSingleton<AnkiHandler>();
             services.AddSingleton<SessionTracker>();
 
+            services.AddSingleton<MediaService>();
+            services.AddSingleton<AnkiExportService>();
+
             services.AddSingleton<MiningService>();
 
             services.AddTransient<VN2Anki.ViewModels.MainWindowViewModel>();

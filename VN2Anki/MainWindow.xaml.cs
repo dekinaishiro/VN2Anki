@@ -21,13 +21,17 @@ namespace VN2Anki
         private readonly MainWindowViewModel _viewModel;
         private SettingsWindow _settingsWindowInstance;
         private bool _isBufferActive = false;
+        private readonly AnkiExportService _ankiExportService;
+        private readonly AnkiHandler _ankiHandler;
 
-        public MainWindow(MiningService miningService, IConfigurationService configService, MainWindowViewModel viewModel)
+        public MainWindow(MiningService miningService, IConfigurationService configService, MainWindowViewModel viewModel, AnkiExportService ankiExportService, AnkiHandler ankiHandler)
         {
             InitializeComponent();
             _miningService = miningService;
             _configService = configService;
             _viewModel = viewModel;
+            _ankiExportService = ankiExportService;
+            _ankiHandler = ankiHandler;
 
             this.DataContext = _viewModel;
 
@@ -40,6 +44,7 @@ namespace VN2Anki
                 _miningService.StopBuffer();
                 SaveWindowPosition();
             };
+            _ankiExportService = ankiExportService;
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -85,8 +90,8 @@ namespace VN2Anki
 
             _miningService.UseDynamicTimeout = config.Session.UseDynamicTimeout;
             _miningService.MaxImageWidth = config.Media.MaxImageWidth;
-            _miningService.AudioBitrate = config.Media.AudioBitrate;
-            _miningService.Anki.UpdateSettings(config.Anki.Url, config.Anki.TimeoutSeconds);
+
+            _ankiHandler.UpdateSettings(config.Anki.Url, config.Anki.TimeoutSeconds);
         }
 
         private void BtnOpenSettings_Click(object sender, RoutedEventArgs e)
@@ -190,20 +195,19 @@ namespace VN2Anki
         // 
         public async Task ProcessMiningToAnki(MiningSlot slot, bool isQuietMode = false)
         {
-            var ankiConfig = _configService.CurrentConfig.Anki;
+            var config = _configService.CurrentConfig;
 
-            if (string.IsNullOrEmpty(ankiConfig.Deck))
+            if (string.IsNullOrEmpty(config.Anki.Deck))
             {
-                ShowFlashMessage("Configure o Deck!", true); return;
+                ShowFlashMessage("Please configure the Deck first!", true);
+                return;
             }
 
-            var result = await _miningService.ProcessMiningToAnki(slot, ankiConfig.Deck, ankiConfig.Model, ankiConfig.AudioField, ankiConfig.ImageField);
+            var result = await _ankiExportService.ExportSlotAsync(slot, config.Anki, config.Media);
 
-            // TxtStatus.Text = result.success ? $"✅ {result.message}" : $"❌ {result.message}";
-            if (isQuietMode) ShowFlashMessage(result.success ? Strings.MsgCardUpdated : Strings.MsgError, !result.success);
-
-            else if (result.success) MessageBox.Show(Strings.MsgSuccess);
-            else MessageBox.Show(result.message, Strings.MsgAttention);
+            if (isQuietMode) ShowFlashMessage(result.success ? "Card Updated" : "Error Updating Card", !result.success);
+            else if (result.success) MessageBox.Show("Success!");
+            else MessageBox.Show(result.message, "Attention");
         }
 
         private void ShowFlashMessage(string message, bool isError = false)

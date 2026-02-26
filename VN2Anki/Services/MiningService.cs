@@ -1,30 +1,24 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Threading;
-using VN2Anki.Models;
-using VN2Anki.Services;
 using System.Text.RegularExpressions;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.Messaging;
 using VN2Anki.Messages;
+using VN2Anki.Models;
 
 namespace VN2Anki.Services
 {
     public class MiningService
     {
-        public AudioEngine Audio { get; }
-        public VideoEngine Video { get; }
-        public ITextHook TextHook { get; } 
-        public AnkiHandler Anki { get; }
+        public ITextHook TextHook { get; }
         public SessionTracker Tracker { get; }
+        public AudioEngine Audio { get; }
 
-        public ObservableCollection<MiningSlot> HistorySlots { get; }
-
+        private readonly MediaService _mediaService;
         private readonly DispatcherTimer _idleTimer;
 
-        // public event Action<string> OnStatusChanged;
+        public ObservableCollection<MiningSlot> HistorySlots { get; }
         public event Action<MiningSlot> OnSlotCaptured;
         public event Action OnBufferStoppedUnexpectedly;
 
@@ -33,58 +27,54 @@ namespace VN2Anki.Services
         public double IdleTimeoutFixo { get; set; } = 30.0;
         public bool UseDynamicTimeout { get; set; } = true;
         public int MaxImageWidth { get; set; } = 1280;
-        public int AudioBitrate { get; set; } = 128;
-        private void SendStatus(string message)
-        {
-            WeakReferenceMessenger.Default.Send(new StatusMessage(message));
-        }
 
-        public MiningService(
-            AudioEngine audio, VideoEngine video, ITextHook textHook, AnkiHandler anki, SessionTracker tracker) // <-- Construtor atualizado
+        public MiningService(ITextHook textHook, SessionTracker tracker, AudioEngine audio, MediaService mediaService)
         {
-            Audio = audio;
-            Video = video;
-            TextHook = textHook; //
-            Anki = anki;
+            TextHook = textHook;
             Tracker = tracker;
+            Audio = audio;
+            _mediaService = mediaService;
 
             HistorySlots = new ObservableCollection<MiningSlot>();
 
             _idleTimer = new DispatcherTimer();
             _idleTimer.Tick += IdleTimer_Tick;
 
-            TextHook.OnTextCopied += ProcessCaptureSequence; 
+            TextHook.OnTextCopied += ProcessCaptureSequence;
             Audio.OnRecordingError += HandleAudioError;
+        }
+
+        private void SendStatus(string message)
+        {
+            WeakReferenceMessenger.Default.Send(new StatusMessage(message));
         }
 
         public void StartBuffer(string audioDeviceId)
         {
             Audio.Start(audioDeviceId);
-            TextHook.Start(); 
+            TextHook.Start();
             Tracker.Start();
-            SendStatus("Buffer Rodando...");
+            SendStatus("Buffer running...");
         }
 
         public void StopBuffer()
         {
             SealAllOpenSlots(DateTime.Now);
-
             Audio.Stop();
-            TextHook.Stop(); 
+            TextHook.Stop();
             _idleTimer.Stop();
             Tracker.Pause();
-            SendStatus("Buffer Parado.");
+            SendStatus("Buffer stopped.");
         }
 
         private void ProcessCaptureSequence(string text, DateTime timestamp)
         {
-            Application.Current.Dispatcher.Invoke(() =>
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
                 _idleTimer.Stop();
-
                 SealAllOpenSlots(DateTime.Now);
 
-                byte[] imgBytes = string.IsNullOrEmpty(TargetVideoWindow) ? null : Video.CaptureWindow(TargetVideoWindow, MaxImageWidth);
+                byte[] imgBytes = _mediaService.CaptureScreenshot(TargetVideoWindow, MaxImageWidth);
                 string safeText = text.Length > 1000 ? text.Substring(0, 1000) + " [...]" : text;
 
                 var newSlot = new MiningSlot
@@ -96,47 +86,38 @@ namespace VN2Anki.Services
 
                 HistorySlots.Insert(0, newSlot);
 
-                
                 char[] pauseChars = new[] { '。', '、', '？', '！', '…', '　' };
                 int spokenCharCount = CountJapaneseCharacters(safeText);
                 Tracker.AddCharacters(spokenCharCount);
 
-                // memory management: remove old slots if we exceed max
                 while (HistorySlots.Count > MaxSlots)
                 {
                     var oldSlot = HistorySlots[HistorySlots.Count - 1];
-                    oldSlot.Dispose(); // Libera os bytes
+                    oldSlot.Dispose();
                     HistorySlots.RemoveAt(HistorySlots.Count - 1);
                 }
 
-                // DYNAMIC TIMEOUT CALCULATION
                 double finalSeconds;
-
-                // make it user configurable in the future after testing
-                // algo might require adjustments too
                 double baseSeconds = 0.75;
                 double perCharSeconds = 0.25;
                 double perPauseSeconds = 0.50;
                 double minSeconds = 2.0;
 
-                // count commas and periods
-                // Calculate dynamic timeout based on spoken characters and pauses, with a minimum threshold
                 if (UseDynamicTimeout)
                 {
-                    int pauseCount = safeText.Count(c => pauseChars.Contains(c));                                     
+                    int pauseCount = safeText.Count(c => pauseChars.Contains(c));
                     finalSeconds = Math.Max(minSeconds, baseSeconds + (spokenCharCount * perCharSeconds) + (pauseCount * perPauseSeconds));
                 }
                 else
                 {
-                    // fixed timeout if enabled 
                     finalSeconds = IdleTimeoutFixo;
                 }
 
                 _idleTimer.Interval = TimeSpan.FromSeconds(finalSeconds);
                 _idleTimer.Start();
 
-                string modeText = UseDynamicTimeout ? "Dinâmico" : "Fixo";
-                SendStatus($"Slot capturado! Fechando em {finalSeconds:F1}s ({modeText})");
+                string modeText = UseDynamicTimeout ? "Dynamic" : "Fixed";
+                SendStatus($"Slot captured! Sealing in {finalSeconds:F1}s ({modeText})");
                 OnSlotCaptured?.Invoke(newSlot);
             });
         }
@@ -148,7 +129,7 @@ namespace VN2Anki.Services
             if (SealAllOpenSlots(DateTime.Now) > 0)
             {
                 SealSlotAudio(HistorySlots[0], DateTime.Now);
-                SendStatus("Slot selado por inatividade.");
+                SendStatus("Slot sealed due to inactivity.");
             }
         }
 
@@ -165,99 +146,17 @@ namespace VN2Anki.Services
             if (endAgo < 0) endAgo = 0;
             if (startAgo <= endAgo) startAgo = endAgo + 5.0;
 
-            // temp: fix persisten audio slots being open
-            // slot.AudioBytes = Audio.ExportSegment(startAgo, endAgo);
-            slot.AudioBytes = Audio.ExportSegment(startAgo, endAgo) ?? Array.Empty<byte>();
-        }
-
-        private byte[] ConvertWavToMp3(byte[] wavBytes, int bitrate)
-        {
-            try
-            {
-                using (var retMs = new System.IO.MemoryStream())
-                using (var wavMs = new System.IO.MemoryStream(wavBytes))
-                using (var rdr = new NAudio.Wave.WaveFileReader(wavMs))
-                using (var wtr = new NAudio.Lame.LameMP3FileWriter(retMs, rdr.WaveFormat, bitrate))
-                {
-                    rdr.CopyTo(wtr);
-                    wtr.Flush(); // ensures memory stream writting
-                    return retMs.ToArray();
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[MP3 Encode Error] {ex.Message}");
-                return wavBytes;
-            }
-        }
-        private void HandleAudioError(string msg)
-        {
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
-            {
-                StopBuffer();
-                SendStatus($"⚠️ ERROR: {msg}");
-                OnBufferStoppedUnexpectedly?.Invoke(); // notifies ui
-            });
-        }
-
-        public async Task<(bool success, string message)> ProcessMiningToAnki(MiningSlot slot, string deck, string model, string audioField, string imageField)
-        {
-            if (string.IsNullOrEmpty(deck)) return (false, "Selecione um Deck!");
-
-            SendStatus("Preparando mídia...");
-
-            if (slot.IsOpen) SealSlotAudio(slot, DateTime.Now);
-
-            string uniqueId = Guid.NewGuid().ToString("N").Substring(0, 8);
-            string audioExt = AudioBitrate > 0 ? "mp3" : "wav";
-            string audioFilename = $"miner_{uniqueId}.{audioExt}";
-            string imageFilename = $"miner_{uniqueId}.jpg";
-
-            bool hasAudio = slot.AudioBytes != null && slot.AudioBytes.Length > 0;
-            bool hasImage = slot.ScreenshotBytes != null && slot.ScreenshotBytes.Length > 0;
-
-            if (hasAudio)
-            {
-                byte[] finalAudioBytes = slot.AudioBytes;
-
-                if (AudioBitrate > 0)
-                {
-                    SendStatus($"Convertendo áudio para MP3 {AudioBitrate}kbps...");
-                    finalAudioBytes = await Task.Run(() => ConvertWavToMp3(slot.AudioBytes, AudioBitrate));
-                }
-
-                await Anki.StoreMediaAsync(audioFilename, finalAudioBytes);
-            }
-            if (hasImage) await Anki.StoreMediaAsync(imageFilename, slot.ScreenshotBytes);
-
-            var result = await Anki.UpdateLastCardAsync(deck, audioField, imageField, hasAudio ? audioFilename : null, hasImage ? imageFilename : null);
-
-            // Force GC collecting after adding stuff to anki
-            _ = Task.Run(async () =>
-            {
-                // prevents UI freezes by waiting Anki string64
-                await Task.Delay(1000);
-
-                // makes LOH compact large obj
-                System.Runtime.GCSettings.LargeObjectHeapCompactionMode = System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
-
-                // forces collect; blocking = false tries to run in bg; compacting = true
-                GC.Collect(2, GCCollectionMode.Forced, false, true);
-            });
-
-            return result;
+            slot.AudioBytes = _mediaService.GetAudioSegment(startAgo, endAgo);
         }
 
         private int SealAllOpenSlots(DateTime endTime)
         {
             var openSlots = HistorySlots.Where(s => s.IsOpen).ToList();
-
             foreach (var slot in openSlots)
             {
                 SealSlotAudio(slot, endTime);
             }
-
-            return openSlots.Count; 
+            return openSlots.Count;
         }
 
         public void DeleteSlot(MiningSlot slot)
@@ -266,8 +165,6 @@ namespace VN2Anki.Services
             {
                 int spokenCharCount = CountJapaneseCharacters(slot.Text);
                 Tracker.RemoveCharacters(spokenCharCount);
-
-                // release bytes
                 slot.Dispose();
                 HistorySlots.Remove(slot);
             }
@@ -276,8 +173,17 @@ namespace VN2Anki.Services
         private int CountJapaneseCharacters(string text)
         {
             if (string.IsNullOrWhiteSpace(text)) return 0;
-
             return Regex.Matches(text, @"[\p{IsHiragana}\p{IsKatakana}\p{IsCJKUnifiedIdeographs}]").Count;
+        }
+
+        private void HandleAudioError(string msg)
+        {
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            {
+                StopBuffer();
+                SendStatus($"⚠️ ERROR: {msg}");
+                OnBufferStoppedUnexpectedly?.Invoke();
+            });
         }
     }
 }
