@@ -8,7 +8,6 @@ VN2Anki is a simple and lightweight tool designed to streamline the process of m
 
 1. Textractor or Luna Translator *(configured to copy text to the clipboard)*
 2. Anki with the **AnkiConnect** add-on installed
-3. .NET 8.0 Desktop Runtime (you probably won't need to download it)
 
 ## Setup
 
@@ -30,9 +29,14 @@ VN2Anki is a simple and lightweight tool designed to streamline the process of m
 * Click **RES** to end and restart the current Session (this clears the history and resets the characters-read stats).
 * Click the **⏱** to toggle the mini-stats panel visibility.
 
+https://github.com/user-attachments/assets/d2f8f085-0c69-4e2e-821e-8662a7a81102
+
 ## Settings Overview
 
-* **Slot Limit:** The maximum number of sentences (and their media) kept in your RAM. Older slots are automatically deleted. (Default is 30 but you are probably fine way more)
+* **Slot Limit:** The maximum number of sentences (and their media) kept in your RAM. Older slots are automatically deleted.
 * **Dynamic Timeout:** Calculates the audio recording duration automatically based on the length of the sentence and punctuation pauses.
 * **Timeout (Settings):** *(Not recommended)* If Dynamic Timeout is disabled, sets a fixed recording time for every audio clip.
 * **Timeout (Anki):** The maximum time (in seconds) the program will wait for AnkiConnect to respond. Increase this if you have a huge Anki database that takes a while to save.
+
+## Troubleshooting
+- Downloading NET 8.0 Desktop Runtime might be necessary (most likely won't)
