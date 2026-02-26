@@ -29,7 +29,7 @@ namespace VN2Anki
         {
             var services = new ServiceCollection();
 
-            // 1. Setup Serilog (File Logging)
+            // Setup Serilog (File Logging)
             string logDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VN2Anki", "Logs");
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
@@ -44,18 +44,15 @@ namespace VN2Anki
                 builder.AddSerilog(dispose: true);
             });
 
-            // 2. Register Core Services (Singletons: only one instance lives during the app lifecycle)
             services.AddSingleton<IConfigurationService, ConfigurationService>();
             services.AddSingleton<AudioEngine>();
             services.AddSingleton<VideoEngine>();
-            services.AddSingleton<ClipboardMonitor>();
+            services.AddSingleton<ITextHook, ClipboardHook>();
             services.AddSingleton<AnkiHandler>();
             services.AddSingleton<SessionTracker>();
 
-            // Note: MiningService is currently a God Class. We register it as is for now. Phase 3 will split it.
             services.AddSingleton<MiningService>();
 
-            // 3. Register Views (Transient: a new instance is created every time it's requested)
             services.AddTransient<MainWindow>();
             services.AddTransient<SettingsWindow>();
 

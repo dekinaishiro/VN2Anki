@@ -7,7 +7,6 @@ using System.Windows.Threading;
 using VN2Anki.Models;
 using VN2Anki.Services;
 using System.Text.RegularExpressions;
-using System.Windows.Media.Animation;
 
 namespace VN2Anki.Services
 {
@@ -15,7 +14,7 @@ namespace VN2Anki.Services
     {
         public AudioEngine Audio { get; }
         public VideoEngine Video { get; }
-        public ClipboardMonitor Clipboard { get; }
+        public ITextHook TextHook { get; } 
         public AnkiHandler Anki { get; }
         public SessionTracker Tracker { get; }
 
@@ -23,13 +22,10 @@ namespace VN2Anki.Services
 
         private readonly DispatcherTimer _idleTimer;
 
-        // events for UI updates (status text, slot captured, etc)
         public event Action<string> OnStatusChanged;
         public event Action<MiningSlot> OnSlotCaptured;
-
         public event Action OnBufferStoppedUnexpectedly;
 
-        // 
         public string TargetVideoWindow { get; set; }
         public int MaxSlots { get; set; } = 25;
         public double IdleTimeoutFixo { get; set; } = 30.0;
@@ -38,11 +34,11 @@ namespace VN2Anki.Services
         public int AudioBitrate { get; set; } = 128;
 
         public MiningService(
-            AudioEngine audio, VideoEngine video, ClipboardMonitor clipboard, AnkiHandler anki, SessionTracker tracker)
+            AudioEngine audio, VideoEngine video, ITextHook textHook, AnkiHandler anki, SessionTracker tracker) // <-- Construtor atualizado
         {
             Audio = audio;
             Video = video;
-            Clipboard = clipboard;
+            TextHook = textHook; //
             Anki = anki;
             Tracker = tracker;
 
@@ -51,14 +47,14 @@ namespace VN2Anki.Services
             _idleTimer = new DispatcherTimer();
             _idleTimer.Tick += IdleTimer_Tick;
 
-            Clipboard.OnTextCopied += ProcessCaptureSequence;
+            TextHook.OnTextCopied += ProcessCaptureSequence; 
             Audio.OnRecordingError += HandleAudioError;
         }
 
         public void StartBuffer(string audioDeviceId)
         {
             Audio.Start(audioDeviceId);
-            Clipboard.Start();
+            TextHook.Start(); 
             Tracker.Start();
             OnStatusChanged?.Invoke("Buffer Rodando...");
         }
@@ -68,7 +64,7 @@ namespace VN2Anki.Services
             SealAllOpenSlots(DateTime.Now);
 
             Audio.Stop();
-            Clipboard.Stop();
+            TextHook.Stop(); 
             _idleTimer.Stop();
             Tracker.Pause();
             OnStatusChanged?.Invoke("Buffer Parado.");

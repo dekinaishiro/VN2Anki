@@ -5,10 +5,11 @@ using WK.Libraries.SharpClipboardNS;
 
 namespace VN2Anki.Services
 {
-    public class ClipboardMonitor
+    public class ClipboardHook : ITextHook
     {
         private SharpClipboard _clipboard;
         public event Action<string, DateTime> OnTextCopied;
+
         private string _lastText = string.Empty;
         private DateTime _lastTime = DateTime.MinValue;
         private DateTime _startTime;
@@ -16,7 +17,7 @@ namespace VN2Anki.Services
         private bool _isFirstEvent = true;
         private bool _isListening = false;
 
-        public ClipboardMonitor()
+        public ClipboardHook()
         {
             _clipboard = new SharpClipboard();
             _clipboard.ClipboardChanged += Clipboard_Changed;
@@ -41,7 +42,7 @@ namespace VN2Anki.Services
             if (_isFirstEvent)
             {
                 _isFirstEvent = false;
-                _lastText = await GetClipboardTextSafeAsync(); // gets initial state
+                _lastText = await GetClipboardTextSafeAsync();
                 return;
             }
 
@@ -65,8 +66,6 @@ namespace VN2Anki.Services
             {
                 string text = null;
                 bool success = false;
-
-                // Dispatcher since clipboard uses sta
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     try
@@ -75,16 +74,14 @@ namespace VN2Anki.Services
                         {
                             text = Clipboard.GetText();
                         }
-                        success = true; 
+                        success = true;
                     }
                     catch (System.Runtime.InteropServices.COMException)
                     {
-                        // other process is using the clipboard
                         success = false;
                     }
                     catch (Exception)
                     {
-                        // generic error
                         success = false;
                     }
                 });
@@ -96,8 +93,6 @@ namespace VN2Anki.Services
 
                 await Task.Delay(delayMs);
             }
-
-            // avoid endless loop
             return string.Empty;
         }
     }
