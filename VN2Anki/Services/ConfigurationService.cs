@@ -61,7 +61,14 @@ namespace VN2Anki.Services
                     Directory.CreateDirectory(_appDataFolder);
                 }
 
-                string json = JsonSerializer.Serialize(CurrentConfig, new JsonSerializerOptions { WriteIndented = true });
+                // saving double.NaN without crashing the json serializer
+                var options = new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals
+                };
+
+                string json = JsonSerializer.Serialize(CurrentConfig, options);
                 File.WriteAllText(_configFilePath, json);
                 _logger.LogInformation("Configuration saved successfully.");
             }
