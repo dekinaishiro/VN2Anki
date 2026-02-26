@@ -1,18 +1,27 @@
 ﻿using System;
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Windows.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace VN2Anki.Services
 {
-    public class SessionTracker : INotifyPropertyChanged
+    public partial class SessionTracker : ObservableObject
     {
         private readonly DispatcherTimer _timer;
         private readonly Stopwatch _stopwatch;
 
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(SpeedCharsPerMinute))]
+        [NotifyPropertyChangedFor(nameof(SpeedCharsPerHour))]
         private int _validCharacterCount;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(SpeedCharsPerMinute))]
+        [NotifyPropertyChangedFor(nameof(SpeedCharsPerHour))]
         private TimeSpan _elapsed;
+
+        [ObservableProperty]
+        private bool _isTracking;
 
         public SessionTracker()
         {
@@ -22,48 +31,24 @@ namespace VN2Anki.Services
             _timer.Tick += (s, e) => Elapsed = _stopwatch.Elapsed;
         }
 
-        public TimeSpan Elapsed
-        {
-            get => _elapsed;
-            private set
-            {
-                _elapsed = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(SpeedCharsPerHour));
-            }
-        }
-
-        public int ValidCharacterCount
-        {
-            get => _validCharacterCount;
-            private set
-            {
-                _validCharacterCount = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(SpeedCharsPerHour));
-            }
-        }
-
         public double SpeedCharsPerMinute =>
             Elapsed.TotalMinutes > 0 ? Math.Round(ValidCharacterCount / Elapsed.TotalMinutes, 1) : 0;
 
         public double SpeedCharsPerHour =>
             Elapsed.TotalHours > 0 ? Math.Round(ValidCharacterCount / Elapsed.TotalHours, 0) : 0;
 
-        public bool IsTracking => _stopwatch.IsRunning;
-
         public void Start()
         {
             _stopwatch.Start();
             _timer.Start();
-            OnPropertyChanged(nameof(IsTracking));
+            IsTracking = true;
         }
 
         public void Pause()
         {
             _stopwatch.Stop();
             _timer.Stop();
-            OnPropertyChanged(nameof(IsTracking));
+            IsTracking = false;
         }
 
         public void Reset()
@@ -72,15 +57,11 @@ namespace VN2Anki.Services
             _timer.Stop();
             Elapsed = TimeSpan.Zero;
             ValidCharacterCount = 0;
-            OnPropertyChanged(nameof(IsTracking));
+            IsTracking = false;
         }
 
         public void AddCharacters(int count) => ValidCharacterCount += count;
 
         public void RemoveCharacters(int count) => ValidCharacterCount = Math.Max(0, ValidCharacterCount - count);
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string name = null) =>
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }

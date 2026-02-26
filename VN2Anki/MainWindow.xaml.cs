@@ -3,13 +3,14 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.Extensions.DependencyInjection;
 using VN2Anki.Locales;
 using VN2Anki.Models;
 using VN2Anki.Services;
-using System.Windows.Controls;
+using VN2Anki.ViewModels;
 
 namespace VN2Anki
 {
@@ -17,17 +18,19 @@ namespace VN2Anki
     {
         private readonly MiningService _miningService;
         private readonly IConfigurationService _configService;
+        private readonly MainWindowViewModel _viewModel;
         private SettingsWindow _settingsWindowInstance;
         private bool _isBufferActive = false;
 
-        public MainWindow(MiningService miningService, IConfigurationService configService)
+        public MainWindow(MiningService miningService, IConfigurationService configService, MainWindowViewModel viewModel)
         {
             InitializeComponent();
             _miningService = miningService;
             _configService = configService;
+            _viewModel = viewModel;
 
-            this.DataContext = _miningService.Tracker;
-            _miningService.OnStatusChanged += msg => Dispatcher.Invoke(() => TxtStatus.Text = msg);
+            this.DataContext = _viewModel;
+
             _miningService.OnBufferStoppedUnexpectedly += HandleUnexpectedBufferStop;
 
             this.Loaded += Window_Loaded;
@@ -196,8 +199,9 @@ namespace VN2Anki
 
             var result = await _miningService.ProcessMiningToAnki(slot, ankiConfig.Deck, ankiConfig.Model, ankiConfig.AudioField, ankiConfig.ImageField);
 
-            TxtStatus.Text = result.success ? $"✅ {result.message}" : $"❌ {result.message}";
+            // TxtStatus.Text = result.success ? $"✅ {result.message}" : $"❌ {result.message}";
             if (isQuietMode) ShowFlashMessage(result.success ? Strings.MsgCardUpdated : Strings.MsgError, !result.success);
+
             else if (result.success) MessageBox.Show(Strings.MsgSuccess);
             else MessageBox.Show(result.message, Strings.MsgAttention);
         }

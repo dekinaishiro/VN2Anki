@@ -7,6 +7,8 @@ using System.Windows.Threading;
 using VN2Anki.Models;
 using VN2Anki.Services;
 using System.Text.RegularExpressions;
+using CommunityToolkit.Mvvm.Messaging;
+using VN2Anki.Messages;
 
 namespace VN2Anki.Services
 {
@@ -22,7 +24,7 @@ namespace VN2Anki.Services
 
         private readonly DispatcherTimer _idleTimer;
 
-        public event Action<string> OnStatusChanged;
+        // public event Action<string> OnStatusChanged;
         public event Action<MiningSlot> OnSlotCaptured;
         public event Action OnBufferStoppedUnexpectedly;
 
@@ -32,6 +34,10 @@ namespace VN2Anki.Services
         public bool UseDynamicTimeout { get; set; } = true;
         public int MaxImageWidth { get; set; } = 1280;
         public int AudioBitrate { get; set; } = 128;
+        private void SendStatus(string message)
+        {
+            WeakReferenceMessenger.Default.Send(new StatusMessage(message));
+        }
 
         public MiningService(
             AudioEngine audio, VideoEngine video, ITextHook textHook, AnkiHandler anki, SessionTracker tracker) // <-- Construtor atualizado
@@ -56,7 +62,7 @@ namespace VN2Anki.Services
             Audio.Start(audioDeviceId);
             TextHook.Start(); 
             Tracker.Start();
-            OnStatusChanged?.Invoke("Buffer Rodando...");
+            SendStatus("Buffer Rodando...");
         }
 
         public void StopBuffer()
@@ -67,7 +73,7 @@ namespace VN2Anki.Services
             TextHook.Stop(); 
             _idleTimer.Stop();
             Tracker.Pause();
-            OnStatusChanged?.Invoke("Buffer Parado.");
+            SendStatus("Buffer Parado.");
         }
 
         private void ProcessCaptureSequence(string text, DateTime timestamp)
@@ -130,7 +136,7 @@ namespace VN2Anki.Services
                 _idleTimer.Start();
 
                 string modeText = UseDynamicTimeout ? "Dinâmico" : "Fixo";
-                OnStatusChanged?.Invoke($"Slot capturado! Fechando em {finalSeconds:F1}s ({modeText})");
+                SendStatus($"Slot capturado! Fechando em {finalSeconds:F1}s ({modeText})");
                 OnSlotCaptured?.Invoke(newSlot);
             });
         }
@@ -142,7 +148,7 @@ namespace VN2Anki.Services
             if (SealAllOpenSlots(DateTime.Now) > 0)
             {
                 SealSlotAudio(HistorySlots[0], DateTime.Now);
-                OnStatusChanged?.Invoke("Slot selado por inatividade.");
+                SendStatus("Slot selado por inatividade.");
             }
         }
 
@@ -189,7 +195,7 @@ namespace VN2Anki.Services
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
                 StopBuffer();
-                OnStatusChanged?.Invoke($"⚠️ ERROR: {msg}");
+                SendStatus($"⚠️ ERROR: {msg}");
                 OnBufferStoppedUnexpectedly?.Invoke(); // notifies ui
             });
         }
@@ -198,7 +204,7 @@ namespace VN2Anki.Services
         {
             if (string.IsNullOrEmpty(deck)) return (false, "Selecione um Deck!");
 
-            OnStatusChanged?.Invoke("Preparando mídia...");
+            SendStatus("Preparando mídia...");
 
             if (slot.IsOpen) SealSlotAudio(slot, DateTime.Now);
 
@@ -216,7 +222,7 @@ namespace VN2Anki.Services
 
                 if (AudioBitrate > 0)
                 {
-                    OnStatusChanged?.Invoke($"Convertendo áudio para MP3 {AudioBitrate}kbps...");
+                    SendStatus($"Convertendo áudio para MP3 {AudioBitrate}kbps...");
                     finalAudioBytes = await Task.Run(() => ConvertWavToMp3(slot.AudioBytes, AudioBitrate));
                 }
 
