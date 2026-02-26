@@ -1,7 +1,4 @@
-﻿using Microsoft.VisualBasic;
-using System.IO;
-using System.Linq;
-using System.Text.Json;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -13,13 +10,13 @@ namespace VN2Anki
     public partial class SettingsWindow : Window
     {
         private readonly MiningService _miningService;
-        private AppConfig _config;
+        private readonly IConfigurationService _configService;
 
-        public SettingsWindow(MiningService miningService, AppConfig currentConfig)
+        public SettingsWindow(MiningService miningService, IConfigurationService configService)
         {
             InitializeComponent();
             _miningService = miningService;
-            _config = currentConfig;
+            _configService = configService;
 
             this.Loaded += async (s, e) => await InitializeDataAsync();
         }
@@ -30,31 +27,33 @@ namespace VN2Anki
             RefreshVideo();
             await LoadAnkiDataAsync();
 
-            if (!string.IsNullOrEmpty(_config.AudioDevice))
-                ComboAudio.SelectedItem = ComboAudio.Items.Cast<AudioDeviceItem>().FirstOrDefault(x => x.Name == _config.AudioDevice);
-            if (!string.IsNullOrEmpty(_config.VideoWindow))
-                ComboVideo.SelectedValue = _config.VideoWindow;
-            if (!string.IsNullOrEmpty(_config.Deck) && ComboDeck.Items.Contains(_config.Deck))
-                ComboDeck.SelectedItem = _config.Deck;
-            if (!string.IsNullOrEmpty(_config.Model) && ComboModel.Items.Contains(_config.Model))
-                ComboModel.SelectedItem = _config.Model;
+            var config = _configService.CurrentConfig;
 
-            TxtIdleTime.Text = _config.IdleTime ?? "20";
-            TxtMaxSlots.Text = _config.MaxSlots ?? "30";
-            ChkDynamicTimeout.IsChecked = _config.UseDynamicTimeout;
-            ChkOpenSettings.IsChecked = _config.OpenSettingsOnStartup;
-            ComboLanguage.SelectedItem = ComboLanguage.Items.Cast<ComboBoxItem>().FirstOrDefault(x => x.Tag.ToString() == _config.Language);
+            if (!string.IsNullOrEmpty(config.Media.AudioDevice))
+                ComboAudio.SelectedItem = ComboAudio.Items.Cast<AudioDeviceItem>().FirstOrDefault(x => x.Name == config.Media.AudioDevice);
+            if (!string.IsNullOrEmpty(config.Media.VideoWindow))
+                ComboVideo.SelectedValue = config.Media.VideoWindow;
+            if (!string.IsNullOrEmpty(config.Anki.Deck) && ComboDeck.Items.Contains(config.Anki.Deck))
+                ComboDeck.SelectedItem = config.Anki.Deck;
+            if (!string.IsNullOrEmpty(config.Anki.Model) && ComboModel.Items.Contains(config.Anki.Model))
+                ComboModel.SelectedItem = config.Anki.Model;
 
-            string tagTarget = _config.MaxImageWidth.ToString();
+            TxtIdleTime.Text = config.Session.IdleTime ?? "20";
+            TxtMaxSlots.Text = config.Session.MaxSlots ?? "30";
+            ChkDynamicTimeout.IsChecked = config.Session.UseDynamicTimeout;
+            ChkOpenSettings.IsChecked = config.General.OpenSettingsOnStartup;
+            ComboLanguage.SelectedItem = ComboLanguage.Items.Cast<ComboBoxItem>().FirstOrDefault(x => x.Tag.ToString() == config.General.Language);
+
+            string tagTarget = config.Media.MaxImageWidth.ToString();
             ComboImageRes.SelectedItem = ComboImageRes.Items.Cast<ComboBoxItem>().FirstOrDefault(x => x.Tag.ToString() == tagTarget)
                                          ?? ComboImageRes.Items[2];
 
-            string tagAudio = _config.AudioBitrate.ToString();
+            string tagAudio = config.Media.AudioBitrate.ToString();
             ComboAudioRes.SelectedItem = ComboAudioRes.Items.Cast<ComboBoxItem>().FirstOrDefault(x => x.Tag.ToString() == tagAudio)
                                          ?? ComboAudioRes.Items[2];
 
-            TxtAnkiUrl.Text = string.IsNullOrEmpty(_config.AnkiUrl) ? "http://127.0.0.1:8765" : _config.AnkiUrl;
-            TxtAnkiTimeout.Text = _config.AnkiTimeout > 0 ? _config.AnkiTimeout.ToString() : "15";
+            TxtAnkiUrl.Text = string.IsNullOrEmpty(config.Anki.Url) ? "http://127.0.0.1:8765" : config.Anki.Url;
+            TxtAnkiTimeout.Text = config.Anki.TimeoutSeconds > 0 ? config.Anki.TimeoutSeconds.ToString() : "15";
         }
 
         private async Task RefreshAudioAsync()
@@ -89,23 +88,25 @@ namespace VN2Anki
                 ComboFieldAudio.ItemsSource = fields;
                 ComboFieldImage.ItemsSource = fields;
 
-                if (!string.IsNullOrEmpty(_config.AudioField) && fields.Contains(_config.AudioField))
-                    ComboFieldAudio.SelectedItem = _config.AudioField;
-                if (!string.IsNullOrEmpty(_config.ImageField) && fields.Contains(_config.ImageField))
-                    ComboFieldImage.SelectedItem = _config.ImageField;
+                var config = _configService.CurrentConfig.Anki;
+
+                if (!string.IsNullOrEmpty(config.AudioField) && fields.Contains(config.AudioField))
+                    ComboFieldAudio.SelectedItem = config.AudioField;
+                if (!string.IsNullOrEmpty(config.ImageField) && fields.Contains(config.ImageField))
+                    ComboFieldImage.SelectedItem = config.ImageField;
             }
         }
+
         private void ComboLanguage_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (!this.IsLoaded) return;
 
             if (ComboLanguage.SelectedItem is ComboBoxItem item && item.Tag is string langCode)
             {
-                if (_config.Language == langCode) return;
+                if (_configService.CurrentConfig.General.Language == langCode) return;
 
-                _config.Language = langCode;
-
-                ConfigManager.Save(_config);
+                _configService.CurrentConfig.General.Language = langCode;
+                _configService.Save();
 
                 var result = MessageBox.Show(
                     Locales.Strings.LangRestartNow,
@@ -123,47 +124,45 @@ namespace VN2Anki
 
         private void BtnSave_Click(object sender, RoutedEventArgs e)
         {
-            _config.AudioDevice = (ComboAudio.SelectedItem as AudioDeviceItem)?.Name;
-            _config.VideoWindow = ComboVideo.SelectedValue?.ToString();
-            _config.Deck = ComboDeck.SelectedItem?.ToString();
-            _config.Model = ComboModel.SelectedItem?.ToString();
-            _config.AudioField = ComboFieldAudio.SelectedItem?.ToString();
-            _config.ImageField = ComboFieldImage.SelectedItem?.ToString();
-            _config.IdleTime = TxtIdleTime.Text;
-            _config.MaxSlots = TxtMaxSlots.Text;
-            _config.UseDynamicTimeout = ChkDynamicTimeout.IsChecked ?? true;
-            _config.OpenSettingsOnStartup = ChkOpenSettings.IsChecked ?? false;
+            var config = _configService.CurrentConfig;
 
-            // video & audio
+            config.Media.AudioDevice = (ComboAudio.SelectedItem as AudioDeviceItem)?.Name;
+            config.Media.VideoWindow = ComboVideo.SelectedValue?.ToString();
+            config.Anki.Deck = ComboDeck.SelectedItem?.ToString();
+            config.Anki.Model = ComboModel.SelectedItem?.ToString();
+            config.Anki.AudioField = ComboFieldAudio.SelectedItem?.ToString();
+            config.Anki.ImageField = ComboFieldImage.SelectedItem?.ToString();
+
+            config.Session.IdleTime = TxtIdleTime.Text;
+            config.Session.MaxSlots = TxtMaxSlots.Text;
+            config.Session.UseDynamicTimeout = ChkDynamicTimeout.IsChecked ?? true;
+            config.General.OpenSettingsOnStartup = ChkOpenSettings.IsChecked ?? false;
+
             if (ComboImageRes.SelectedItem is ComboBoxItem resItem && int.TryParse(resItem.Tag.ToString(), out int parsedWidth))
             {
-                _config.MaxImageWidth = parsedWidth;
+                config.Media.MaxImageWidth = parsedWidth;
             }
             if (ComboAudioRes.SelectedItem is ComboBoxItem audioItem && int.TryParse(audioItem.Tag.ToString(), out int parsedBitrate))
             {
-                _config.AudioBitrate = parsedBitrate;
+                config.Media.AudioBitrate = parsedBitrate;
             }
-            // anki
-            _config.AnkiUrl = TxtAnkiUrl.Text.Trim();
+
+            config.Anki.Url = TxtAnkiUrl.Text.Trim();
             if (int.TryParse(TxtAnkiTimeout.Text.Trim(), out int timeout) && timeout > 0)
             {
-                _config.AnkiTimeout = timeout;
+                config.Anki.TimeoutSeconds = timeout;
             }
             else
             {
-                _config.AnkiTimeout = 15;
+                config.Anki.TimeoutSeconds = 15;
             }
 
-            // saves
-            ConfigManager.Save(_config);
-
+            _configService.Save();
             this.Close();
-            //this.DialogResult = true;
         }
 
         private void ChkOpenSettings_Checked(object sender, RoutedEventArgs e)
         {
-
         }
     }
 }

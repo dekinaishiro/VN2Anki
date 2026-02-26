@@ -1,36 +1,37 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using Microsoft.Extensions.DependencyInjection;
 using VN2Anki.Locales;
 using VN2Anki.Models;
 using VN2Anki.Services;
+using System.Windows.Controls;
 
 namespace VN2Anki
 {
     public partial class MainWindow : Window
     {
         private readonly MiningService _miningService;
+        private readonly IConfigurationService _configService;
         private SettingsWindow _settingsWindowInstance;
-        private AppConfig _currentConfig = new AppConfig();
         private bool _isBufferActive = false;
 
-        public MainWindow(MiningService miningService)
+        public MainWindow(MiningService miningService, IConfigurationService configService)
         {
             InitializeComponent();
             _miningService = miningService;
+            _configService = configService;
+
             this.DataContext = _miningService.Tracker;
             _miningService.OnStatusChanged += msg => Dispatcher.Invoke(() => TxtStatus.Text = msg);
             _miningService.OnBufferStoppedUnexpectedly += HandleUnexpectedBufferStop;
 
             this.Loaded += Window_Loaded;
 
-            // last pos
             this.Closing += (s, e) =>
             {
                 _miningService.StopBuffer();
@@ -40,22 +41,23 @@ namespace VN2Anki
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            LoadConfig();
+            ApplyConfigToService();
 
-            // restore last position or center if not available
-            if (!double.IsNaN(_currentConfig.MainWindowTop) && !double.IsNaN(_currentConfig.MainWindowLeft))
+            var config = _configService.CurrentConfig.General;
+
+            // Restores last position or centers if not available
+            if (!double.IsNaN(config.MainWindowTop) && !double.IsNaN(config.MainWindowLeft))
             {
-                this.Top = _currentConfig.MainWindowTop;
-                this.Left = _currentConfig.MainWindowLeft;
+                this.Top = config.MainWindowTop;
+                this.Left = config.MainWindowLeft;
             }
             else
             {
                 this.WindowStartupLocation = WindowStartupLocation.CenterScreen;
             }
 
-            if (_currentConfig.OpenSettingsOnStartup)
+            if (config.OpenSettingsOnStartup)
             {
-                // ensures the main window is fully loaded before opening settings (avoids dropdown weird behavior x_x)
                 Application.Current.Dispatcher.BeginInvoke(new Action(() =>
                 {
                     BtnOpenSettings_Click(this, new RoutedEventArgs());
@@ -65,32 +67,27 @@ namespace VN2Anki
 
         private void SaveWindowPosition()
         {
-            _currentConfig.MainWindowTop = this.Top;
-            _currentConfig.MainWindowLeft = this.Left;
-
-            ConfigManager.Save(_currentConfig); 
-        }
-
-        private void LoadConfig()
-        {
-            _currentConfig = ConfigManager.Load(); 
-            ApplyConfigToService();
+            _configService.CurrentConfig.General.MainWindowTop = this.Top;
+            _configService.CurrentConfig.General.MainWindowLeft = this.Left;
+            _configService.Save();
         }
 
         private void ApplyConfigToService()
         {
-            _miningService.TargetVideoWindow = _currentConfig.VideoWindow;
-            if (int.TryParse(_currentConfig.MaxSlots, out int parsedMax) && parsedMax > 0) _miningService.MaxSlots = parsedMax;
-            if (double.TryParse(_currentConfig.IdleTime, out double parsedIdle) && parsedIdle > 0) _miningService.IdleTimeoutFixo = parsedIdle;
-            _miningService.UseDynamicTimeout = _currentConfig.UseDynamicTimeout;
-            _miningService.MaxImageWidth = _currentConfig.MaxImageWidth;
-            _miningService.AudioBitrate = _currentConfig.AudioBitrate;
-            _miningService.Anki.UpdateSettings(_currentConfig.AnkiUrl, _currentConfig.AnkiTimeout);
+            var config = _configService.CurrentConfig;
+
+            _miningService.TargetVideoWindow = config.Media.VideoWindow;
+            if (int.TryParse(config.Session.MaxSlots, out int parsedMax) && parsedMax > 0) _miningService.MaxSlots = parsedMax;
+            if (double.TryParse(config.Session.IdleTime, out double parsedIdle) && parsedIdle > 0) _miningService.IdleTimeoutFixo = parsedIdle;
+
+            _miningService.UseDynamicTimeout = config.Session.UseDynamicTimeout;
+            _miningService.MaxImageWidth = config.Media.MaxImageWidth;
+            _miningService.AudioBitrate = config.Media.AudioBitrate;
+            _miningService.Anki.UpdateSettings(config.Anki.Url, config.Anki.TimeoutSeconds);
         }
 
         private void BtnOpenSettings_Click(object sender, RoutedEventArgs e)
         {
-            // 
             if (_settingsWindowInstance != null)
             {
                 if (_settingsWindowInstance.WindowState == WindowState.Minimized)
@@ -99,22 +96,22 @@ namespace VN2Anki
                 return;
             }
 
-            // temporary fix (audio switch)
-            string oldAudioDevice = _currentConfig.AudioDevice;
+            string oldAudioDevice = _configService.CurrentConfig.Media.AudioDevice;
 
-            _settingsWindowInstance = new SettingsWindow(_miningService, _currentConfig);
+            // Resolves window via DI container
+            _settingsWindowInstance = App.Current.Services.GetRequiredService<SettingsWindow>();
             _settingsWindowInstance.Owner = this;
 
             _settingsWindowInstance.Closed += (s, args) =>
             {
                 _settingsWindowInstance = null;
-                LoadConfig();
+                _configService.Load();
+                ApplyConfigToService();
 
-                // temporary fix (audio switch)
-                if (_isBufferActive && oldAudioDevice != _currentConfig.AudioDevice)
+                if (_isBufferActive && oldAudioDevice != _configService.CurrentConfig.Media.AudioDevice)
                 {
-                    BtnToggleBuffer_Click(null, null); 
-                    BtnToggleBuffer_Click(null, null); 
+                    BtnToggleBuffer_Click(null, null);
+                    BtnToggleBuffer_Click(null, null);
                 }
             };
 
@@ -125,9 +122,8 @@ namespace VN2Anki
         {
             if (!_isBufferActive)
             {
-                // gets the real device ID based on the name stored in config (since IDs can change between sessions)
                 var devices = _miningService.Audio.GetDevices();
-                var deviceId = devices.FirstOrDefault(d => d.Name == _currentConfig.AudioDevice)?.Id;
+                var deviceId = devices.FirstOrDefault(d => d.Name == _configService.CurrentConfig.Media.AudioDevice)?.Id;
 
                 if (string.IsNullOrEmpty(deviceId))
                 {
@@ -191,12 +187,14 @@ namespace VN2Anki
         // 
         public async Task ProcessMiningToAnki(MiningSlot slot, bool isQuietMode = false)
         {
-            if (string.IsNullOrEmpty(_currentConfig.Deck))
+            var ankiConfig = _configService.CurrentConfig.Anki;
+
+            if (string.IsNullOrEmpty(ankiConfig.Deck))
             {
                 ShowFlashMessage("Configure o Deck!", true); return;
             }
 
-            var result = await _miningService.ProcessMiningToAnki(slot, _currentConfig.Deck, _currentConfig.Model, _currentConfig.AudioField, _currentConfig.ImageField);
+            var result = await _miningService.ProcessMiningToAnki(slot, ankiConfig.Deck, ankiConfig.Model, ankiConfig.AudioField, ankiConfig.ImageField);
 
             TxtStatus.Text = result.success ? $"✅ {result.message}" : $"❌ {result.message}";
             if (isQuietMode) ShowFlashMessage(result.success ? Strings.MsgCardUpdated : Strings.MsgError, !result.success);
