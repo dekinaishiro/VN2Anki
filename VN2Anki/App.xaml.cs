@@ -14,10 +14,10 @@ namespace VN2Anki
     {
         private static Mutex _mutex = null;
 
-        /// <summary> Exposes the DI container to the application. </summary>
+        // Exposes the DI container to the application
         public IServiceProvider Services { get; }
 
-        /// <summary> Strongly-typed singleton instance of the App. </summary>
+        // Strongly-typed singleton instance of the App
         public new static App Current => (App)Application.Current;
 
         public App()

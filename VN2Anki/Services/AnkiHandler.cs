@@ -94,10 +94,10 @@ namespace VN2Anki.Services
 
         public async Task<(bool success, string message)> UpdateLastCardAsync(string deckName, string audioField, string imageField, string audioFilename, string imageFilename)
         {
-            // Substituimos a chamada simples pela detalhada para pegar os erros de timeout
+            // replaces simple call
             var (noteIds, error) = await InvokeWithDetailsAsync<List<long>>("findNotes", new { query = $"\"deck:{deckName}\" added:1" });
 
-            // Propaga o erro de Timeout ou Conexão imediatamente para a UI!
+            // propagates error if findNotes fails, otherwise continues with the update
             if (!string.IsNullOrEmpty(error)) return (false, error);
 
             if (noteIds == null || noteIds.Count == 0) return (false, "No card added recently in this dekck.");

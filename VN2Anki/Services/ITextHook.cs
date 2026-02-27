@@ -2,9 +2,7 @@
 
 namespace VN2Anki.Services
 {
-    /// <summary>
-    /// Contract for all text capture methods (Clipboard, WebSocket, etc.)
-    /// </summary>
+    // Contract for all text capture methods (Clipboard, WebSocket, etc.)
     public interface ITextHook
     {
         event Action<string, DateTime> OnTextCopied;

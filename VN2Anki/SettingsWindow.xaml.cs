@@ -250,86 +250,79 @@ namespace VN2Anki
 
         private void BtnExtensionSettings_Click(object sender, RoutedEventArgs e)
         {
-            if (!(ListExtensions.SelectedItem is string selectedExtPath) || !Directory.Exists(selectedExtPath))
+            // When the user clicks to open extension settings, we attempt to load the extension in a new WebView2 window and navigate to its options page.
+            if (ListExtensions.SelectedItem is string selectedExtPath)
             {
-                MessageBox.Show("Please select a custom extension from the list first.", "No Extension Selected", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            // 1. Auto-resolve the version subfolder if the user selected the parent ID folder
-            string manifestPath = Path.Combine(selectedExtPath, "manifest.json");
-            if (!File.Exists(manifestPath))
-            {
-                var subDirs = Directory.GetDirectories(selectedExtPath);
-                bool foundManifest = false;
-
-                foreach (var dir in subDirs)
+                var settingsWin = new Window
                 {
-                    string subManifest = Path.Combine(dir, "manifest.json");
-                    if (File.Exists(subManifest))
+                    Title = "Extension Settings",
+                    Width = 900,
+                    Height = 700,
+                    WindowStartupLocation = WindowStartupLocation.CenterScreen
+                };
+
+                var settingsWebView = new Microsoft.Web.WebView2.Wpf.WebView2();
+                settingsWin.Content = settingsWebView;
+
+                settingsWin.Loaded += async (ss, ee) =>
+                {
+                    var options = new CoreWebView2EnvironmentOptions { AreBrowserExtensionsEnabled = true };
+                    var environment = await CoreWebView2Environment.CreateAsync(null, null, options);
+                    await settingsWebView.EnsureCoreWebView2Async(environment);
+
+                    try
                     {
-                        selectedExtPath = dir; // Update path to the actual version folder
-                        manifestPath = subManifest;
-                        foundManifest = true;
-                        break;
+                        string manifestPath = Path.Combine(selectedExtPath, "manifest.json");
+                        string optionsHtmlPage = "options.html";
+                        string targetExtName = "";
+
+                        // attempt to read the extension's manifest to get its name and options page (if specified)
+                        if (File.Exists(manifestPath))
+                        {
+                            var json = File.ReadAllText(manifestPath);
+                            using var doc = JsonDocument.Parse(json);
+
+                            if (doc.RootElement.TryGetProperty("name", out JsonElement nameProp))
+                            {
+                                targetExtName = nameProp.GetString();
+                            }
+
+                            if (doc.RootElement.TryGetProperty("options_ui", out JsonElement optUi) && optUi.TryGetProperty("page", out JsonElement page))
+                            {
+                                optionsHtmlPage = page.GetString();
+                            }
+                            else if (doc.RootElement.TryGetProperty("options_page", out JsonElement optPage))
+                            {
+                                optionsHtmlPage = optPage.GetString();
+                            }
+                        }
+
+                        // extension name is crucial for WebView2 to recognize and load it properly, so we try to find an already loaded extension with the same name first
+                        var loadedExtensions = await settingsWebView.CoreWebView2.Profile.GetBrowserExtensionsAsync();
+
+                        // search for an already loaded extension that matches our target by name (or contains "Yomitan" as a fallback)
+                        var existingExt = loadedExtensions.FirstOrDefault(ext => ext.Name == targetExtName || (ext.Name != null && ext.Name.Contains("Yomitan")));
+
+                        if (existingExt != null)
+                        {
+                            // existing extension found, navigate directly to its options page
+                            settingsWebView.CoreWebView2.Navigate($"chrome-extension://{existingExt.Id}/{optionsHtmlPage}");
+                        }
+                        else
+                        {
+                            // fallback: load the extension and then navigate
+                            var newExtension = await settingsWebView.CoreWebView2.Profile.AddBrowserExtensionAsync(selectedExtPath);
+                            settingsWebView.CoreWebView2.Navigate($"chrome-extension://{newExtension.Id}/{optionsHtmlPage}");
+                        }
                     }
-                }
-
-                if (!foundManifest)
-                {
-                    MessageBox.Show($"Could not find 'manifest.json' in:\n{selectedExtPath}\nor any of its subfolders.", "Invalid Extension", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-            }
-
-            // 2. Spawn a lightweight host window for the extension's UI
-            var settingsWin = new Window
-            {
-                Title = "Extension Settings",
-                Width = 900,
-                Height = 700,
-                WindowStartupLocation = WindowStartupLocation.CenterScreen
-            };
-
-            var settingsWebView = new Microsoft.Web.WebView2.Wpf.WebView2();
-            settingsWin.Content = settingsWebView;
-
-            settingsWin.Loaded += async (ss, ee) =>
-            {
-                var options = new CoreWebView2EnvironmentOptions { AreBrowserExtensionsEnabled = true };
-                var environment = await CoreWebView2Environment.CreateAsync(null, null, options);
-                await settingsWebView.EnsureCoreWebView2Async(environment);
-
-                try
-                {
-                    // Read manifest to find the correct options page
-                    string optionsHtmlPage = "index.html";
-                    string json = File.ReadAllText(manifestPath);
-                    using (var doc = JsonDocument.Parse(json))
+                    catch (Exception ex)
                     {
-                        if (doc.RootElement.TryGetProperty("options_ui", out JsonElement optionsUi) && optionsUi.TryGetProperty("page", out JsonElement page))
-                        {
-                            optionsHtmlPage = page.GetString();
-                        }
-                        else if (doc.RootElement.TryGetProperty("options_page", out JsonElement optPage))
-                        {
-                            optionsHtmlPage = optPage.GetString();
-                        }
+                        MessageBox.Show($"Could not load extension settings:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
+                };
 
-                    // Load the extension and get its dynamic ID
-                    var extension = await settingsWebView.CoreWebView2.Profile.AddBrowserExtensionAsync(selectedExtPath);
-
-                    // Navigate to the settings page
-                    settingsWebView.CoreWebView2.Navigate($"chrome-extension://{extension.Id}/{optionsHtmlPage}");
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Could not load extension settings:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            };
-
-            settingsWin.Show();
+                settingsWin.Show();
+            }
         }
         private void BtnRemoveExtension_Click(object sender, RoutedEventArgs e)
         {

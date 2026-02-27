@@ -87,48 +87,48 @@ namespace VN2Anki
         }
 
         private void CreateDynamicHtml()
-        {
-            var conf = _configService.CurrentConfig.Overlay;
-            string appDir = AppDomain.CurrentDomain.BaseDirectory;
-            string htmlPath = Path.Combine(appDir, "overlay.html");
+{
+    var conf = _configService.CurrentConfig.Overlay;
+    string appDir = AppDomain.CurrentDomain.BaseDirectory;
+    string htmlPath = Path.Combine(appDir, "overlay.html");
 
-            string htmlBase = $@"
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset='utf-8'>
-                    <style>
-                        html, body {{
-                            margin: 0; padding: 0; height: 100vh;
-                            background-color: transparent !important;
-                            overflow: hidden;
-                            display: flex; flex-direction: column; 
-                            justify-content: flex-end;
-                        }}
-                        #text-box {{
-                            color: {conf.FontColor}; font-size: {conf.FontSize}px; padding: 25px;
-                            font-family: 'Segoe UI', sans-serif;
-                            border-radius: 8px; margin: 15px;
-                            transition: background 0.3s ease;
-                        }}
-                        body.transp-on #text-box {{
-                            background: transparent;
-                            text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
-                            box-shadow: none;
-                        }}
-                        body.transp-off #text-box {{
-                            background: {conf.BgColor}; 
-                            box-shadow: none; text-shadow: none;
-                        }}
-                    </style>
-                </head>
-                <body class='transp-on'>
-                    <div id='text-box'>Waiting for text...</div>
-                </body>
-                </html>";
+    string htmlBase = $@"
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='utf-8'>
+            <style>
+                html, body {{
+                    margin: 0; padding: 0; height: 100vh;
+                    background-color: rgba(0, 0, 0, 0.01) !important;
+                    overflow: hidden;
+                    display: flex; flex-direction: column; 
+                    justify-content: flex-end;
+                }}
+                #text-box {{
+                    color: {conf.FontColor}; font-size: {conf.FontSize}px; padding: 25px;
+                    font-family: 'Segoe UI', sans-serif;
+                    border-radius: 8px; margin: 15px;
+                    transition: background 0.3s ease;
+                }}
+                body.transp-on #text-box {{
+                    background-color: rgba(0, 0, 0, 0.01) !important;
+                    text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+                    box-shadow: none;
+                }}
+                body.transp-off #text-box {{
+                    background: {conf.BgColor}; 
+                    box-shadow: none; text-shadow: none;
+                }}
+            </style>
+        </head>
+        <body class='transp-on'>
+            <div id='text-box'>Waiting for text...</div>
+        </body>
+        </html>";
 
-            File.WriteAllText(htmlPath, htmlBase);
-        }
+    File.WriteAllText(htmlPath, htmlBase);
+}
 
         private async void InitializeWebViewAsync()
         {
@@ -154,7 +154,8 @@ namespace VN2Anki
             var profile = webView.CoreWebView2.Profile;
             string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
-            // 1. Native Yomitan Support (Checks Edge then Chrome)
+            // native yomitan support
+         
             string yomitanId = "likgccmbimhjbgkjambclfkhldnlhbnn";
             string[] possiblePaths = {
                 Path.Combine(localAppData, $@"Microsoft\Edge\User Data\Default\Extensions\{yomitanId}"),
@@ -174,7 +175,7 @@ namespace VN2Anki
                 }
             }
 
-            // 2. Custom Extensions from Settings
+            // custom extensions from config
             foreach (var extPath in _configService.CurrentConfig.Overlay.CustomExtensions)
             {
                 if (Directory.Exists(extPath))
@@ -259,12 +260,11 @@ namespace VN2Anki
 
         private void ApplyTransparencyState()
         {
-            UpdateBackground(); // Atualiza a cor do fundo da janela WPF
+            UpdateBackground();
 
             if (webView.CoreWebView2 != null)
             {
-                // O WebView DEVE ser sempre transparente para o fundo do WPF aparecer.
-                // Isso evita o erro de ArgumentException com cores semi-transparentes.
+                //avoids ArgumentException from WebView2 when trying to set a semi-transparent background
                 webView.DefaultBackgroundColor = System.Drawing.Color.Transparent;
 
                 if (_isTransparent)
@@ -290,7 +290,7 @@ namespace VN2Anki
             }
             else
             {
-                // Pega a cor WPF (suporta transparência tranquilamente)
+                // webview2 doesn't support semi-transparent backgrounds (throws ArgumentException), so we rely on the WPF window's background to create the transparency effect.
                 string hexColor = _configService.CurrentConfig.Overlay.OverlayBgColor;
                 System.Windows.Media.Color customColor;
                 try { customColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hexColor); }
@@ -321,28 +321,51 @@ namespace VN2Anki
                 var environment = await CoreWebView2Environment.CreateAsync(null, null, options);
                 await settingsWebView.EnsureCoreWebView2Async(environment);
 
-                // load yomitan
-                string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                string yomitanId = "likgccmbimhjbgkjambclfkhldnlhbnn";
-                string[] possiblePaths = {
+                try
+                {
+                    // O SEGREDO DO LUNA: Pega as extensões que JÁ ESTÃO na memória
+                    var loadedExtensions = await settingsWebView.CoreWebView2.Profile.GetBrowserExtensionsAsync();
+
+                    // Procura o Yomitan na memória pelo ID padrão ou pelo nome
+                    var yomitanExt = loadedExtensions.FirstOrDefault(ext =>
+                        ext.Id == "likgccmbimhjbgkjambclfkhldnlhbnn" ||
+                        (ext.Name != null && ext.Name.Contains("Yomitan")));
+
+                    if (yomitanExt != null)
+                    {
+                        // Extensão já existe! Só navegamos sem reinstalar
+                        settingsWebView.CoreWebView2.Navigate($"chrome-extension://{yomitanExt.Id}/settings.html");
+                    }
+                    else
+                    {
+                        // Fallback (apenas por segurança se não achar na memória)
+                        string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                        string yomitanId = "likgccmbimhjbgkjambclfkhldnlhbnn";
+                        string[] possiblePaths = {
                     Path.Combine(localAppData, $@"Microsoft\Edge\User Data\Default\Extensions\{yomitanId}"),
                     Path.Combine(localAppData, $@"Google\Chrome\User Data\Default\Extensions\{yomitanId}")
                 };
 
-                foreach (var path in possiblePaths)
-                {
-                    if (Directory.Exists(path))
-                    {
-                        var versionDirs = Directory.GetDirectories(path);
-                        if (versionDirs.Length > 0)
+                        foreach (var path in possiblePaths)
                         {
-                            string latestVersion = versionDirs.OrderByDescending(d => d).First();
-                            try { await settingsWebView.CoreWebView2.Profile.AddBrowserExtensionAsync(latestVersion); break; } catch { }
+                            if (Directory.Exists(path))
+                            {
+                                var versionDirs = Directory.GetDirectories(path);
+                                if (versionDirs.Length > 0)
+                                {
+                                    string latestVersion = versionDirs.OrderByDescending(d => d).First();
+                                    var newExt = await settingsWebView.CoreWebView2.Profile.AddBrowserExtensionAsync(latestVersion);
+                                    settingsWebView.CoreWebView2.Navigate($"chrome-extension://{newExt.Id}/settings.html");
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
-
-                settingsWebView.CoreWebView2.Navigate("chrome-extension://likgccmbimhjbgkjambclfkhldnlhbnn/settings.html");
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Erro ao abrir configurações do Yomitan:\n{ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             };
 
             settingsWin.Show();

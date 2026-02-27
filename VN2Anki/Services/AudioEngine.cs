@@ -27,7 +27,7 @@ namespace VN2Anki.Services
 
         // event to notify errors from silent audio dc
         public event Action<string> OnRecordingError;
-        private bool _isManualStop = false; // <-- Nova flag
+        private bool _isManualStop = false; 
 
         public int DurationSeconds { get; }
 
@@ -42,11 +42,10 @@ namespace VN2Anki.Services
 
             using (var enumerator = new MMDeviceEnumerator())
             {
-                // 1º: Outputs (Render) - Fones, Caixas de som e Cabos Virtuais (Prioridade máxima)
+                // lists output sources first then input sources
                 foreach (var endpoint in enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active))
                     devices.Add(new AudioDeviceItem { Id = endpoint.ID, Name = endpoint.FriendlyName, Flow = endpoint.DataFlow });
 
-                // 2º: Inputs (Capture) - Microfones (Vão para o fim da lista)
                 foreach (var endpoint in enumerator.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active))
                     devices.Add(new AudioDeviceItem { Id = endpoint.ID, Name = endpoint.FriendlyName, Flow = endpoint.DataFlow });
             }
