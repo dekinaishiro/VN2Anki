@@ -248,12 +248,42 @@ namespace VN2Anki
 
         private void BtnExtensionSettings_Click(object sender, RoutedEventArgs e)
         {
-            string selectedExtPath = ListExtensions.SelectedItem as string;
-            bool isCustomExtSelected = !string.IsNullOrEmpty(selectedExtPath) && Directory.Exists(selectedExtPath);
+            if (!(ListExtensions.SelectedItem is string selectedExtPath) || !Directory.Exists(selectedExtPath))
+            {
+                MessageBox.Show("Please select a custom extension from the list first.", "No Extension Selected", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
 
+            // 1. Auto-resolve the version subfolder if the user selected the parent ID folder
+            string manifestPath = Path.Combine(selectedExtPath, "manifest.json");
+            if (!File.Exists(manifestPath))
+            {
+                var subDirs = Directory.GetDirectories(selectedExtPath);
+                bool foundManifest = false;
+
+                foreach (var dir in subDirs)
+                {
+                    string subManifest = Path.Combine(dir, "manifest.json");
+                    if (File.Exists(subManifest))
+                    {
+                        selectedExtPath = dir; // Update path to the actual version folder
+                        manifestPath = subManifest;
+                        foundManifest = true;
+                        break;
+                    }
+                }
+
+                if (!foundManifest)
+                {
+                    MessageBox.Show($"Could not find 'manifest.json' in:\n{selectedExtPath}\nor any of its subfolders.", "Invalid Extension", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+            }
+
+            // 2. Spawn a lightweight host window for the extension's UI
             var settingsWin = new Window
             {
-                Title = isCustomExtSelected ? "Extension Settings" : "Yomitan Settings",
+                Title = "Extension Settings",
                 Width = 900,
                 Height = 700,
                 WindowStartupLocation = WindowStartupLocation.CenterScreen
@@ -268,72 +298,37 @@ namespace VN2Anki
                 var environment = await CoreWebView2Environment.CreateAsync(null, null, options);
                 await settingsWebView.EnsureCoreWebView2Async(environment);
 
-                if (isCustomExtSelected)
+                try
                 {
-                    try
+                    // Read manifest to find the correct options page
+                    string optionsHtmlPage = "index.html";
+                    string json = File.ReadAllText(manifestPath);
+                    using (var doc = JsonDocument.Parse(json))
                     {
-                        // 1. Load the custom extension and capture the dynamically generated ID
-                        var extension = await settingsWebView.CoreWebView2.Profile.AddBrowserExtensionAsync(selectedExtPath);
-                        string extensionId = extension.Id;
-
-                        // 2. Parse manifest.json to find the correct settings page
-                        string manifestPath = Path.Combine(selectedExtPath, "manifest.json");
-                        string optionsHtmlPage = "index.html"; // Fallback
-
-                        if (File.Exists(manifestPath))
+                        if (doc.RootElement.TryGetProperty("options_ui", out JsonElement optionsUi) && optionsUi.TryGetProperty("page", out JsonElement page))
                         {
-                            string json = File.ReadAllText(manifestPath);
-                            using (var doc = JsonDocument.Parse(json))
-                            {
-                                if (doc.RootElement.TryGetProperty("options_ui", out JsonElement optionsUi) && optionsUi.TryGetProperty("page", out JsonElement page))
-                                {
-                                    optionsHtmlPage = page.GetString();
-                                }
-                                else if (doc.RootElement.TryGetProperty("options_page", out JsonElement optPage))
-                                {
-                                    optionsHtmlPage = optPage.GetString();
-                                }
-                            }
+                            optionsHtmlPage = page.GetString();
                         }
+                        else if (doc.RootElement.TryGetProperty("options_page", out JsonElement optPage))
+                        {
+                            optionsHtmlPage = optPage.GetString();
+                        }
+                    }
 
-                        // 3. Navigate to the dynamic URL
-                        settingsWebView.CoreWebView2.Navigate($"chrome-extension://{extensionId}/{optionsHtmlPage}");
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Could not load custom extension settings:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
+                    // Load the extension and get its dynamic ID
+                    var extension = await settingsWebView.CoreWebView2.Profile.AddBrowserExtensionAsync(selectedExtPath);
+
+                    // Navigate to the settings page
+                    settingsWebView.CoreWebView2.Navigate($"chrome-extension://{extension.Id}/{optionsHtmlPage}");
                 }
-                else
+                catch (Exception ex)
                 {
-                    // Fallback to Native Yomitan Load
-                    string localAppData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
-                    string yomitanId = "likgccmbimhjbgkjambclfkhldnlhbnn";
-                    string[] possiblePaths = {
-                        Path.Combine(localAppData, $@"Microsoft\Edge\User Data\Default\Extensions\{yomitanId}"),
-                        Path.Combine(localAppData, $@"Google\Chrome\User Data\Default\Extensions\{yomitanId}")
-                    };
-
-                    foreach (var path in possiblePaths)
-                    {
-                        if (Directory.Exists(path))
-                        {
-                            var versionDirs = Directory.GetDirectories(path);
-                            if (versionDirs.Length > 0)
-                            {
-                                string latestVersion = versionDirs.OrderByDescending(d => d).First();
-                                try { await settingsWebView.CoreWebView2.Profile.AddBrowserExtensionAsync(latestVersion); break; } catch { }
-                            }
-                        }
-                    }
-
-                    settingsWebView.CoreWebView2.Navigate($"chrome-extension://{yomitanId}/settings.html");
+                    MessageBox.Show($"Could not load extension settings:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             };
 
             settingsWin.Show();
         }
-
         private void BtnRemoveExtension_Click(object sender, RoutedEventArgs e)
         {
             if (ListExtensions.SelectedItem is string selectedExt)

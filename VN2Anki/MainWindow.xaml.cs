@@ -23,7 +23,7 @@ namespace VN2Anki
         private bool _isBufferActive = false;
         private readonly AnkiExportService _ankiExportService;
         private readonly AnkiHandler _ankiHandler;
-
+        private OverlayWindow _overlayWindowInstance;
         public MainWindow(MiningService miningService, IConfigurationService configService, MainWindowViewModel viewModel, AnkiExportService ankiExportService, AnkiHandler ankiHandler)
         {
             InitializeComponent();
@@ -194,8 +194,23 @@ namespace VN2Anki
 
         private void BtnOpenOverlay_Click(object sender, RoutedEventArgs e)
         {
-            var overlay = App.Current.Services.GetRequiredService<OverlayWindow>();
-            overlay.Show();
+            if (_overlayWindowInstance != null)
+            {
+                if (_overlayWindowInstance.WindowState == WindowState.Minimized)
+                    _overlayWindowInstance.WindowState = WindowState.Normal;
+
+                _overlayWindowInstance.Activate();
+                return;
+            }
+
+            _overlayWindowInstance = App.Current.Services.GetRequiredService<OverlayWindow>();
+
+            _overlayWindowInstance.Closed += (s, args) =>
+            {
+                _overlayWindowInstance = null;
+            };
+
+            _overlayWindowInstance.Show();
         }
 
         // 
