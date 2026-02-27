@@ -22,7 +22,7 @@
                 <Button x:Name="BtnYomitan" Content="⚙️" ToolTip="Yomitan Settings" Click="BtnYomitan_Click" 
                         Foreground="White" Background="Transparent" BorderThickness="0" Margin="5,0" FontSize="16"/>
 
-                <Button x:Name="BtnPosicao" Content="⇅" ToolTip="Toggle Position" Click="BtnPosicao_Click" 
+                <Button x:Name="BtnPosicao" Content="⇅" ToolTip="Toggle Position" Click="BtnPosition_Click" 
                         Foreground="White" Background="Transparent" BorderThickness="0" Margin="5,0" FontSize="18"/>
 
                 <Button x:Name="BtnTransparencia" Content="👁" ToolTip="Toggle Transparency" Click="BtnTransparencia_Click" 

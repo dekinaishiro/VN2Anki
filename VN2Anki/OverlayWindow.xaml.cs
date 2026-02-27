@@ -78,7 +78,7 @@ namespace VN2Anki
             if (webView.CoreWebView2 != null)
             {
                 string dir = _isTextAtTop ? "flex-start" : "flex-end";
-                string margin = _isTextAtTop ? "margin-top: 50px;" : "margin-bottom: 15px;";
+                string margin = _isTextAtTop ? "margin-top: 0px;" : "margin-bottom: 0px;";
                 webView.CoreWebView2.ExecuteScriptAsync($@"
             document.body.style.justifyContent = '{dir}';
             document.getElementById('text-box').style.cssText += '{margin}';
@@ -100,19 +100,20 @@ namespace VN2Anki
             <style>
                 html, body {{
                     margin: 0; padding: 0; height: 100vh;
-                    background-color: rgba(0, 0, 0, 0.01) !important;
+                    background-color: rgba(0, 0, 0, 0.0) !important;
                     overflow: hidden;
                     display: flex; flex-direction: column; 
                     justify-content: flex-end;
                 }}
                 #text-box {{
-                    color: {conf.FontColor}; font-size: {conf.FontSize}px; padding: 25px;
+                    color: {conf.FontColor}; font-size: {conf.FontSize}px; padding: 10px;
                     font-family: 'Segoe UI', sans-serif;
                     border-radius: 8px; margin: 15px;
                     transition: background 0.3s ease;
+                    text-align: center;
                 }}
                 body.transp-on #text-box {{
-                    background-color: rgba(0, 0, 0, 0.01) !important;
+                    background-color: rgba(0, 0, 0, 0.0) !important;
                     text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
                     box-shadow: none;
                 }}
@@ -297,7 +298,7 @@ namespace VN2Anki
                 catch { customColor = System.Windows.Media.Colors.Black; }
 
                 this.Background = _isTransparent
-                    ? new SolidColorBrush(System.Windows.Media.Color.FromArgb(5, 0, 0, 0))
+                    ? new SolidColorBrush(System.Windows.Media.Color.FromArgb(1, 0, 0, 0))
                     : new SolidColorBrush(customColor);
             }
         }
@@ -370,7 +371,7 @@ namespace VN2Anki
             settingsWin.Show();
         }
 
-        private void BtnPosicao_Click(object sender, RoutedEventArgs e)
+        private void BtnPosition_Click(object sender, RoutedEventArgs e)
         {
             _isTextAtTop = !_isTextAtTop;
             ApplyPositionState();
