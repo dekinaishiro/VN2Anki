@@ -323,22 +323,21 @@ namespace VN2Anki
 
                 try
                 {
-                    // O SEGREDO DO LUNA: Pega as extensões que JÁ ESTÃO na memória
+                    // gets extensions loaded in memory
                     var loadedExtensions = await settingsWebView.CoreWebView2.Profile.GetBrowserExtensionsAsync();
 
-                    // Procura o Yomitan na memória pelo ID padrão ou pelo nome
+                    // searches yomitan
                     var yomitanExt = loadedExtensions.FirstOrDefault(ext =>
                         ext.Id == "likgccmbimhjbgkjambclfkhldnlhbnn" ||
                         (ext.Name != null && ext.Name.Contains("Yomitan")));
 
                     if (yomitanExt != null)
                     {
-                        // Extensão já existe! Só navegamos sem reinstalar
                         settingsWebView.CoreWebView2.Navigate($"chrome-extension://{yomitanExt.Id}/settings.html");
                     }
                     else
                     {
-                        // Fallback (apenas por segurança se não achar na memória)
+                        // fallback
                         string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
                         string yomitanId = "likgccmbimhjbgkjambclfkhldnlhbnn";
                         string[] possiblePaths = {
