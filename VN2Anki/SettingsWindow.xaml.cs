@@ -34,6 +34,11 @@ namespace VN2Anki
             await LoadAnkiDataAsync();
 
             var config = _configService.CurrentConfig;
+            var hookConfig = _configService.CurrentConfig.Hook;
+            string tagHook = hookConfig.ActiveHookType.ToString();
+            ComboHookType.SelectedItem = ComboHookType.Items.Cast<ComboBoxItem>().FirstOrDefault(x => x.Tag.ToString() == tagHook)
+                                         ?? ComboHookType.Items[0];
+            TxtWsUrl.Text = string.IsNullOrEmpty(hookConfig.WebSocketUrl) ? "ws://localhost:2333/api/ws/text/origin" : hookConfig.WebSocketUrl;
 
             if (!string.IsNullOrEmpty(config.Media.AudioDevice))
                 ComboAudio.SelectedItem = ComboAudio.Items.Cast<AudioDeviceItem>().FirstOrDefault(x => x.Name == config.Media.AudioDevice);
@@ -131,6 +136,7 @@ namespace VN2Anki
         private void BtnSave_Click(object sender, RoutedEventArgs e)
         {
             var config = _configService.CurrentConfig;
+            var hookConfig = _configService.CurrentConfig.Hook;
 
             config.Media.AudioDevice = (ComboAudio.SelectedItem as AudioDeviceItem)?.Name;
             config.Media.VideoWindow = ComboVideo.SelectedValue?.ToString();
@@ -162,6 +168,13 @@ namespace VN2Anki
             {
                 config.Anki.TimeoutSeconds = 15;
             }
+
+            if (ComboHookType.SelectedItem is ComboBoxItem hookItem && int.TryParse(hookItem.Tag.ToString(), out int parsedHook))
+            {
+                hookConfig.ActiveHookType = parsedHook;
+            }
+
+            hookConfig.WebSocketUrl = TxtWsUrl.Text.Trim();
 
             _configService.Save();
             this.Close();

@@ -45,9 +45,14 @@ namespace VN2Anki
             });
 
             services.AddSingleton<IConfigurationService, ConfigurationService>();
+
             services.AddSingleton<AudioEngine>();
             services.AddSingleton<VideoEngine>();
-            services.AddSingleton<ITextHook, ClipboardHook>();
+
+            services.AddSingleton<ClipboardHook>();
+            services.AddSingleton<WebsocketHook>();
+            services.AddSingleton<ITextHook, HookManager>();
+
             services.AddSingleton<AnkiHandler>();
             services.AddSingleton<SessionTracker>();
 

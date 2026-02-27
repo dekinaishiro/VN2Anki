@@ -90,6 +90,8 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -162,6 +164,14 @@
                         </ComboBox>
 
                         <CheckBox x:Name="ChkOpenSettings" Content="{x:Static loc:Strings.LblOpenSettingsOnStartup}" Foreground="White" Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2" Margin="5,15,5,5" VerticalAlignment="Center" Checked="ChkOpenSettings_Checked"/>
+                        <TextBlock Text="Text Hook Source:" Grid.Row="9" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <ComboBox x:Name="ComboHookType" Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="2">
+                            <ComboBoxItem Content="Clipboard" Tag="0"/>
+                            <ComboBoxItem Content="WebSocket (Luna/Textractor)" Tag="1"/>
+                        </ComboBox>
+
+                        <TextBlock Text="WebSocket URL:" Grid.Row="10" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <TextBox x:Name="TxtWsUrl" Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5" ToolTip="Luna: ws://localhost:2333/api/ws/text/origin | Textractor: ws://localhost:6677"/>
                     </Grid>
                 </TabItem>
 

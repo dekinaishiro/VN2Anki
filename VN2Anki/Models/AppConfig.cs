@@ -2,15 +2,13 @@
 
 namespace VN2Anki.Models
 {
-    /// <summary>
-    /// Root configuration model. Modularized to support future feature expansion.
-    /// </summary>
     public class AppConfig
     {
         public GeneralConfig General { get; set; } = new GeneralConfig();
         public MediaConfig Media { get; set; } = new MediaConfig();
         public AnkiConfig Anki { get; set; } = new AnkiConfig();
         public SessionConfig Session { get; set; } = new SessionConfig();
+        public HookConfig Hook { get; set; } = new HookConfig(); // <-- Added
     }
 
     public class GeneralConfig
@@ -44,5 +42,13 @@ namespace VN2Anki.Models
         public string IdleTime { get; set; } = "20";
         public string MaxSlots { get; set; } = "30";
         public bool UseDynamicTimeout { get; set; } = true;
+    }
+
+    // New configuration class for Text Hooks
+    public class HookConfig
+    {
+        // 0 = Clipboard, 1 = WebSocket (Luna), 2 = Textractor
+        public int ActiveHookType { get; set; } = 0;
+        public string WebSocketUrl { get; set; } = "ws://localhost:43253"; // Default Luna port
     }
 }
