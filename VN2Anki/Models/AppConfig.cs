@@ -8,7 +8,8 @@ namespace VN2Anki.Models
         public MediaConfig Media { get; set; } = new MediaConfig();
         public AnkiConfig Anki { get; set; } = new AnkiConfig();
         public SessionConfig Session { get; set; } = new SessionConfig();
-        public HookConfig Hook { get; set; } = new HookConfig(); // <-- Added
+        public HookConfig Hook { get; set; } = new HookConfig();
+        public OverlayConfig Overlay { get; set; } = new OverlayConfig();
     }
 
     public class GeneralConfig
@@ -44,11 +45,20 @@ namespace VN2Anki.Models
         public bool UseDynamicTimeout { get; set; } = true;
     }
 
-    // New configuration class for Text Hooks
     public class HookConfig
     {
         // 0 = Clipboard, 1 = WebSocket (Luna), 2 = Textractor
         public int ActiveHookType { get; set; } = 0;
         public string WebSocketUrl { get; set; } = "ws://localhost:43253"; // Default Luna port
+    }
+
+    public class OverlayConfig
+    {
+        public bool IsEnabled { get; set; } = false;
+        public string BgColor { get; set; } = "#E5111111";
+        public string FontColor { get; set; } = "#FFFFFF";
+        public int FontSize { get; set; } = 32;
+        public string PassThroughModifier { get; set; } = "Ctrl";
+        public List<string> CustomExtensions { get; set; } = new List<string>();
     }
 }

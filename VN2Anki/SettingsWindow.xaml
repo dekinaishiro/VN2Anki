@@ -217,6 +217,47 @@
                         <TextBox x:Name="TxtAnkiTimeout" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5"/>
                     </Grid>
                 </TabItem>
+
+                <TabItem Header="Overlay">
+                    <Grid Margin="0,15,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="Background Color (Hex):" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <TextBox x:Name="TxtBgColor" Grid.Row="0" Grid.Column="1" Margin="5" Padding="5"/>
+
+                        <TextBlock Text="Font Color (Hex):" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <TextBox x:Name="TxtFontColor" Grid.Row="1" Grid.Column="1" Margin="5" Padding="5"/>
+
+                        <TextBlock Text="Font Size:" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <TextBox x:Name="TxtFontSize" Grid.Row="2" Grid.Column="1" Margin="5" Padding="5"/>
+
+                        <TextBlock Text="Pass-Through Hold Key:" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <ComboBox x:Name="ComboPassModifier" Grid.Row="3" Grid.Column="1" Margin="5" Padding="5">
+                            <ComboBoxItem Content="Ctrl" Tag="Ctrl"/>
+                            <ComboBoxItem Content="Alt" Tag="Alt"/>
+                            <ComboBoxItem Content="Shift" Tag="Shift"/>
+                        </ComboBox>
+
+                        <TextBlock Text="Custom Extensions Paths:" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal" Margin="5,15,5,5"/>
+                        <StackPanel Orientation="Horizontal" Grid.Row="4" Grid.Column="1" HorizontalAlignment="Right" Margin="0,10,5,0">
+                            <Button Content="⚙️" Width="30" Click="BtnExtensionSettings_Click" ToolTip="Open Yomitan Settings"/>
+                            <Button Content="+" Width="30" Click="BtnAddExtension_Click" ToolTip="Add Custom Extension"/>
+                            <Button Content="-" Width="30" Click="BtnRemoveExtension_Click" ToolTip="Remove Selected Extension"/>
+                        </StackPanel>
+                        <ListBox x:Name="ListExtensions" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2" Margin="5" Background="#333" Foreground="White" BorderThickness="0"/>
+                    </Grid>
+                </TabItem>
             </TabControl>
 
             <Button Content="{x:Static loc:Strings.BtnSaveClose}" Background="#28A745" Grid.Row="1" Margin="0,20,0,0" Height="40" FontSize="14" Click="BtnSave_Click"/>

@@ -192,6 +192,12 @@ namespace VN2Anki
             BtnMiniQuickAdd.Background = Brushes.DodgerBlue; BtnMiniQuickAdd.IsEnabled = true;
         }
 
+        private void BtnOpenOverlay_Click(object sender, RoutedEventArgs e)
+        {
+            var overlay = App.Current.Services.GetRequiredService<OverlayWindow>();
+            overlay.Show();
+        }
+
         // 
         public async Task ProcessMiningToAnki(MiningSlot slot, bool isQuietMode = false)
         {

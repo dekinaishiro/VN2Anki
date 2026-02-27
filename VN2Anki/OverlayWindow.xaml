@@ -1,0 +1,43 @@
+﻿<Window x:Class="VN2Anki.OverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="VN2Anki Overlay" Height="250" Width="800"
+        WindowStyle="None" AllowsTransparency="True" Background="#05000000"
+        Topmost="True">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="35" ResizeBorderThickness="8" GlassFrameThickness="0" CornerRadius="0" />
+    </WindowChrome.WindowChrome>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="35"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="#E5111111">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,10,0" WindowChrome.IsHitTestVisibleInChrome="True">
+
+                <Button x:Name="BtnYomitan" Content="⚙️" ToolTip="Yomitan Settings" Click="BtnYomitan_Click" 
+                        Foreground="White" Background="Transparent" BorderThickness="0" Margin="5,0" FontSize="16"/>
+
+                <Button x:Name="BtnPosicao" Content="⇅" ToolTip="Toggle Position" Click="BtnPosicao_Click" 
+                        Foreground="White" Background="Transparent" BorderThickness="0" Margin="5,0" FontSize="18"/>
+
+                <Button x:Name="BtnTransparencia" Content="👁" ToolTip="Toggle Transparency" Click="BtnTransparencia_Click" 
+                        Foreground="White" Background="Transparent" BorderThickness="0" Margin="5,0" FontSize="16"/>
+
+                <Button x:Name="BtnPassThrough" Content="🧱" ToolTip="Toggle Pass-Through" Click="BtnPassThrough_Click" 
+                        Foreground="White" Background="Transparent" BorderThickness="0" Margin="5,0" FontSize="14"/>
+
+                <Button x:Name="BtnMinimize" Content="➖" ToolTip="Minimize Overlay" Click="BtnMinimize_Click" 
+                        Foreground="White" Background="Transparent" BorderThickness="0" Margin="5,0" FontSize="14"/>
+                <Button x:Name="BtnClose" Content="❌" ToolTip="Close Overlay" Click="BtnClose_Click" 
+                        Foreground="#FF5555" Background="Transparent" BorderThickness="0" Margin="10,0,0,0" FontSize="12"/>
+            </StackPanel>
+        </Border>
+
+        <wv2:WebView2 x:Name="webView" Grid.Row="1" />
+    </Grid>
+</Window>

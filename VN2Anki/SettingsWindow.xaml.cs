@@ -1,4 +1,7 @@
-﻿using System.Linq;
+﻿using Microsoft.Web.WebView2.Core;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -65,6 +68,17 @@ namespace VN2Anki
 
             TxtAnkiUrl.Text = string.IsNullOrEmpty(config.Anki.Url) ? "http://127.0.0.1:8765" : config.Anki.Url;
             TxtAnkiTimeout.Text = config.Anki.TimeoutSeconds > 0 ? config.Anki.TimeoutSeconds.ToString() : "15";
+
+            // Overlay Config
+            var overlayConfig = _configService.CurrentConfig.Overlay;
+            TxtBgColor.Text = overlayConfig.BgColor;
+            TxtFontColor.Text = overlayConfig.FontColor;
+            TxtFontSize.Text = overlayConfig.FontSize.ToString();
+
+            ComboPassModifier.SelectedItem = ComboPassModifier.Items.Cast<ComboBoxItem>()
+                .FirstOrDefault(x => x.Tag.ToString() == overlayConfig.PassThroughModifier) ?? ComboPassModifier.Items[0];
+
+            ListExtensions.ItemsSource = new System.Collections.ObjectModel.ObservableCollection<string>(overlayConfig.CustomExtensions);
         }
 
         private async Task RefreshAudioAsync()
@@ -150,6 +164,7 @@ namespace VN2Anki
             config.Session.UseDynamicTimeout = ChkDynamicTimeout.IsChecked ?? true;
             config.General.OpenSettingsOnStartup = ChkOpenSettings.IsChecked ?? false;
 
+            // video&audio
             if (ComboImageRes.SelectedItem is ComboBoxItem resItem && int.TryParse(resItem.Tag.ToString(), out int parsedWidth))
             {
                 config.Media.MaxImageWidth = parsedWidth;
@@ -159,6 +174,7 @@ namespace VN2Anki
                 config.Media.AudioBitrate = parsedBitrate;
             }
 
+            // ankiUrl
             config.Anki.Url = TxtAnkiUrl.Text.Trim();
             if (int.TryParse(TxtAnkiTimeout.Text.Trim(), out int timeout) && timeout > 0)
             {
@@ -169,6 +185,7 @@ namespace VN2Anki
                 config.Anki.TimeoutSeconds = 15;
             }
 
+            // hook
             if (ComboHookType.SelectedItem is ComboBoxItem hookItem && int.TryParse(hookItem.Tag.ToString(), out int parsedHook))
             {
                 hookConfig.ActiveHookType = parsedHook;
@@ -176,12 +193,159 @@ namespace VN2Anki
 
             hookConfig.WebSocketUrl = TxtWsUrl.Text.Trim();
 
+            // overlay
+            var overlayConfig = _configService.CurrentConfig.Overlay;
+            overlayConfig.BgColor = TxtBgColor.Text.Trim();
+            overlayConfig.FontColor = TxtFontColor.Text.Trim();
+            if (int.TryParse(TxtFontSize.Text.Trim(), out int fSize)) overlayConfig.FontSize = fSize;
+
+            if (ComboPassModifier.SelectedItem is ComboBoxItem modItem)
+            {
+                overlayConfig.PassThroughModifier = modItem.Tag.ToString();
+            }
+
+            overlayConfig.CustomExtensions = ListExtensions.Items.Cast<string>().ToList();
+
+            // save
             _configService.Save();
             this.Close();
+        }
+
+        private void BtnAddExtension_Click(object sender, RoutedEventArgs e)
+        {
+            // Auto-detect the default extension path to save the user time
+            string defaultChromePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Google\Chrome\User Data\Default\Extensions");
+            string defaultEdgePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Microsoft\Edge\User Data\Default\Extensions");
+
+            string startPath = Directory.Exists(defaultChromePath) ? defaultChromePath :
+                               (Directory.Exists(defaultEdgePath) ? defaultEdgePath : Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
+
+            // Native WPF Folder Picker Hack
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Select the Unpacked Extension Folder",
+                ValidateNames = false,
+                CheckFileExists = false,
+                CheckPathExists = true,
+                FileName = "Select Folder", // Dummy filename
+                Filter = "Folders|\n",      // Hides files
+                InitialDirectory = startPath
+            };
+
+            // Important: We pass 'this' so the dialog parents to the Settings Window
+            if (dialog.ShowDialog(this) == true)
+            {
+                // Extracts just the folder path from the dummy filename
+                string extPath = System.IO.Path.GetDirectoryName(dialog.FileName);
+
+                if (!string.IsNullOrWhiteSpace(extPath) && System.IO.Directory.Exists(extPath))
+                {
+                    var list = ListExtensions.ItemsSource as System.Collections.ObjectModel.ObservableCollection<string>;
+                    if (!list.Contains(extPath)) list.Add(extPath);
+                }
+            }
+        }
+
+        private void BtnExtensionSettings_Click(object sender, RoutedEventArgs e)
+        {
+            string selectedExtPath = ListExtensions.SelectedItem as string;
+            bool isCustomExtSelected = !string.IsNullOrEmpty(selectedExtPath) && Directory.Exists(selectedExtPath);
+
+            var settingsWin = new Window
+            {
+                Title = isCustomExtSelected ? "Extension Settings" : "Yomitan Settings",
+                Width = 900,
+                Height = 700,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen
+            };
+
+            var settingsWebView = new Microsoft.Web.WebView2.Wpf.WebView2();
+            settingsWin.Content = settingsWebView;
+
+            settingsWin.Loaded += async (ss, ee) =>
+            {
+                var options = new CoreWebView2EnvironmentOptions { AreBrowserExtensionsEnabled = true };
+                var environment = await CoreWebView2Environment.CreateAsync(null, null, options);
+                await settingsWebView.EnsureCoreWebView2Async(environment);
+
+                if (isCustomExtSelected)
+                {
+                    try
+                    {
+                        // 1. Load the custom extension and capture the dynamically generated ID
+                        var extension = await settingsWebView.CoreWebView2.Profile.AddBrowserExtensionAsync(selectedExtPath);
+                        string extensionId = extension.Id;
+
+                        // 2. Parse manifest.json to find the correct settings page
+                        string manifestPath = Path.Combine(selectedExtPath, "manifest.json");
+                        string optionsHtmlPage = "index.html"; // Fallback
+
+                        if (File.Exists(manifestPath))
+                        {
+                            string json = File.ReadAllText(manifestPath);
+                            using (var doc = JsonDocument.Parse(json))
+                            {
+                                if (doc.RootElement.TryGetProperty("options_ui", out JsonElement optionsUi) && optionsUi.TryGetProperty("page", out JsonElement page))
+                                {
+                                    optionsHtmlPage = page.GetString();
+                                }
+                                else if (doc.RootElement.TryGetProperty("options_page", out JsonElement optPage))
+                                {
+                                    optionsHtmlPage = optPage.GetString();
+                                }
+                            }
+                        }
+
+                        // 3. Navigate to the dynamic URL
+                        settingsWebView.CoreWebView2.Navigate($"chrome-extension://{extensionId}/{optionsHtmlPage}");
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Could not load custom extension settings:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+                else
+                {
+                    // Fallback to Native Yomitan Load
+                    string localAppData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
+                    string yomitanId = "likgccmbimhjbgkjambclfkhldnlhbnn";
+                    string[] possiblePaths = {
+                        Path.Combine(localAppData, $@"Microsoft\Edge\User Data\Default\Extensions\{yomitanId}"),
+                        Path.Combine(localAppData, $@"Google\Chrome\User Data\Default\Extensions\{yomitanId}")
+                    };
+
+                    foreach (var path in possiblePaths)
+                    {
+                        if (Directory.Exists(path))
+                        {
+                            var versionDirs = Directory.GetDirectories(path);
+                            if (versionDirs.Length > 0)
+                            {
+                                string latestVersion = versionDirs.OrderByDescending(d => d).First();
+                                try { await settingsWebView.CoreWebView2.Profile.AddBrowserExtensionAsync(latestVersion); break; } catch { }
+                            }
+                        }
+                    }
+
+                    settingsWebView.CoreWebView2.Navigate($"chrome-extension://{yomitanId}/settings.html");
+                }
+            };
+
+            settingsWin.Show();
+        }
+
+        private void BtnRemoveExtension_Click(object sender, RoutedEventArgs e)
+        {
+            if (ListExtensions.SelectedItem is string selectedExt)
+            {
+                var list = ListExtensions.ItemsSource as System.Collections.ObjectModel.ObservableCollection<string>;
+                list.Remove(selectedExt);
+            }
         }
 
         private void ChkOpenSettings_Checked(object sender, RoutedEventArgs e)
         {
         }
+
     }
 }

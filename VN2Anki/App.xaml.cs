@@ -65,6 +65,8 @@ namespace VN2Anki
             services.AddTransient<MainWindow>();
             services.AddTransient<SettingsWindow>();
 
+            services.AddTransient<OverlayWindow>();
+
             return services.BuildServiceProvider();
         }
 
