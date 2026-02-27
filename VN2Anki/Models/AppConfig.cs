@@ -49,7 +49,7 @@ namespace VN2Anki.Models
     {
         // 0 = Clipboard, 1 = WebSocket (Luna), 2 = Textractor
         public int ActiveHookType { get; set; } = 0;
-        public string WebSocketUrl { get; set; } = "ws://localhost:43253"; 
+        public string WebSocketUrl { get; set; } = "ws://localhost:2333"; 
     }
 
     public class OverlayConfig

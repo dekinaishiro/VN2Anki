@@ -7,16 +7,20 @@
         Topmost="True">
 
     <WindowChrome.WindowChrome>
-        <WindowChrome CaptionHeight="35" ResizeBorderThickness="8" GlassFrameThickness="0" CornerRadius="0" />
+        <WindowChrome CaptionHeight="25" ResizeBorderThickness="8" GlassFrameThickness="0" CornerRadius="0" />
     </WindowChrome.WindowChrome>
 
     <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="187*"/>
+            <ColumnDefinition Width="13*"/>
+        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="35"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Background="#E5111111">
+        <Border Grid.Row="0" Background="#E5111111" Grid.ColumnSpan="2">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,10,0" WindowChrome.IsHitTestVisibleInChrome="True">
 
                 <Button x:Name="BtnYomitan" Content="⚙️" ToolTip="Yomitan Settings" Click="BtnYomitan_Click" 
@@ -38,6 +42,6 @@
             </StackPanel>
         </Border>
 
-        <wv2:WebView2 x:Name="webView" Grid.Row="1" />
+        <wv2:WebView2 x:Name="webView" Grid.Row="1" Grid.ColumnSpan="2" />
     </Grid>
 </Window>
