@@ -49,7 +49,7 @@ namespace VN2Anki.Models
     {
         // 0 = Clipboard, 1 = WebSocket (Luna), 2 = Textractor
         public int ActiveHookType { get; set; } = 0;
-        public string WebSocketUrl { get; set; } = "ws://localhost:43253"; // Default Luna port
+        public string WebSocketUrl { get; set; } = "ws://localhost:43253"; 
     }
 
     public class OverlayConfig
@@ -57,8 +57,13 @@ namespace VN2Anki.Models
         public bool IsEnabled { get; set; } = false;
         public string BgColor { get; set; } = "#E5111111";
         public string FontColor { get; set; } = "#FFFFFF";
+        public string OverlayBgColor { get; set; } = "#E5111111";
         public int FontSize { get; set; } = 32;
         public string PassThroughModifier { get; set; } = "Ctrl";
         public List<string> CustomExtensions { get; set; } = new List<string>();
+        // states
+        public bool IsTextAtTop { get; set; } = false;
+        public bool IsTransparent { get; set; } = true;
+        public bool IsPassThrough { get; set; } = false;
     }
 }

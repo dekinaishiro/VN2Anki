@@ -71,8 +71,9 @@ namespace VN2Anki
 
             // Overlay Config
             var overlayConfig = _configService.CurrentConfig.Overlay;
-            TxtBgColor.Text = overlayConfig.BgColor;
-            TxtFontColor.Text = overlayConfig.FontColor;
+            try { PickerBgColor.SelectedColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(overlayConfig.BgColor); } catch { }
+            try { PickerFontColor.SelectedColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(overlayConfig.FontColor); } catch { }
+            try { PickerOverlayBgColor.SelectedColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(overlayConfig.OverlayBgColor); } catch { }
             TxtFontSize.Text = overlayConfig.FontSize.ToString();
 
             ComboPassModifier.SelectedItem = ComboPassModifier.Items.Cast<ComboBoxItem>()
@@ -97,10 +98,10 @@ namespace VN2Anki
 
         private async Task LoadAnkiDataAsync()
         {
-            if (await _anki.IsConnectedAsync()) // <-- Mudou aqui
+            if (await _anki.IsConnectedAsync()) 
             {
-                ComboDeck.ItemsSource = await _anki.GetDecksAsync(); // <-- Mudou aqui
-                ComboModel.ItemsSource = await _anki.GetModelsAsync(); // <-- Mudou aqui
+                ComboDeck.ItemsSource = await _anki.GetDecksAsync(); 
+                ComboModel.ItemsSource = await _anki.GetModelsAsync();
             }
         }
         private void BtnRefreshAnki_Click(object sender, RoutedEventArgs e) => _ = LoadAnkiDataAsync();
@@ -195,8 +196,9 @@ namespace VN2Anki
 
             // overlay
             var overlayConfig = _configService.CurrentConfig.Overlay;
-            overlayConfig.BgColor = TxtBgColor.Text.Trim();
-            overlayConfig.FontColor = TxtFontColor.Text.Trim();
+            overlayConfig.BgColor = PickerBgColor.SelectedColor.ToString();
+            overlayConfig.FontColor = PickerFontColor.SelectedColor.ToString();
+            overlayConfig.OverlayBgColor = PickerOverlayBgColor.SelectedColor.ToString();
             if (int.TryParse(TxtFontSize.Text.Trim(), out int fSize)) overlayConfig.FontSize = fSize;
 
             if (ComboPassModifier.SelectedItem is ComboBoxItem modItem)
@@ -337,6 +339,7 @@ namespace VN2Anki
                 list.Remove(selectedExt);
             }
         }
+
 
         private void ChkOpenSettings_Checked(object sender, RoutedEventArgs e)
         {

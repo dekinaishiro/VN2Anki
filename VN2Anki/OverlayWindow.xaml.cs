@@ -51,6 +51,11 @@ namespace VN2Anki
             this.Loaded += OverlayWindow_Loaded;
             this.Closed += OverlayWindow_Closed;
 
+            var conf = _configService.CurrentConfig.Overlay;
+            _isTextAtTop = conf.IsTextAtTop;
+            _isTransparent = conf.IsTransparent;
+            _isPassThroughToggled = conf.IsPassThrough;
+
             DetermineModifierKey();
             CreateDynamicHtml();
             InitializeWebViewAsync();
@@ -66,6 +71,19 @@ namespace VN2Anki
                 "Shift" => 0xA0, // VK_LSHIFT (Left Shift explicitly)
                 _ => 0xA2        // VK_LCONTROL (Left Ctrl explicitly)
             };
+        }
+
+        private void ApplyPositionState()
+        {
+            if (webView.CoreWebView2 != null)
+            {
+                string dir = _isTextAtTop ? "flex-start" : "flex-end";
+                string margin = _isTextAtTop ? "margin-top: 50px;" : "margin-bottom: 15px;";
+                webView.CoreWebView2.ExecuteScriptAsync($@"
+            document.body.style.justifyContent = '{dir}';
+            document.getElementById('text-box').style.cssText += '{margin}';
+        ");
+            }
         }
 
         private void CreateDynamicHtml()
@@ -126,6 +144,7 @@ namespace VN2Anki
             webView.NavigationCompleted += (s, e) =>
             {
                 InstallWebViewSubclass();
+                ApplyPositionState();    
                 ApplyTransparencyState();
             };
         }
@@ -240,24 +259,24 @@ namespace VN2Anki
 
         private void ApplyTransparencyState()
         {
-            UpdateBackground();
-            if (_isTransparent)
+            UpdateBackground(); // Atualiza a cor do fundo da janela WPF
+
+            if (webView.CoreWebView2 != null)
             {
-                if (webView.CoreWebView2 != null)
+                // O WebView DEVE ser sempre transparente para o fundo do WPF aparecer.
+                // Isso evita o erro de ArgumentException com cores semi-transparentes.
+                webView.DefaultBackgroundColor = System.Drawing.Color.Transparent;
+
+                if (_isTransparent)
                 {
-                    webView.DefaultBackgroundColor = System.Drawing.Color.Transparent;
                     webView.CoreWebView2.ExecuteScriptAsync("document.body.className = 'transp-on';");
+                    BtnTransparencia.Foreground = new SolidColorBrush(System.Windows.Media.Colors.White);
                 }
-                BtnTransparencia.Foreground = new SolidColorBrush(Colors.White);
-            }
-            else
-            {
-                if (webView.CoreWebView2 != null)
+                else
                 {
-                    webView.DefaultBackgroundColor = System.Drawing.Color.Black;
                     webView.CoreWebView2.ExecuteScriptAsync("document.body.className = 'transp-on transp-off';");
+                    BtnTransparencia.Foreground = new SolidColorBrush(System.Windows.Media.Colors.Gray);
                 }
-                BtnTransparencia.Foreground = new SolidColorBrush(Colors.Gray);
             }
         }
 
@@ -265,8 +284,22 @@ namespace VN2Anki
         {
             bool finalPassThrough = _isPassThroughToggled ^ _isHoldActive;
 
-            if (finalPassThrough) this.Background = null;
-            else this.Background = _isTransparent ? new SolidColorBrush(Color.FromArgb(5, 0, 0, 0)) : new SolidColorBrush(Colors.Black);
+            if (finalPassThrough)
+            {
+                this.Background = null;
+            }
+            else
+            {
+                // Pega a cor WPF (suporta transparência tranquilamente)
+                string hexColor = _configService.CurrentConfig.Overlay.OverlayBgColor;
+                System.Windows.Media.Color customColor;
+                try { customColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hexColor); }
+                catch { customColor = System.Windows.Media.Colors.Black; }
+
+                this.Background = _isTransparent
+                    ? new SolidColorBrush(System.Windows.Media.Color.FromArgb(5, 0, 0, 0))
+                    : new SolidColorBrush(customColor);
+            }
         }
 
         private void BtnYomitan_Click(object sender, RoutedEventArgs e)
@@ -318,15 +351,7 @@ namespace VN2Anki
         private void BtnPosicao_Click(object sender, RoutedEventArgs e)
         {
             _isTextAtTop = !_isTextAtTop;
-            if (webView.CoreWebView2 != null)
-            {
-                string dir = _isTextAtTop ? "flex-start" : "flex-end";
-                string margin = _isTextAtTop ? "margin-top: 50px;" : "margin-bottom: 15px;";
-                webView.CoreWebView2.ExecuteScriptAsync($@"
-                    document.body.style.justifyContent = '{dir}';
-                    document.getElementById('text-box').style.cssText += '{margin}';
-                ");
-            }
+            ApplyPositionState();
         }
 
         private void BtnTransparencia_Click(object sender, RoutedEventArgs e)
@@ -350,6 +375,11 @@ namespace VN2Anki
 
         private void OverlayWindow_Closed(object sender, EventArgs e)
         {
+            var conf = _configService.CurrentConfig.Overlay;
+            conf.IsTextAtTop = _isTextAtTop;
+            conf.IsTransparent = _isTransparent;
+            conf.IsPassThrough = _isPassThroughToggled;
+            _configService.Save();
             _textHook.OnTextCopied -= HandleNewText;
             
             if (_webViewRenderHostHandle != IntPtr.Zero)
