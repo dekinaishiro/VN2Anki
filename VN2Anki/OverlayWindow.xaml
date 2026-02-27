@@ -16,7 +16,7 @@
             <ColumnDefinition Width="13*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="35"/>
+            <RowDefinition Height="25"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -24,21 +24,21 @@
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,10,0" WindowChrome.IsHitTestVisibleInChrome="True">
 
                 <Button x:Name="BtnYomitan" Content="⚙️" ToolTip="Yomitan Settings" Click="BtnYomitan_Click" 
-                        Foreground="White" Background="Transparent" BorderThickness="0" Margin="5,0" FontSize="16"/>
+                        Foreground="White" Background="Transparent" BorderThickness="0" Margin="5,0" FontSize="14"/>
 
                 <Button x:Name="BtnPosicao" Content="⇅" ToolTip="Toggle Position" Click="BtnPosition_Click" 
-                        Foreground="White" Background="Transparent" BorderThickness="0" Margin="5,0" FontSize="18"/>
+                        Foreground="White" Background="Transparent" BorderThickness="0" Margin="5,0" FontSize="14"/>
 
                 <Button x:Name="BtnTransparencia" Content="👁" ToolTip="Toggle Transparency" Click="BtnTransparencia_Click" 
-                        Foreground="White" Background="Transparent" BorderThickness="0" Margin="5,0" FontSize="16"/>
+                        Foreground="White" Background="Transparent" BorderThickness="0" Margin="5,0" FontSize="14"/>
 
                 <Button x:Name="BtnPassThrough" Content="🧱" ToolTip="Toggle Pass-Through" Click="BtnPassThrough_Click" 
-                        Foreground="White" Background="Transparent" BorderThickness="0" Margin="5,0" FontSize="14"/>
+                        Foreground="White" Background="Transparent" BorderThickness="0" Margin="5,0" FontSize="12"/>
 
                 <Button x:Name="BtnMinimize" Content="➖" ToolTip="Minimize Overlay" Click="BtnMinimize_Click" 
-                        Foreground="White" Background="Transparent" BorderThickness="0" Margin="5,0" FontSize="14"/>
+                        Foreground="White" Background="Transparent" BorderThickness="0" Margin="5,0" FontSize="12"/>
                 <Button x:Name="BtnClose" Content="❌" ToolTip="Close Overlay" Click="BtnClose_Click" 
-                        Foreground="#FF5555" Background="Transparent" BorderThickness="0" Margin="10,0,0,0" FontSize="12"/>
+                        Foreground="#FF5555" Background="Transparent" BorderThickness="0" Margin="10,0,0,0" FontSize="10"/>
             </StackPanel>
         </Border>
 
