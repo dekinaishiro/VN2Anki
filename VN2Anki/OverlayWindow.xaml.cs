@@ -14,18 +14,37 @@ namespace VN2Anki
 {
     public partial class OverlayWindow : Window
     {
-        [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int vKey);
+        [DllImport("user32.dll")]
+        private static extern short GetAsyncKeyState(int vKey);
+
+        [DllImport("user32.dll")]
+        private static extern int GetWindowLong(IntPtr hwnd, int index);
+
+        [DllImport("user32.dll")]
+        private static extern int SetWindowLong(IntPtr hwnd, int index, int newStyle);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool GetCursorPos(out POINT lpPoint);
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct POINT { public int X; public int Y; }
 
         [DllImport("comctl32.dll", SetLastError = true)]
         public static extern bool SetWindowSubclass(IntPtr hWnd, SUBCLASSPROC pfnSubclass, uint uIdSubclass, IntPtr dwRefData);
+
         [DllImport("comctl32.dll", SetLastError = true)]
         public static extern bool RemoveWindowSubclass(IntPtr hWnd, SUBCLASSPROC pfnSubclass, uint uIdSubclass);
+
         [DllImport("comctl32.dll", SetLastError = true)]
         public static extern IntPtr DefSubclassProc(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam);
+
         public delegate IntPtr SUBCLASSPROC(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam, uint uIdSubclass, IntPtr dwRefData);
 
         private const int WM_NCHITTEST = 0x0084;
         private const int HTTRANSPARENT = -1;
+        private const int GWL_EXSTYLE = -20;
+        private const int WS_EX_TRANSPARENT = 0x00000020;
 
         private readonly IConfigurationService _configService;
         private readonly ITextHook _textHook;
@@ -38,7 +57,8 @@ namespace VN2Anki
         private bool _isTransparent = true;
         private bool _isPassThroughToggled = false;
         private bool _isHoldActive = false;
-        private int _modifierKeyVk = 0xA2; // Default LCONTROL
+        private bool _isMouseOverHeader = false; 
+        private int _modifierKeyVk = 0xA2;
 
         public OverlayWindow(IConfigurationService configService, ITextHook textHook)
         {
@@ -67,9 +87,9 @@ namespace VN2Anki
             string mod = _configService.CurrentConfig.Overlay.PassThroughModifier;
             _modifierKeyVk = mod switch
             {
-                "Alt" => 0xA4,   // VK_LMENU (Left Alt explicitly)
-                "Shift" => 0xA0, // VK_LSHIFT (Left Shift explicitly)
-                _ => 0xA2        // VK_LCONTROL (Left Ctrl explicitly)
+                "Alt" => 0xA4,
+                "Shift" => 0xA0,
+                _ => 0xA2
             };
         }
 
@@ -87,49 +107,49 @@ namespace VN2Anki
         }
 
         private void CreateDynamicHtml()
-{
-    var conf = _configService.CurrentConfig.Overlay;
-    string appDir = AppDomain.CurrentDomain.BaseDirectory;
-    string htmlPath = Path.Combine(appDir, "overlay.html");
+        {
+            var conf = _configService.CurrentConfig.Overlay;
+            string appDir = AppDomain.CurrentDomain.BaseDirectory;
+            string htmlPath = Path.Combine(appDir, "overlay.html");
 
-    string htmlBase = $@"
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset='utf-8'>
-            <style>
-                html, body {{
-                    margin: 0; padding: 0; height: 100vh;
-                    background-color: rgba(0, 0, 0, 0.0) !important;
-                    overflow: hidden;
-                    display: flex; flex-direction: column; 
-                    justify-content: flex-end;
-                }}
-                #text-box {{
-                    color: {conf.FontColor}; font-size: {conf.FontSize}px; padding: 10px;
-                    font-family: 'Segoe UI', sans-serif;
-                    border-radius: 8px; margin: 15px;
-                    transition: background 0.3s ease;
-                    text-align: center;
-                }}
-                body.transp-on #text-box {{
-                    background-color: rgba(0, 0, 0, 0.0) !important;
-                    text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
-                    box-shadow: none;
-                }}
-                body.transp-off #text-box {{
-                    background: {conf.BgColor}; 
-                    box-shadow: none; text-shadow: none;
-                }}
-            </style>
-        </head>
-        <body class='transp-on'>
-            <div id='text-box'>Waiting for text...</div>
-        </body>
-        </html>";
+            string htmlBase = $@"
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset='utf-8'>
+        <style>
+            html, body {{
+                margin: 0; padding: 0; height: 100vh;
+                background-color: rgba(0, 0, 0, 0.0) !important;
+                overflow: hidden;
+                display: flex; flex-direction: column; 
+                justify-content: flex-end;
+            }}
+            #text-box {{
+                color: {conf.FontColor}; font-size: {conf.FontSize}px; padding: 10px;
+                font-family: 'Segoe UI', sans-serif;
+                border-radius: 8px; margin: 15px;
+                transition: background 0.3s ease;
+                text-align: center;
+            }}
+            body.transp-on #text-box {{
+                background-color: rgba(0, 0, 0, 0.0) !important;
+                text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+                box-shadow: none;
+            }}
+            body.transp-off #text-box {{
+                background: {conf.BgColor}; 
+                box-shadow: none; text-shadow: none;
+            }}
+        </style>
+    </head>
+    <body class='transp-on'>
+        <div id='text-box'>Waiting for text...</div>
+    </body>
+    </html>";
 
-    File.WriteAllText(htmlPath, htmlBase);
-}
+            File.WriteAllText(htmlPath, htmlBase);
+        }
 
         private async void InitializeWebViewAsync()
         {
@@ -145,7 +165,7 @@ namespace VN2Anki
             webView.NavigationCompleted += (s, e) =>
             {
                 InstallWebViewSubclass();
-                ApplyPositionState();    
+                ApplyPositionState();
                 ApplyTransparencyState();
             };
         }
@@ -155,8 +175,6 @@ namespace VN2Anki
             var profile = webView.CoreWebView2.Profile;
             string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
-            // native yomitan support
-         
             string yomitanId = "likgccmbimhjbgkjambclfkhldnlhbnn";
             string[] possiblePaths = {
                 Path.Combine(localAppData, $@"Microsoft\Edge\User Data\Default\Extensions\{yomitanId}"),
@@ -176,7 +194,6 @@ namespace VN2Anki
                 }
             }
 
-            // custom extensions from config
             foreach (var extPath in _configService.CurrentConfig.Overlay.CustomExtensions)
             {
                 if (Directory.Exists(extPath))
@@ -222,8 +239,11 @@ namespace VN2Anki
 
         private IntPtr WebViewSubclassProc(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam, uint uIdSubclass, IntPtr dwRefData)
         {
-            bool finalPassThrough = _isPassThroughToggled ^ _isHoldActive;
-            if (uMsg == WM_NCHITTEST && finalPassThrough) return (IntPtr)HTTRANSPARENT;
+            if (uMsg == WM_NCHITTEST)
+            {
+                bool finalPassThrough = _isPassThroughToggled ^ _isHoldActive;
+                if (finalPassThrough && !_isMouseOverHeader) return (IntPtr)HTTRANSPARENT;
+            }
             return DefSubclassProc(hWnd, uMsg, wParam, lParam);
         }
 
@@ -238,13 +258,36 @@ namespace VN2Anki
                     _isHoldActive = isKeyDown;
                     ApplyPassThroughState();
                 }
+
+                bool finalPassThrough = _isPassThroughToggled ^ _isHoldActive;
+                if (finalPassThrough)
+                {
+                    GetCursorPos(out POINT p);
+
+                    try
+                    {
+                        Point mouseRelative = this.PointFromScreen(new Point(p.X, p.Y));
+
+                        bool isOverHeader = (mouseRelative.X >= 0 && mouseRelative.X <= this.ActualWidth &&
+                                             mouseRelative.Y >= 0 && mouseRelative.Y <= 40);
+
+                        if (isOverHeader != _isMouseOverHeader)
+                        {
+                            _isMouseOverHeader = isOverHeader;
+                            ApplyWindowExStyle(); 
+                        }
+                    }
+                    catch
+                    {
+                       
+                    }
+                }
             };
             _holdTimer.Start();
         }
 
         private void ApplyPassThroughState()
         {
-            UpdateBackground();
             bool finalPassThrough = _isPassThroughToggled ^ _isHoldActive;
 
             if (finalPassThrough)
@@ -256,7 +299,38 @@ namespace VN2Anki
             {
                 BtnPassThrough.Foreground = new SolidColorBrush(Colors.White);
                 BtnPassThrough.Content = "🧱";
+                _isMouseOverHeader = false;
             }
+
+            ApplyWindowExStyle();
+        }
+
+        private void ApplyWindowExStyle()
+        {
+            var hwnd = new WindowInteropHelper(this).Handle;
+            if (hwnd == IntPtr.Zero) return;
+
+            int extendedStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+            bool finalPassThrough = _isPassThroughToggled ^ _isHoldActive;
+
+            if (finalPassThrough && !_isMouseOverHeader)
+            {
+                SetWindowLong(hwnd, GWL_EXSTYLE, extendedStyle | WS_EX_TRANSPARENT);
+            }
+            else
+            {
+                SetWindowLong(hwnd, GWL_EXSTYLE, extendedStyle & ~WS_EX_TRANSPARENT);
+            }
+        }
+
+        private void UpdateBackground()
+        {
+            string hexColor = _configService.CurrentConfig.Overlay.OverlayBgColor;
+            System.Windows.Media.Color customColor;
+            try { customColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hexColor); }
+            catch { customColor = System.Windows.Media.Colors.Black; }
+
+            this.Background = _isTransparent ? new SolidColorBrush(System.Windows.Media.Color.FromArgb(1, 0, 0, 0)) : new SolidColorBrush(customColor);
         }
 
         private void ApplyTransparencyState()
@@ -265,7 +339,6 @@ namespace VN2Anki
 
             if (webView.CoreWebView2 != null)
             {
-                //avoids ArgumentException from WebView2 when trying to set a semi-transparent background
                 webView.DefaultBackgroundColor = System.Drawing.Color.Transparent;
 
                 if (_isTransparent)
@@ -278,28 +351,6 @@ namespace VN2Anki
                     webView.CoreWebView2.ExecuteScriptAsync("document.body.className = 'transp-on transp-off';");
                     BtnTransparencia.Foreground = new SolidColorBrush(System.Windows.Media.Colors.Gray);
                 }
-            }
-        }
-
-        private void UpdateBackground()
-        {
-            bool finalPassThrough = _isPassThroughToggled ^ _isHoldActive;
-
-            if (finalPassThrough)
-            {
-                this.Background = null;
-            }
-            else
-            {
-                // webview2 doesn't support semi-transparent backgrounds (throws ArgumentException), so we rely on the WPF window's background to create the transparency effect.
-                string hexColor = _configService.CurrentConfig.Overlay.OverlayBgColor;
-                System.Windows.Media.Color customColor;
-                try { customColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hexColor); }
-                catch { customColor = System.Windows.Media.Colors.Black; }
-
-                this.Background = _isTransparent
-                    ? new SolidColorBrush(System.Windows.Media.Color.FromArgb(1, 0, 0, 0))
-                    : new SolidColorBrush(customColor);
             }
         }
 
@@ -324,10 +375,8 @@ namespace VN2Anki
 
                 try
                 {
-                    // gets extensions loaded in memory
                     var loadedExtensions = await settingsWebView.CoreWebView2.Profile.GetBrowserExtensionsAsync();
 
-                    // searches yomitan
                     var yomitanExt = loadedExtensions.FirstOrDefault(ext =>
                         ext.Id == "likgccmbimhjbgkjambclfkhldnlhbnn" ||
                         (ext.Name != null && ext.Name.Contains("Yomitan")));
@@ -338,13 +387,12 @@ namespace VN2Anki
                     }
                     else
                     {
-                        // fallback
                         string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
                         string yomitanId = "likgccmbimhjbgkjambclfkhldnlhbnn";
                         string[] possiblePaths = {
-                    Path.Combine(localAppData, $@"Microsoft\Edge\User Data\Default\Extensions\{yomitanId}"),
-                    Path.Combine(localAppData, $@"Google\Chrome\User Data\Default\Extensions\{yomitanId}")
-                };
+                            Path.Combine(localAppData, $@"Microsoft\Edge\User Data\Default\Extensions\{yomitanId}"),
+                            Path.Combine(localAppData, $@"Google\Chrome\User Data\Default\Extensions\{yomitanId}")
+                        };
 
                         foreach (var path in possiblePaths)
                         {
@@ -377,7 +425,7 @@ namespace VN2Anki
             ApplyPositionState();
         }
 
-        private void BtnTransparencia_Click(object sender, RoutedEventArgs e)
+        private void BtnTransparency_Click(object sender, RoutedEventArgs e)
         {
             _isTransparent = !_isTransparent;
             ApplyTransparencyState();
@@ -404,16 +452,15 @@ namespace VN2Anki
             conf.IsPassThrough = _isPassThroughToggled;
             _configService.Save();
             _textHook.OnTextCopied -= HandleNewText;
-            
+
             if (_webViewRenderHostHandle != IntPtr.Zero)
             {
                 RemoveWindowSubclass(_webViewRenderHostHandle, _webViewSubclassProc, 0);
             }
-            
+
             _holdTimer?.Stop();
-            
-            // Kills the underlying Edge/WebView2 processes instantly
-            webView?.Dispose(); 
+
+            webView?.Dispose();
         }
     }
 }

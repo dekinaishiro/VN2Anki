@@ -29,7 +29,7 @@
                 <Button x:Name="BtnPosicao" Content="⇅" ToolTip="Toggle Position" Click="BtnPosition_Click" 
                         Foreground="White" Background="Transparent" BorderThickness="0" Margin="5,0" FontSize="14"/>
 
-                <Button x:Name="BtnTransparencia" Content="👁" ToolTip="Toggle Transparency" Click="BtnTransparencia_Click" 
+                <Button x:Name="BtnTransparencia" Content="👁" ToolTip="Toggle Transparency" Click="BtnTransparency_Click" 
                         Foreground="White" Background="Transparent" BorderThickness="0" Margin="5,0" FontSize="14"/>
 
                 <Button x:Name="BtnPassThrough" Content="🧱" ToolTip="Toggle Pass-Through" Click="BtnPassThrough_Click" 
