@@ -42,7 +42,13 @@ namespace VN2Anki.Services
             try
             {
                 string json = File.ReadAllText(_configFilePath);
-                CurrentConfig = JsonSerializer.Deserialize<AppConfig>(json) ?? new AppConfig();
+
+                var options = new JsonSerializerOptions
+                {
+                    NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals
+                };
+
+                CurrentConfig = JsonSerializer.Deserialize<AppConfig>(json, options) ?? new AppConfig();
                 _logger.LogInformation("Configuration loaded successfully.");
             }
             catch (Exception ex)

@@ -9,10 +9,12 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using Microsoft.Web.WebView2.Core;
 using VN2Anki.Services;
+using CommunityToolkit.Mvvm.Messaging;
+using VN2Anki.Messages;
 
 namespace VN2Anki
 {
-    public partial class OverlayWindow : Window
+    public partial class OverlayWindow : Window, IRecipient<OverlayConfigUpdatedMessage>
     {
         [DllImport("user32.dll")]
         private static extern short GetAsyncKeyState(int vKey);
@@ -80,6 +82,8 @@ namespace VN2Anki
             CreateDynamicHtml();
             InitializeWebViewAsync();
             SetupHoldTimer();
+
+            WeakReferenceMessenger.Default.Register(this);
         }
 
         private void DetermineModifierKey()
@@ -109,6 +113,9 @@ namespace VN2Anki
         private void CreateDynamicHtml()
         {
             var conf = _configService.CurrentConfig.Overlay;
+            string cssBgColor = WpfHexToCss(conf.BgColor);
+            string cssFontColor = WpfHexToCss(conf.FontColor);
+
             string appDir = AppDomain.CurrentDomain.BaseDirectory;
             string htmlPath = Path.Combine(appDir, "overlay.html");
 
@@ -126,24 +133,20 @@ namespace VN2Anki
                 justify-content: flex-end;
             }}
             #text-box {{
-                color: {conf.FontColor}; font-size: {conf.FontSize}px; padding: 10px;
+                color: {cssFontColor}; 
+                background-color: {cssBgColor};
+                font-size: {conf.FontSize}px; 
+                padding: 10px;
                 font-family: 'Segoe UI', sans-serif;
                 border-radius: 8px; margin: 15px;
-                transition: background 0.3s ease;
+                transition: background 0.3s ease, color 0.3s ease;
                 text-align: center;
-            }}
-            body.transp-on #text-box {{
-                background-color: rgba(0, 0, 0, 0.0) !important;
-                text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
                 box-shadow: none;
-            }}
-            body.transp-off #text-box {{
-                background: {conf.BgColor}; 
-                box-shadow: none; text-shadow: none;
+                text-shadow: none;
             }}
         </style>
     </head>
-    <body class='transp-on'>
+    <body>
         <div id='text-box'>Waiting for text...</div>
     </body>
     </html>";
@@ -160,11 +163,15 @@ namespace VN2Anki
             LoadExtensions();
 
             webView.CoreWebView2.SetVirtualHostNameToFolderMapping("vn.local", AppDomain.CurrentDomain.BaseDirectory, CoreWebView2HostResourceAccessKind.Allow);
-            webView.CoreWebView2.Navigate("http://vn.local/overlay.html");
+            // ensures that the page is always reloaded fresh, preventing caching issues when the overlay is restarted multiple times during development
+            webView.CoreWebView2.Navigate($"http://vn.local/overlay.html?t={DateTime.Now.Ticks}");
 
             webView.NavigationCompleted += (s, e) =>
             {
                 InstallWebViewSubclass();
+
+                ApplyDynamicStyles();
+
                 ApplyPositionState();
                 ApplyTransparencyState();
             };
@@ -205,6 +212,15 @@ namespace VN2Anki
 
         private void OverlayWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            var conf = _configService.CurrentConfig.Overlay;
+            this.Width = conf.Width;
+            this.Height = conf.Height;
+            if (!double.IsNaN(conf.Top) && !double.IsNaN(conf.Left))
+            {
+                this.Top = conf.Top;
+                this.Left = conf.Left;
+            }
+
             _textHook.OnTextCopied += HandleNewText;
             ApplyPassThroughState();
         }
@@ -450,6 +466,13 @@ namespace VN2Anki
             conf.IsTextAtTop = _isTextAtTop;
             conf.IsTransparent = _isTransparent;
             conf.IsPassThrough = _isPassThroughToggled;
+
+            // save current window position and size
+            conf.Width = this.Width;
+            conf.Height = this.Height;
+            conf.Top = this.Top;
+            conf.Left = this.Left;
+
             _configService.Save();
             _textHook.OnTextCopied -= HandleNewText;
 
@@ -459,8 +482,61 @@ namespace VN2Anki
             }
 
             _holdTimer?.Stop();
-
             webView?.Dispose();
+
+            // unregister from messages to prevent memory leaks
+            WeakReferenceMessenger.Default.Unregister<OverlayConfigUpdatedMessage>(this);
+        }
+
+        private string WpfHexToCss(string hexColor)
+        {
+            try
+            {
+                var color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hexColor);
+                return $"rgba({color.R}, {color.G}, {color.B}, {(color.A / 255.0).ToString(System.Globalization.CultureInfo.InvariantCulture)})";
+            }
+            catch
+            {
+                return "rgba(0,0,0,0)";
+            }
+        }
+
+        private void ApplyDynamicStyles()
+        {
+            if (webView.CoreWebView2 == null) return;
+
+            var conf = _configService.CurrentConfig.Overlay;
+            string cssBgColor = WpfHexToCss(conf.BgColor);
+            string cssFontColor = WpfHexToCss(conf.FontColor);
+
+            string script = $@"
+                var style = document.getElementById('dynamic-config-style');
+                if (!style) {{
+                    style = document.createElement('style');
+                    style.id = 'dynamic-config-style';
+                    document.head.appendChild(style);
+                }}
+                style.innerHTML = `
+                    #text-box {{
+                        color: {cssFontColor} !important; 
+                        font-size: {conf.FontSize}px !important;
+                        background-color: {cssBgColor} !important;
+                        text-shadow: none !important;
+                    }}
+                `;
+            ";
+            webView.CoreWebView2.ExecuteScriptAsync(script);
+        }
+
+        // this method will be called whenever the OverlayConfigUpdatedMessage is sent, allowing the overlay to update its appearance in real-time based on configuration changes
+        public void Receive(OverlayConfigUpdatedMessage message)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                UpdateBackground();
+                ApplyDynamicStyles();
+                ApplyTransparencyState();
+            });
         }
     }
 }

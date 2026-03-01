@@ -65,5 +65,10 @@ namespace VN2Anki.Models
         public bool IsTextAtTop { get; set; } = false;
         public bool IsTransparent { get; set; } = true;
         public bool IsPassThrough { get; set; } = false;
+        // size and position
+        public double Width { get; set; } = 800;
+        public double Height { get; set; } = 250;
+        public double Top { get; set; } = double.NaN;
+        public double Left { get; set; } = double.NaN;
     }
 }

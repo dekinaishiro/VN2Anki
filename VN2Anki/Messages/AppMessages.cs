@@ -12,4 +12,8 @@ namespace VN2Anki.Messages
     {
         public SlotCapturedMessage(MiningSlot value) : base(value) { }
     }
+    public class OverlayConfigUpdatedMessage
+    {
+        // trigger
+    }
 }

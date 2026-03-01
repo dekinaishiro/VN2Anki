@@ -1,4 +1,5 @@
-﻿using Microsoft.Web.WebView2.Core;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Web.WebView2.Core;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -210,6 +211,9 @@ namespace VN2Anki
 
             // save
             _configService.Save();
+            // notify overlay to update
+            CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default.Send(new VN2Anki.Messages.OverlayConfigUpdatedMessage());
+            
             this.Close();
         }
 
