@@ -77,6 +77,9 @@ namespace VN2Anki
 
             services.AddSingleton<VndbService>();
 
+            services.AddTransient<ViewModels.Hub.AddVnViewModel>();
+            services.AddTransient<AddVnWindow>();
+
             return services.BuildServiceProvider();
         }
 
