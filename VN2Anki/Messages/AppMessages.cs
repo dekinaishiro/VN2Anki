@@ -16,4 +16,14 @@ namespace VN2Anki.Messages
     {
         // trigger
     }
+    public class FlashMessagePayload
+    {
+        public string Message { get; set; }
+        public bool IsError { get; set; }
+    }
+
+    public class ShowFlashMessage : ValueChangedMessage<FlashMessagePayload>
+    {
+        public ShowFlashMessage(FlashMessagePayload value) : base(value) { }
+    }
 }
