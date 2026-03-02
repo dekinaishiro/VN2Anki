@@ -25,6 +25,35 @@ namespace VN2Anki.Services
         [DllImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] private static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
         private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
         [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hWnd);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr OpenProcess(uint processAccess, bool bInheritHandle, int processId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool CloseHandle(IntPtr hObject);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        private static extern bool QueryFullProcessImageName(IntPtr hProcess, uint dwFlags, StringBuilder lpExeName, ref uint lpdwSize);
+
+        private string GetProcessFilename(Process p)
+        {
+            try { return p.MainModule?.FileName; } catch { /* ignores and tries fallback */ }
+
+            int capacity = 2000;
+            StringBuilder sb = new StringBuilder(capacity);
+            IntPtr ptr = OpenProcess(0x1000, false, p.Id);
+            if (ptr != IntPtr.Zero)
+            {
+                uint size = (uint)capacity;
+                if (QueryFullProcessImageName(ptr, 0, sb, ref size))
+                {
+                    CloseHandle(ptr);
+                    return sb.ToString();
+                }
+                CloseHandle(ptr);
+            }
+            return null;
+        }
 
         public List<VideoWindowItem> GetWindows()
         {
@@ -35,14 +64,19 @@ namespace VN2Anki.Services
             {
                 if (p.MainWindowHandle != IntPtr.Zero && !string.IsNullOrEmpty(p.MainWindowTitle))
                 {
-                    // avoid duplicates
                     if (!windows.Exists(w => w.ProcessName == p.ProcessName))
-                        windows.Add(new VideoWindowItem { Title = p.MainWindowTitle, ProcessName = p.ProcessName });
+                    {
+                        string exePath = GetProcessFilename(p);
+                        windows.Add(new VideoWindowItem
+                        {
+                            Title = p.MainWindowTitle,
+                            ProcessName = p.ProcessName,
+                            ExecutablePath = exePath
+                        });
+                    }
                 }
                 p.Dispose();
             }
-
-            // sort by display/title name 
             windows.Sort((a, b) => a.DisplayName.CompareTo(b.DisplayName));
             return windows;
         }
@@ -110,6 +144,7 @@ namespace VN2Anki.Services
         {
             public string Title { get; set; }
             public string ProcessName { get; set; }
+            public string ExecutablePath { get; set; }
             public string DisplayName => string.IsNullOrWhiteSpace(Title) ? ProcessName : $"{Title} ({ProcessName}.exe)";
         }
     }

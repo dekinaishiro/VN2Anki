@@ -70,8 +70,27 @@ namespace VN2Anki.ViewModels
         {
             if (!IsBufferActive)
             {
+                var config = _configService.CurrentConfig;
+
+                if (string.IsNullOrEmpty(config.Media.VideoWindow))
+                {
+                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Video Source vazia! Selecione o vídeo.", IsError = true }));
+                    return;
+                }
+
+                // checks if the process is still running, if not, clear the config and alert the user
+                var procs = System.Diagnostics.Process.GetProcessesByName(config.Media.VideoWindow);
+                bool isRunning = procs.Any(p => p.MainWindowHandle != IntPtr.Zero);
+                foreach (var p in procs) p.Dispose();
+
+                if (!isRunning)
+                {
+                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "A janela alvo está fechada! Abra o jogo e tente novamente.", IsError = true }));
+                    return;
+                }
+
                 var devices = _miningService.Audio.GetDevices();
-                var deviceId = devices.FirstOrDefault(d => d.Name == _configService.CurrentConfig.Media.AudioDevice)?.Id;
+                var deviceId = devices.FirstOrDefault(d => d.Name == config.Media.AudioDevice)?.Id;
 
                 if (string.IsNullOrEmpty(deviceId))
                 {

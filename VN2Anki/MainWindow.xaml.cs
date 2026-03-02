@@ -134,11 +134,54 @@ namespace VN2Anki
         {
             Dispatcher.Invoke(() =>
             {
-                var f = new Window { WindowStyle = WindowStyle.None, AllowsTransparency = true, Background = message.Value.IsError ? Brushes.Red : Brushes.Green, Topmost = true, ShowInTaskbar = false, Width = 250, Height = 40, Left = this.Left, Top = this.Top + this.Height + 5 };
-                f.Content = new TextBlock { Text = message.Value.Message, Foreground = Brushes.White, FontWeight = FontWeights.Bold, FontSize = 12, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+                double toastWidth = 250;
+                double toastHeight = 40;
+
+                double leftPos = this.Left + (this.ActualWidth - toastWidth) / 2;
+                double screenMidHeight = SystemParameters.WorkArea.Height / 2;
+                double windowMidY = this.Top + (this.ActualHeight / 2);
+
+                double topPos = windowMidY > screenMidHeight
+                                ? this.Top - toastHeight - 5
+                                : this.Top + this.ActualHeight + 5;
+
+                var f = new Window
+                {
+                    WindowStyle = WindowStyle.None,
+                    AllowsTransparency = true,
+                    Background = Brushes.Transparent, // O fundo da Window DEVE ser transparente
+                    Topmost = true,
+                    ShowInTaskbar = false,
+                    Width = toastWidth,
+                    Height = toastHeight,
+                    Left = leftPos,
+                    Top = topPos
+                };
+
+                // Criamos um Border para segurar o conteúdo e o arredondamento
+                var border = new Border
+                {
+                    Background = message.Value.IsError ? Brushes.Crimson : Brushes.SeaGreen,
+                    BorderBrush = Brushes.White,
+                    BorderThickness = new Thickness(1),
+                    CornerRadius = new CornerRadius(8), // Agora sim, aqui funciona!
+                    Child = new TextBlock
+                    {
+                        Text = message.Value.Message,
+                        Foreground = Brushes.White,
+                        FontWeight = FontWeights.Bold,
+                        FontSize = 12,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center
+                    }
+                };
+
+                f.Content = border; // O Border é o conteúdo principal da Window
                 f.Show();
-                var t = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1.5) };
-                t.Tick += (s, args) => { f.Close(); t.Stop(); f = null; }; t.Start();
+
+                var t = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1.8) };
+                t.Tick += (s, args) => { f.Close(); t.Stop(); };
+                t.Start();
             });
         }
 

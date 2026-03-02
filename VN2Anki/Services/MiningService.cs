@@ -1,9 +1,10 @@
-﻿using System;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows.Threading;
-using CommunityToolkit.Mvvm.Messaging;
 using VN2Anki.Messages;
 using VN2Anki.Models;
 
@@ -17,6 +18,7 @@ namespace VN2Anki.Services
 
         private readonly MediaService _mediaService;
         private readonly DispatcherTimer _idleTimer;
+        private readonly DispatcherTimer _videoCheckTimer;
 
         public ObservableCollection<MiningSlot> HistorySlots { get; }
         public event Action<MiningSlot> OnSlotCaptured;
@@ -27,6 +29,7 @@ namespace VN2Anki.Services
         public double IdleTimeoutFixo { get; set; } = 30.0;
         public bool UseDynamicTimeout { get; set; } = true;
         public int MaxImageWidth { get; set; } = 1280;
+
 
         public MiningService(ITextHook textHook, SessionTracker tracker, AudioEngine audio, MediaService mediaService)
         {
@@ -42,6 +45,9 @@ namespace VN2Anki.Services
 
             TextHook.OnTextCopied += ProcessCaptureSequence;
             Audio.OnRecordingError += HandleAudioError;
+
+            _videoCheckTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            _videoCheckTimer.Tick += VideoCheckTimer_Tick;
         }
 
         private void SendStatus(string message)
@@ -54,6 +60,7 @@ namespace VN2Anki.Services
             Audio.Start(audioDeviceId);
             TextHook.Start();
             Tracker.Start();
+            _videoCheckTimer.Start();
             SendStatus("Buffer running...");
         }
 
@@ -64,6 +71,7 @@ namespace VN2Anki.Services
             TextHook.Stop();
             _idleTimer.Stop();
             Tracker.Pause();
+            _videoCheckTimer.Start();
             SendStatus("Buffer stopped.");
         }
 
@@ -130,6 +138,29 @@ namespace VN2Anki.Services
             {
                 SealSlotAudio(HistorySlots[0], DateTime.Now);
                 SendStatus("Slot sealed due to inactivity.");
+            }
+        }
+        private void VideoCheckTimer_Tick(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(TargetVideoWindow)) return;
+
+            var procs = Process.GetProcessesByName(TargetVideoWindow);
+            bool isRunning = false;
+
+            foreach (var p in procs)
+            {
+                if (p.MainWindowHandle != IntPtr.Zero) isRunning = true;
+                p.Dispose();
+            }
+
+            if (!isRunning)
+            {
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    StopBuffer();
+                    SendStatus("⚠️ Vídeo desconectado! Buffer pausado.");
+                    OnBufferStoppedUnexpectedly?.Invoke();
+                });
             }
         }
 
