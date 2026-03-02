@@ -114,6 +114,21 @@ namespace VN2Anki
             _overlayWindowInstance.Closed += (s, args) => { _overlayWindowInstance = null; };
             _overlayWindowInstance.Show();
         }
+        private UserHubWindow _hubWindowInstance;
+
+        private void BtnOpenHub_Click(object sender, RoutedEventArgs e)
+        {
+            if (_hubWindowInstance != null)
+            {
+                if (_hubWindowInstance.WindowState == WindowState.Minimized) _hubWindowInstance.WindowState = WindowState.Normal;
+                _hubWindowInstance.Activate();
+                return;
+            }
+
+            _hubWindowInstance = App.Current.Services.GetRequiredService<UserHubWindow>();
+            _hubWindowInstance.Closed += (s, args) => { _hubWindowInstance = null; };
+            _hubWindowInstance.Show();
+        }
 
         public void Receive(ShowFlashMessage message)
         {

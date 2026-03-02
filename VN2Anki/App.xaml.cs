@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using VN2Anki.Models;
 using VN2Anki.Services;
+using VN2Anki.Data;
 
 namespace VN2Anki
 {
@@ -69,6 +70,12 @@ namespace VN2Anki
 
             services.AddTransient<OverlayWindow>();
 
+            services.AddDbContext<AppDbContext>();
+
+            services.AddTransient<ViewModels.Hub.LibraryViewModel>();
+            services.AddTransient<UserHubWindow>();
+
+            services.AddSingleton<VndbService>();
 
             return services.BuildServiceProvider();
         }
@@ -92,6 +99,13 @@ namespace VN2Anki
             var configService = Services.GetRequiredService<IConfigurationService>();
             string langCode = configService.CurrentConfig.General.Language;
             System.Threading.Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(langCode);
+
+            // ensure database is created before showing the main window
+            using (var scope = Services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                dbContext.Database.EnsureCreated();
+            }
 
             // Resolve and show MainWindow via DI
             var mainWindow = Services.GetRequiredService<MainWindow>();
