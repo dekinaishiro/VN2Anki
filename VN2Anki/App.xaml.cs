@@ -62,10 +62,13 @@ namespace VN2Anki
             services.AddSingleton<MiningService>();
 
             services.AddTransient<VN2Anki.ViewModels.MainWindowViewModel>();
+            services.AddTransient<ViewModels.SettingsViewModel>();
+
             services.AddTransient<MainWindow>();
             services.AddTransient<SettingsWindow>();
 
             services.AddTransient<OverlayWindow>();
+
 
             return services.BuildServiceProvider();
         }

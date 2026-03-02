@@ -114,36 +114,28 @@
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblAudioSource}" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboAudio" Grid.Row="0" Grid.Column="1" DisplayMemberPath="DisplayName"/>
+                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboAudio" Grid.Row="0" Grid.Column="1" ItemsSource="{Binding AudioDevices}" DisplayMemberPath="DisplayName" SelectedValuePath="Name" SelectedValue="{Binding Config.Media.AudioDevice}"/>
                         <Button Style="{StaticResource StandardButton}" Grid.Row="0" Grid.Column="2" Width="35" Height="35" Click="BtnRefreshAudio_Click" Padding="0">
-                            <Viewbox Stretch="Uniform">
-                                <Canvas Width="24" Height="24" Margin="4">
-                                    <Path Fill="White" Data="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/>
-                                </Canvas>
-                            </Viewbox>
+                            <TextBlock Text="🔄" FontSize="18"/>
                         </Button>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblVideoSource}" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboVideo" Grid.Row="1" Grid.Column="1" DisplayMemberPath="DisplayName" SelectedValuePath="ProcessName"/>
+                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboVideo" Grid.Row="1" Grid.Column="1" ItemsSource="{Binding VideoWindows}" DisplayMemberPath="DisplayName" SelectedValuePath="ProcessName" SelectedValue="{Binding Config.Media.VideoWindow}"/>
                         <Button Style="{StaticResource StandardButton}" Grid.Row="1" Grid.Column="2" Width="35" Height="35" Click="BtnRefreshVideo_Click" Padding="0">
-                            <Viewbox Stretch="Uniform">
-                                <Canvas Width="24" Height="24" Margin="4">
-                                    <Path Fill="White" Data="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/>
-                                </Canvas>
-                            </Viewbox>
+                            <TextBlock Text="🔄" FontSize="18"/>
                         </Button>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblSlotLimit}" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <TextBox x:Name="TxtMaxSlots" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5"/>
+                        <TextBox x:Name="TxtMaxSlots" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5" Text="{Binding Config.Session.MaxSlots, UpdateSourceTrigger=PropertyChanged}"/>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblTimeout}" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <TextBox x:Name="TxtIdleTime" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5">
+                        <TextBox x:Name="TxtIdleTime" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5" Text="{Binding Config.Session.IdleTime, UpdateSourceTrigger=PropertyChanged}">
                             <TextBox.Style>
                                 <Style TargetType="TextBox">
                                     <Setter Property="IsEnabled" Value="True"/>
                                     <Setter Property="Background" Value="White"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsChecked, ElementName=ChkDynamicTimeout}" Value="True">
+                                        <DataTrigger Binding="{Binding Config.Session.UseDynamicTimeout}" Value="True">
                                             <Setter Property="IsEnabled" Value="False"/>
                                             <Setter Property="Background" Value="#444444"/>
                                         </DataTrigger>
@@ -152,17 +144,17 @@
                             </TextBox.Style>
                         </TextBox>
 
-                        <CheckBox x:Name="ChkDynamicTimeout" Content="{x:Static loc:Strings.LblDynamicTimeout}" Foreground="White" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" VerticalAlignment="Center"/>
+                        <CheckBox x:Name="ChkDynamicTimeout" Content="{x:Static loc:Strings.LblDynamicTimeout}" Foreground="White" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" VerticalAlignment="Center" IsChecked="{Binding Config.Session.UseDynamicTimeout}"/>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblLanguage}" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboLanguage" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="ComboLanguage_SelectionChanged">
+                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboLanguage" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="ComboLanguage_SelectionChanged" SelectedValuePath="Tag" SelectedValue="{Binding Config.General.Language}">
                             <ComboBoxItem Content="English" Tag="en-US"/>
                             <ComboBoxItem Content="Español" Tag="es-ES"/>
                             <ComboBoxItem Content="Português" Tag="pt-BR"/>
                         </ComboBox>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblImageQuality}" Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboImageRes" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2">
+                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboImageRes" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" SelectedValuePath="Tag" SelectedValue="{Binding Config.Media.MaxImageWidth}">
                             <ComboBoxItem Content="Tamanho Original" Tag="0"/>
                             <ComboBoxItem Content="1080p (FHD)" Tag="1920"/>
                             <ComboBoxItem Content="720p (HD)" Tag="1280"/>
@@ -171,23 +163,23 @@
                         </ComboBox>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblAudioQuality}" Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboAudioRes" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2">
+                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboAudioRes" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2" SelectedValuePath="Tag" SelectedValue="{Binding Config.Media.AudioBitrate}">
                             <ComboBoxItem Content="WAV (original)" Tag="0"/>
                             <ComboBoxItem Content="MP3 192 kbps (HQ)" Tag="192"/>
                             <ComboBoxItem Content="MP3 128 kbps (Default)" Tag="128"/>
                             <ComboBoxItem Content="MP3 64 kbps (LQ)" Tag="64"/>
                         </ComboBox>
 
-                        <CheckBox x:Name="ChkOpenSettings" Content="{x:Static loc:Strings.LblOpenSettingsOnStartup}" Foreground="White" Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2" Margin="5,15,5,5" VerticalAlignment="Center" Checked="ChkOpenSettings_Checked"/>
+                        <CheckBox x:Name="ChkOpenSettings" Content="{x:Static loc:Strings.LblOpenSettingsOnStartup}" Foreground="White" Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2" Margin="5,15,5,5" VerticalAlignment="Center" IsChecked="{Binding Config.General.OpenSettingsOnStartup}"/>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="Text Hook Source:" Grid.Row="9" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboHookType" Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="2">
+                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboHookType" Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="2" SelectedValuePath="Tag" SelectedValue="{Binding Config.Hook.ActiveHookType}">
                             <ComboBoxItem Content="Clipboard" Tag="0"/>
                             <ComboBoxItem Content="WebSocket (Luna/Textractor)" Tag="1"/>
                         </ComboBox>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="WebSocket URL:" Grid.Row="10" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <TextBox x:Name="TxtWsUrl" Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5" ToolTip="Luna: ws://localhost:2333/api/ws/text/origin | Textractor: ws://localhost:6677"/>
+                        <TextBox x:Name="TxtWsUrl" Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5" Text="{Binding Config.Hook.WebSocketUrl}" ToolTip="Luna: ws://localhost:2333/api/ws/text/origin | Textractor: ws://localhost:6677"/>
                     </Grid>
                 </ScrollViewer>
             </TabItem>
@@ -210,29 +202,25 @@
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblDeck}" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboDeck" Grid.Row="0" Grid.Column="1"/>
+                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboDeck" Grid.Row="0" Grid.Column="1" SelectedValue="{Binding Config.Anki.Deck}"/>
                         <Button Style="{StaticResource StandardButton}" Grid.Row="0" Grid.Column="2" Width="35" Height="35" Padding="0" Click="BtnRefreshAnki_Click">
-                            <Viewbox Stretch="Uniform">
-                                <Canvas Width="24" Height="24" Margin="4">
-                                    <Path Fill="White" Data="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/>
-                                </Canvas>
-                            </Viewbox>
+                            <TextBlock Text="🔄" FontSize="18"/>
                         </Button>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblNoteType}" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboModel" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="ComboModel_SelectionChanged"/>
+                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboModel" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="ComboModel_SelectionChanged" SelectedValue="{Binding Config.Anki.Model}"/>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblAudioField}" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboFieldAudio" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"/>
+                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboFieldAudio" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" SelectedValue="{Binding Config.Anki.AudioField}"/>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblImageField}" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboFieldImage" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2"/>
+                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboFieldImage" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" SelectedValue="{Binding Config.Anki.ImageField}"/>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="AnkiConnect URL:" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <TextBox x:Name="TxtAnkiUrl" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5"/>
+                        <TextBox x:Name="TxtAnkiUrl" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5" Text="{Binding Config.Anki.Url}"/>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblTimeout}" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <TextBox x:Name="TxtAnkiTimeout" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5"/>
+                        <TextBox x:Name="TxtAnkiTimeout" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5" Text="{Binding Config.Anki.TimeoutSeconds}"/>
                     </Grid>
                 </ScrollViewer>
             </TabItem>
@@ -265,10 +253,10 @@
                         <colorpicker:PortableColorPicker x:Name="PickerOverlayBgColor" Style="{StaticResource DefaultColorPickerStyle}" Grid.Row="2" Grid.Column="1" Margin="5" HorizontalAlignment="Left" Width="60" Height="30" />
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="Font Size:" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <TextBox x:Name="TxtFontSize" Grid.Row="3" Grid.Column="1" Margin="5" Padding="5"/>
+                        <TextBox x:Name="TxtFontSize" Grid.Row="3" Grid.Column="1" Margin="5" Padding="5" Text="{Binding Config.Overlay.FontSize, UpdateSourceTrigger=PropertyChanged}"/>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="Pass-Through Hold Key:" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboPassModifier" Grid.Row="4" Grid.Column="1" Margin="5" Padding="5">
+                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboPassModifier" Grid.Row="4" Grid.Column="1" Margin="5" Padding="5" SelectedValuePath="Tag" SelectedValue="{Binding Config.Overlay.PassThroughModifier}">
                             <ComboBoxItem Content="Ctrl" Tag="Ctrl"/>
                             <ComboBoxItem Content="Alt" Tag="Alt"/>
                             <ComboBoxItem Content="Shift" Tag="Shift"/>
