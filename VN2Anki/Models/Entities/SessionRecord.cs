@@ -1,5 +1,5 @@
 ﻿using System;
-
+using System.ComponentModel.DataAnnotations.Schema;
 namespace VN2Anki.Models.Entities
 {
     public class SessionRecord
@@ -13,5 +13,8 @@ namespace VN2Anki.Models.Entities
         public int DurationSeconds { get; set; }
         public int CharactersRead { get; set; }
         public int CardsMined { get; set; }
+
+        [NotMapped]
+        public string FormattedDuration => TimeSpan.FromSeconds(DurationSeconds).ToString(@"hh\:mm\:ss");
     }
 }

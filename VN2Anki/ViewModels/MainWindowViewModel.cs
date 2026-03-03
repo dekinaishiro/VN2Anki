@@ -9,6 +9,9 @@ using CommunityToolkit.Mvvm.Messaging;
 using VN2Anki.Locales;
 using VN2Anki.Messages;
 using VN2Anki.Services;
+using Microsoft.Extensions.DependencyInjection;
+using VN2Anki.Data;
+using VN2Anki.Models.Entities;
 
 namespace VN2Anki.ViewModels
 {
@@ -170,6 +173,29 @@ namespace VN2Anki.ViewModels
 
         public void EndSession()
         {
+            // real vn and session validation: only saves if there's a valid VN and some activity
+            if (CurrentVN != null && (Tracker.Elapsed.TotalSeconds > 0 || Tracker.ValidCharacterCount > 0))
+            {
+                using (var scope = App.Current.Services.CreateScope())
+                {
+                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    var record = new SessionRecord
+                    {
+                        VisualNovelId = CurrentVN.Id,
+                        StartTime = System.DateTime.Now - Tracker.Elapsed,
+                        EndTime = System.DateTime.Now,
+                        DurationSeconds = (int)Tracker.Elapsed.TotalSeconds,
+                        CharactersRead = Tracker.ValidCharacterCount,
+                        CardsMined = 0 // Expansão futura
+                    };
+                    db.Sessions.Add(record);
+                    db.SaveChanges();
+                }
+
+                // tells hub to update list
+                WeakReferenceMessenger.Default.Send(new SessionSavedMessage());
+            }
+
             if (IsBufferActive) ToggleBuffer();
             Tracker.Reset();
             foreach (var slot in _miningService.HistorySlots) slot.Dispose();

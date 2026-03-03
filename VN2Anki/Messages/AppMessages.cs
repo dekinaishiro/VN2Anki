@@ -15,7 +15,7 @@ namespace VN2Anki.Messages
     }
     public class OverlayConfigUpdatedMessage
     {
-        // trigger
+        // Overlay config update trigger
     }
     public class FlashMessagePayload
     {
@@ -35,5 +35,10 @@ namespace VN2Anki.Messages
         {
             VisualNovel = vn;
         }
+    }
+
+    public class SessionSavedMessage
+    {
+        // "END" trigger
     }
 }

@@ -59,7 +59,53 @@
             </TabItem>
 
             <TabItem Header="⏱️ Sessions History" Foreground="Black">
-                <TextBlock Text="Histórico de sessões aparecerá aqui..." Foreground="Gray" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Grid Margin="10">
+                    <ListView ItemsSource="{Binding SessionHistory}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="Focusable" Value="False"/>
+                            </Style>
+                        </ListView.ItemContainerStyle>
+
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#2D2D30" CornerRadius="6" Margin="0,5,0,5" Padding="15,10">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="200"/>
+                                            <ColumnDefinition Width="150"/>
+                                            <ColumnDefinition Width="150"/>
+                                            <ColumnDefinition Width="150"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0" Text="{Binding VisualNovel.Title}" FontWeight="Bold" Foreground="#007ACC" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding VisualNovel.Title}"/>
+
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="DATA" FontSize="10" Foreground="#888888" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding EndTime, StringFormat='{}{0:dd/MM/yyyy HH:mm}'}" Foreground="White" FontSize="14"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                            <TextBlock Text="DURAÇÃO" FontSize="10" Foreground="#888888" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding FormattedDuration}" Foreground="White" FontSize="14"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="3" VerticalAlignment="Center">
+                                            <TextBlock Text="CARACTERES" FontSize="10" Foreground="#888888" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding CharactersRead}" Foreground="#28A745" FontWeight="Bold" FontSize="14"/>
+                                        </StackPanel>
+
+                                        <Button Grid.Column="5" Content="🗑" Command="{Binding DataContext.DeleteSessionCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Background="#DC3545" Foreground="White" BorderThickness="0" Padding="12,5" Cursor="Hand" ToolTip="Excluir Sessão" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Grid>
             </TabItem>
 
             <TabItem Header="📊 Stats" Foreground="Black">
