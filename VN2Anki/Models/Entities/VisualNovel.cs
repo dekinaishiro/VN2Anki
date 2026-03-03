@@ -11,6 +11,7 @@ namespace VN2Anki.Models.Entities
         public string? ExecutablePath { get; set; }
         public string? VndbId { get; set; }     
         public string? CoverImagePath { get; set; }
+        public string? CoverImageUrl { get; set; }
         public int TotalTimePlayedSeconds { get; set; }
         public int TotalCharactersRead { get; set; }
         public List<SessionRecord> Sessions { get; set; } = new();

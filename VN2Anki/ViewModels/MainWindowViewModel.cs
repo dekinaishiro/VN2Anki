@@ -23,6 +23,7 @@ namespace VN2Anki.ViewModels
         private readonly AnkiExportService _ankiExportService;
         private readonly AnkiHandler _ankiHandler;
         private CancellationTokenSource _pollingCts;
+        private readonly DiscordRpcService _discordRpc;
 
         public SessionTracker Tracker { get; }
 
@@ -48,7 +49,7 @@ namespace VN2Anki.ViewModels
         public string BufferBtnText => IsBufferActive ? "ON" : "OFF";
         public Brush BufferBtnBackground => IsBufferActive ? Brushes.Green : Brushes.Crimson;
 
-        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiExportService ankiExportService, AnkiHandler ankiHandler, VideoEngine videoEngine)
+        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiExportService ankiExportService, AnkiHandler ankiHandler, VideoEngine videoEngine, DiscordRpcService discordRpc)
         {
             Tracker = tracker;
             _miningService = miningService;
@@ -56,13 +57,23 @@ namespace VN2Anki.ViewModels
             _ankiExportService = ankiExportService;
             _ankiHandler = ankiHandler;
             _videoEngine = videoEngine;
+            _discordRpc = discordRpc;
 
             _miningService.OnBufferStoppedUnexpectedly += () =>
             {
                 Application.Current.Dispatcher.Invoke(() => IsBufferActive = false);
+                _ = _discordRpc.UpdatePresenceAsync(
+                    "VN2Anki",             
+                    "No Session",        
+                    "Waiting...", 
+                    null,                   
+                    "default_icon"        
+                );
             };
 
-            WeakReferenceMessenger.Default.RegisterAll(this); // listen to multiple message types
+            WeakReferenceMessenger.Default.RegisterAll(this);
+
+            Tracker.PropertyChanged += Tracker_PropertyChanged;
         }
 
         public void ApplyConfigToServices()
@@ -112,11 +123,37 @@ namespace VN2Anki.ViewModels
 
                 _miningService.StartBuffer(deviceId);
                 IsBufferActive = true;
+
+                // rpc
+                string vnTitle = CurrentVN?.Title ?? "Unknown VN";
+                string imageUrl = CurrentVN?.CoverImageUrl ?? "default_icon";
+                DateTime startTime = DateTime.UtcNow.Subtract(Tracker.Elapsed);
+
+                _ = _discordRpc.UpdatePresenceAsync(
+                    vnTitle, 
+                    "Reading",
+                    $"{Tracker.ValidCharacterCount} chars", 
+                    startTime, 
+                    imageUrl
+                );
             }
             else
             {
                 _miningService.StopBuffer();
                 IsBufferActive = false;
+
+                string vnTitle = CurrentVN?.Title ?? "Unknown VN";
+                string imageUrl = CurrentVN?.CoverImageUrl ?? "default_icon";
+
+                string elapsedStr = Tracker.Elapsed.ToString(@"hh\:mm\:ss");
+
+                _ = _discordRpc.UpdatePresenceAsync(
+                    vnTitle, 
+                    "Paused", 
+                    $"{Tracker.ValidCharacterCount} chars | {elapsedStr}", 
+                    null,
+                    imageUrl
+                );
             }
         }
 
@@ -220,6 +257,7 @@ namespace VN2Anki.ViewModels
             }
 
             // cleaning routine 
+            _ = _discordRpc.ClearPresenceAsync();
             if (IsBufferActive) ToggleBuffer();
             Tracker.Reset();
             foreach (var slot in _miningService.HistorySlots) slot.Dispose();
@@ -339,6 +377,25 @@ namespace VN2Anki.ViewModels
             }
         }
 
+        private void Tracker_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(Tracker.ValidCharacterCount) && IsBufferActive)
+            {
+                string vnTitle = CurrentVN?.Title ?? "Unknown VN";
+                string imageUrl = CurrentVN?.CoverImageUrl ?? "default_icon";
+
+                DateTime startTime = DateTime.UtcNow.Subtract(Tracker.Elapsed);
+
+                _ = _discordRpc.UpdatePresenceAsync(
+                vnTitle, 
+                "Reading", 
+                $"{Tracker.ValidCharacterCount} chars", 
+                startTime, 
+                imageUrl
+                );
+            }
+        }
+
         public async Task CheckRunningVNsAsync()
         {
             await Task.Delay(1500);
@@ -355,7 +412,7 @@ namespace VN2Anki.ViewModels
 
             var windows = _videoEngine.GetWindows();
 
-            // NOVO: Lista para armazenar todos os matches encontrados
+            // store all matches
             var matchedVns = new System.Collections.Generic.List<VN2Anki.Models.Entities.VisualNovel>();
 
             foreach (var win in windows)
@@ -364,7 +421,7 @@ namespace VN2Anki.ViewModels
                     (v.ExecutablePath == win.ExecutablePath && !string.IsNullOrEmpty(win.ExecutablePath)) ||
                     (v.ProcessName == win.ProcessName && !string.IsNullOrEmpty(win.ProcessName)));
 
-                // Evita adicionar a mesma VN duas vezes se o jogo criar múltiplos processos iguais
+                // avoid duplicates in case multiple windows match the same VN
                 if (match != null && !matchedVns.Any(v => v.Id == match.Id))
                 {
                     matchedVns.Add(match);
@@ -379,7 +436,7 @@ namespace VN2Anki.ViewModels
 
                 if (matchedVns.Count == 1)
                 {
-                    // Fluxo normal: Apenas 1 VN encontrada
+                    // 1 vn found, prompt user to confirm linking
                     var result = MessageBox.Show(
                         $"Detectamos que '{matchedVns[0].Title}' está em execução.\nDeseja vinculá-la e iniciar a sessão agora?",
                         "Visual Novel Detectada", MessageBoxButton.YesNo, MessageBoxImage.Information);
@@ -388,7 +445,7 @@ namespace VN2Anki.ViewModels
                 }
                 else
                 {
-                    // Fluxo Múltiplo: Constrói uma janela de seleção dinamicamente para não poluir o projeto com mais arquivos XAML
+                    // multi vn
                     var win = new Window
                     {
                         Title = "Múltiplas VNs Detectadas",
@@ -437,14 +494,13 @@ namespace VN2Anki.ViewModels
                     win.ShowDialog();
                 }
 
-                // Se o usuário selecionou algo (seja no Yes/No ou no ComboBox), fazemos o bind!
                 if (selectedVn != null)
                 {
                     if (CurrentVN != null) EndSession();
 
                     CurrentVN = selectedVn;
 
-                    // Acha a janela correspondente ao selectedVn para pegar o ProcessName correto
+                    // finds correct window again in case user has multiple instances open and selected a different one in the combo box
                     var targetWin = windows.First(w => w.ExecutablePath == selectedVn.ExecutablePath || w.ProcessName == selectedVn.ProcessName);
 
                     var config = _configService.CurrentConfig;

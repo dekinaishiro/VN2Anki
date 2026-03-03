@@ -57,6 +57,8 @@ namespace VN2Anki
             services.AddSingleton<AnkiHandler>();
             services.AddSingleton<SessionTracker>();
 
+            services.AddSingleton<DiscordRpcService>();
+
             services.AddSingleton<MediaService>();
             services.AddSingleton<AnkiExportService>();
 

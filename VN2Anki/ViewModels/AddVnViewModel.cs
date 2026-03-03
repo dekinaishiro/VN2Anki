@@ -122,7 +122,7 @@ namespace VN2Anki.ViewModels.Hub
             bool alreadyExists = _db.VisualNovels.Any(v => v.VndbId == SelectedVndbResult.Id);
             if (alreadyExists)
             {
-                MessageBox.Show("Esta Visual Novel já está adicionada à sua Library!", "Duplicata", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("Esta Visual Novel já está adicionada à sua Library!", "Duplicate", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
@@ -136,7 +136,8 @@ namespace VN2Anki.ViewModels.Hub
                 ProcessName = SelectedWindow.ProcessName,
                 ExecutablePath = SelectedWindow.ExecutablePath,
                 VndbId = SelectedVndbResult.Id,
-                CoverImagePath = coverPath
+                CoverImagePath = coverPath,
+                CoverImageUrl = SelectedVndbResult.Image?.Url
             };
 
             _db.VisualNovels.Add(vn);
