@@ -1,8 +1,10 @@
-﻿using System.Collections.ObjectModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
+using VN2Anki.Messages;
 using VN2Anki.Models;
 using VN2Anki.Services;
 
@@ -33,6 +35,16 @@ namespace VN2Anki.ViewModels
             Tracker = tracker;
 
             Config = _configService.CurrentConfig;
+
+            Tracker.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(Tracker.IsTracking) ||
+                    e.PropertyName == nameof(Tracker.ValidCharacterCount) ||
+                    e.PropertyName == nameof(Tracker.Elapsed))
+                {
+                    OnPropertyChanged(nameof(IsVideoSelectionEnabled));
+                }
+            };
         }
 
         // loads the device lists when the window opens
@@ -59,5 +71,13 @@ namespace VN2Anki.ViewModels
         {
             _configService.Save();
         }
+        public void Receive(SessionEndedMessage message)
+        {
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            {
+                OnPropertyChanged(nameof(IsVideoSelectionEnabled));
+            });
+        }
+
     }
 }

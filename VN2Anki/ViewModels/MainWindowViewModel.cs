@@ -1,18 +1,20 @@
-﻿using System.Threading;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.DependencyInjection;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
-using System.Collections.Generic;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using CommunityToolkit.Mvvm.Messaging;
+using System.Windows.Threading;
+using VN2Anki.Data;
 using VN2Anki.Locales;
 using VN2Anki.Messages;
-using VN2Anki.Services;
-using Microsoft.Extensions.DependencyInjection;
-using VN2Anki.Data;
 using VN2Anki.Models.Entities;
+using VN2Anki.Services;
+
 
 namespace VN2Anki.ViewModels
 {
@@ -46,8 +48,26 @@ namespace VN2Anki.ViewModels
         [ObservableProperty]
         private VN2Anki.Models.Entities.VisualNovel _currentVN;
 
+        [ObservableProperty]
+private Visibility _manualLinkVisibility = Visibility.Collapsed;
         public string BufferBtnText => IsBufferActive ? "ON" : "OFF";
         public Brush BufferBtnBackground => IsBufferActive ? Brushes.Green : Brushes.Crimson;
+        
+        // main window title
+        [ObservableProperty]
+        private Brush _vnTitleColor = Brushes.Crimson;
+        [ObservableProperty]
+        private string _displayVnTitle = "No Video Source";
+        // manual sync vn
+        [ObservableProperty]
+        private string _manualLinkText = "+";
+
+        [ObservableProperty]
+        private Brush _manualLinkColor = Brushes.Teal;
+
+        private readonly DispatcherTimer _idleWindowCheckTimer;
+
+        private bool _isFirstLoad = true;
 
         public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiExportService ankiExportService, AnkiHandler ankiHandler, VideoEngine videoEngine, DiscordRpcService discordRpc)
         {
@@ -71,6 +91,10 @@ namespace VN2Anki.ViewModels
                 );
             };
 
+            _idleWindowCheckTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            _idleWindowCheckTimer.Tick += IdleWindowCheckTimer_Tick;
+            _idleWindowCheckTimer.Start();
+
             WeakReferenceMessenger.Default.RegisterAll(this);
 
             Tracker.PropertyChanged += Tracker_PropertyChanged;
@@ -86,6 +110,22 @@ namespace VN2Anki.ViewModels
             _miningService.UseDynamicTimeout = config.Session.UseDynamicTimeout;
             _miningService.MaxImageWidth = config.Media.MaxImageWidth;
             _ankiHandler.UpdateSettings(config.Anki.Url, config.Anki.TimeoutSeconds);
+
+            bool isSessionActive = Tracker.ValidCharacterCount > 0 || Tracker.Elapsed.TotalSeconds > 0 || IsBufferActive;
+
+            if (_isFirstLoad)
+            {
+                _isFirstLoad = false;
+                Application.Current.Dispatcher.Invoke(() => UpdateVisualCurrentVN());
+            }
+            else if (!isSessionActive)
+            {
+                _ = CheckAndLinkRunningVNsAsync(config.Media.VideoWindow);
+            }
+            else
+            {
+                Application.Current.Dispatcher.Invoke(() => UpdateVisualCurrentVN());
+            }
         }
 
         [RelayCommand]
@@ -112,6 +152,7 @@ namespace VN2Anki.ViewModels
                     return;
                 }
 
+                // checks if audio device is configured and available
                 var devices = _miningService.Audio.GetDevices();
                 var deviceId = devices.FirstOrDefault(d => d.Name == config.Media.AudioDevice)?.Id;
 
@@ -121,14 +162,26 @@ namespace VN2Anki.ViewModels
                     return;
                 }
 
+                // checks if there's no VN linked and no progress, prompts the user to confirm starting an unlinked session
+                if (CurrentVN == null && Tracker.ValidCharacterCount == 0 && Tracker.Elapsed.TotalSeconds == 0)
+                {
+                    var result = MessageBox.Show(
+                        "Nenhuma Visual Novel está vinculada a esta sessão.\nDeseja iniciar o rastreamento avulso mesmo assim?",
+                        "Aviso de Sessão Vazia",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Warning);
+
+                    if (result == MessageBoxResult.No) return;
+                }
+
+                // starts the buffer
                 _miningService.StartBuffer(deviceId);
                 IsBufferActive = true;
 
-                // rpc
+                // updates RPC presence using current tracker values
                 string vnTitle = CurrentVN?.Title ?? "Unknown VN";
                 string imageUrl = CurrentVN?.CoverImageUrl ?? "default_icon";
                 DateTime startTime = DateTime.UtcNow.Subtract(Tracker.Elapsed);
-
                 _ = _discordRpc.UpdatePresenceAsync(
                     vnTitle, 
                     "Reading",
@@ -144,9 +197,7 @@ namespace VN2Anki.ViewModels
 
                 string vnTitle = CurrentVN?.Title ?? "Unknown VN";
                 string imageUrl = CurrentVN?.CoverImageUrl ?? "default_icon";
-
                 string elapsedStr = Tracker.Elapsed.ToString(@"hh\:mm\:ss");
-
                 _ = _discordRpc.UpdatePresenceAsync(
                     vnTitle, 
                     "Paused", 
@@ -229,11 +280,10 @@ namespace VN2Anki.ViewModels
 
                     if (result == MessageBoxResult.No)
                     {
-                        hasProgress = false; // Cancela o salvamento da sessão
+                        hasProgress = false;
                     }
                 }
 
-                // Se tinha VN ou o usuário clicou em 'Sim' no prompt acima, salva no banco
                 if (hasProgress)
                 {
                     using (var scope = App.Current.Services.CreateScope())
@@ -263,10 +313,12 @@ namespace VN2Anki.ViewModels
             foreach (var slot in _miningService.HistorySlots) slot.Dispose();
             _miningService.HistorySlots.Clear();
 
-            CurrentVN = null;
+            UpdateVisualCurrentVN();
 
             StatusText = Strings.StatusSessionEnded;
             StatusVisibility = Visibility.Visible;
+
+            WeakReferenceMessenger.Default.Send(new SessionEndedMessage());
         }
 
         public void Receive(StatusMessage message)
@@ -395,40 +447,55 @@ namespace VN2Anki.ViewModels
                 );
             }
         }
-
-        public async Task CheckRunningVNsAsync()
+        public async Task CheckAndLinkRunningVNsAsync(string specificProcessName = null)
         {
-            await Task.Delay(1500);
+            if (IsBufferActive || Tracker.ValidCharacterCount > 0 || Tracker.Elapsed.TotalSeconds > 0)
+            {
+                Application.Current.Dispatcher.Invoke(() => UpdateVisualCurrentVN());
+                return;
+            }
 
-            List<VN2Anki.Models.Entities.VisualNovel> vns = null;
+            await Task.Delay(1000);
 
+            List<VN2Anki.Models.Entities.VisualNovel> vnsDb;
             using (var scope = App.Current.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<VN2Anki.Data.AppDbContext>();
-                vns = db.VisualNovels.ToList();
+                vnsDb = db.VisualNovels.ToList();
             }
 
-            if (vns == null || vns.Count == 0) return;
+            if (vnsDb.Count == 0)
+            {
+                Application.Current.Dispatcher.Invoke(() => UpdateVisualCurrentVN());
+                return;
+            }
 
-            var windows = _videoEngine.GetWindows();
-
-            // store all matches
+            var runningWindows = _videoEngine.GetWindows();
             var matchedVns = new System.Collections.Generic.List<VN2Anki.Models.Entities.VisualNovel>();
 
-            foreach (var win in windows)
-            {
-                var match = vns.FirstOrDefault(v =>
-                    (v.ExecutablePath == win.ExecutablePath && !string.IsNullOrEmpty(win.ExecutablePath)) ||
-                    (v.ProcessName == win.ProcessName && !string.IsNullOrEmpty(win.ProcessName)));
+            var windowsToCheck = string.IsNullOrEmpty(specificProcessName)
+                ? runningWindows
+                : runningWindows.Where(w => w.ProcessName == specificProcessName).ToList();
 
-                // avoid duplicates in case multiple windows match the same VN
+            foreach (var win in windowsToCheck)
+            {
+                var match = vnsDb.FirstOrDefault(v =>
+                    (!string.IsNullOrEmpty(v.ExecutablePath) && !string.IsNullOrEmpty(win.ExecutablePath) && v.ExecutablePath == win.ExecutablePath) ||
+                    (!string.IsNullOrEmpty(v.ProcessName) && v.ProcessName == win.ProcessName));
+
                 if (match != null && !matchedVns.Any(v => v.Id == match.Id))
                 {
                     matchedVns.Add(match);
                 }
             }
 
-            if (matchedVns.Count == 0) return;
+            // if VN is already linked but process isn't running, keep it linked but show "No Video Source" with red color and + button to allow manual 
+            if (matchedVns.Count == 0)
+            {
+                if (!string.IsNullOrEmpty(specificProcessName)) CurrentVN = null;
+                Application.Current.Dispatcher.Invoke(() => UpdateVisualCurrentVN());
+                return;
+            }
 
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -436,16 +503,21 @@ namespace VN2Anki.ViewModels
 
                 if (matchedVns.Count == 1)
                 {
-                    // 1 vn found, prompt user to confirm linking
-                    var result = MessageBox.Show(
-                        $"Detectamos que '{matchedVns[0].Title}' está em execução.\nDeseja vinculá-la e iniciar a sessão agora?",
-                        "Visual Novel Detectada", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                    if (string.IsNullOrEmpty(specificProcessName))
+                    {
+                        var result = MessageBox.Show(
+                            $"Detectamos que '{matchedVns[0].Title}' está em execução.\nDeseja vinculá-la e iniciar a sessão agora?",
+                            "Visual Novel Detectada", MessageBoxButton.YesNo, MessageBoxImage.Information);
 
-                    if (result == MessageBoxResult.Yes) selectedVn = matchedVns[0];
+                        if (result == MessageBoxResult.Yes) selectedVn = matchedVns[0];
+                    }
+                    else
+                    {
+                        selectedVn = matchedVns[0];
+                    }
                 }
                 else
                 {
-                    // multi vn
                     var win = new Window
                     {
                         Title = "Múltiplas VNs Detectadas",
@@ -457,61 +529,149 @@ namespace VN2Anki.ViewModels
                         Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#252526")),
                         Foreground = Brushes.White
                     };
-
                     var stack = new System.Windows.Controls.StackPanel { Margin = new Thickness(15) };
-
-                    stack.Children.Add(new System.Windows.Controls.TextBlock
-                    {
-                        Text = "Múltiplas VNs em execução detectadas.\nSelecione qual deseja vincular:",
-                        Foreground = Brushes.White,
-                        Margin = new Thickness(0, 0, 0, 15)
-                    });
-
-                    var combo = new System.Windows.Controls.ComboBox
-                    {
-                        ItemsSource = matchedVns,
-                        DisplayMemberPath = "Title",
-                        SelectedIndex = 0,
-                        Margin = new Thickness(0, 0, 0, 15),
-                        Padding = new Thickness(5)
-                    };
+                    stack.Children.Add(new System.Windows.Controls.TextBlock { Text = "Múltiplas VNs em execução detectadas.\nSelecione qual deseja vincular:", Foreground = Brushes.White, Margin = new Thickness(0, 0, 0, 15) });
+                    var combo = new System.Windows.Controls.ComboBox { ItemsSource = matchedVns, DisplayMemberPath = "Title", SelectedIndex = 0, Margin = new Thickness(0, 0, 0, 15), Padding = new Thickness(5) };
                     stack.Children.Add(combo);
-
-                    var btn = new System.Windows.Controls.Button
-                    {
-                        Content = "Vincular Selecionada",
-                        Padding = new Thickness(10, 8, 10, 8),
-                        Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#007ACC")),
-                        Foreground = Brushes.White,
-                        BorderThickness = new Thickness(0),
-                        Cursor = System.Windows.Input.Cursors.Hand
-                    };
-
+                    var btn = new System.Windows.Controls.Button { Content = "Vincular Selecionada", Padding = new Thickness(10, 8, 10, 8), Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#007ACC")), Foreground = Brushes.White, BorderThickness = new Thickness(0), Cursor = System.Windows.Input.Cursors.Hand };
                     btn.Click += (s, e) => { selectedVn = combo.SelectedItem as VN2Anki.Models.Entities.VisualNovel; win.DialogResult = true; win.Close(); };
                     stack.Children.Add(btn);
-
                     win.Content = stack;
                     win.ShowDialog();
                 }
 
                 if (selectedVn != null)
                 {
-                    if (CurrentVN != null) EndSession();
-
                     CurrentVN = selectedVn;
 
-                    // finds correct window again in case user has multiple instances open and selected a different one in the combo box
-                    var targetWin = windows.First(w => w.ExecutablePath == selectedVn.ExecutablePath || w.ProcessName == selectedVn.ProcessName);
-
+                    var targetWin = runningWindows.First(w => w.ExecutablePath == selectedVn.ExecutablePath || w.ProcessName == selectedVn.ProcessName);
                     var config = _configService.CurrentConfig;
                     config.Media.VideoWindow = targetWin.ProcessName;
                     _configService.Save();
 
                     _miningService.TargetVideoWindow = targetWin.ProcessName;
-
-                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = $"Sessão vinculada: {selectedVn.Title}", IsError = false }));
+                    if (string.IsNullOrEmpty(specificProcessName))
+                        WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = $"Sessão vinculada: {selectedVn.Title}", IsError = false }));
                 }
+
+                UpdateVisualCurrentVN();
             });
+        }
+
+        // main window vsource/vn title
+        partial void OnCurrentVNChanged(VN2Anki.Models.Entities.VisualNovel value)
+        {
+            UpdateVisualCurrentVN();
+        }
+
+        public void UpdateVisualCurrentVN()
+        {
+            bool isZeroed = Tracker.ValidCharacterCount == 0 && Tracker.Elapsed.TotalSeconds == 0 && !IsBufferActive;
+
+            ManualLinkVisibility = isZeroed ? Visibility.Visible : Visibility.Collapsed;
+            ManualLinkText = CurrentVN != null ? "-" : "+";
+            ManualLinkColor = CurrentVN != null ? Brushes.Orange : Brushes.Teal;
+
+            if (CurrentVN != null)
+            {
+                DisplayVnTitle = CurrentVN.Title;
+                VnTitleColor = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#007ACC"));
+                return;
+            }
+
+            var videoSource = _configService.CurrentConfig.Media.VideoWindow;
+
+            if (string.IsNullOrEmpty(videoSource))
+            {
+                DisplayVnTitle = "No Video Source";
+                VnTitleColor = Brushes.Crimson;
+                return;
+            }
+
+            var windows = _videoEngine.GetWindows();
+            var targetWin = windows.FirstOrDefault(w => w.ProcessName == videoSource);
+
+            if (targetWin != null)
+            {
+                DisplayVnTitle = !string.IsNullOrWhiteSpace(targetWin.Title) ? targetWin.Title : targetWin.ProcessName;
+            }
+            else
+            {
+                DisplayVnTitle = "No Video Source";
+            }
+
+            VnTitleColor = Brushes.Crimson;
+        }
+
+        [RelayCommand]
+        private void ManualLinkAction()
+        {
+            if (IsBufferActive || Tracker.ValidCharacterCount > 0 || Tracker.Elapsed.TotalSeconds > 0)
+            {
+                MessageBox.Show("Você não pode alterar ou desvincular a Visual Novel com uma sessão em andamento.\nFinalize a sessão atual primeiro clicando em END.", "Ação Bloqueada", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (CurrentVN != null)
+            {
+                CurrentVN = null; // safe manual unlinking
+
+                var config = _configService.CurrentConfig;
+                config.Media.VideoWindow = string.Empty;
+                _configService.Save();
+                _miningService.TargetVideoWindow = string.Empty;
+            }
+            else
+            {
+                var videoSource = _configService.CurrentConfig.Media.VideoWindow;
+                if (string.IsNullOrEmpty(videoSource)) return;
+
+                var addWindow = App.Current.Services.GetRequiredService<AddVnWindow>();
+                var vm = addWindow.DataContext as VN2Anki.ViewModels.Hub.AddVnViewModel;
+
+                var matchWin = vm.OpenWindows.FirstOrDefault(w => w.ProcessName == videoSource);
+                if (matchWin != null) vm.SelectedWindow = matchWin;
+
+                if (addWindow.ShowDialog() == true)
+                {
+                    _ = CheckAndLinkRunningVNsAsync(videoSource);
+                }
+            }
+            UpdateVisualCurrentVN();
+        }
+        private void IdleWindowCheckTimer_Tick(object? sender, System.EventArgs e)
+        {
+            // verify if session has progress
+            bool isZeroed = Tracker.ValidCharacterCount == 0 && Tracker.Elapsed.TotalSeconds == 0 && !IsBufferActive;
+
+            if (!isZeroed) return;
+
+            // if no progress, checks if the configured video source is still running
+            // if not, resets the config and UI
+            var videoSource = _configService.CurrentConfig.Media.VideoWindow;
+            if (string.IsNullOrEmpty(videoSource)) return; 
+
+            var procs = System.Diagnostics.Process.GetProcessesByName(videoSource);
+            bool isRunning = false;
+            foreach (var p in procs)
+            {
+                if (p.MainWindowHandle != System.IntPtr.Zero) isRunning = true;
+                p.Dispose();
+            }
+
+            // process closed while app was idle = reset video source, unlink
+            if (!isRunning)
+            {
+                CurrentVN = null;
+
+                var config = _configService.CurrentConfig;
+                config.Media.VideoWindow = string.Empty;
+                _configService.Save();
+
+                _miningService.TargetVideoWindow = string.Empty;
+
+                UpdateVisualCurrentVN();
+            }
         }
     }
 }

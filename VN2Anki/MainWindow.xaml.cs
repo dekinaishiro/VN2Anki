@@ -58,7 +58,7 @@ namespace VN2Anki
                 }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
             }
 
-            await _viewModel.CheckRunningVNsAsync();
+            await _viewModel.CheckAndLinkRunningVNsAsync();
         }
 
         private void SaveWindowPosition()

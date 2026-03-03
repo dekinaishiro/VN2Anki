@@ -12,13 +12,11 @@ namespace VN2Anki.Services
     {
         private NamedPipeClientStream _pipe;
         private CancellationTokenSource _cts;
-
-        // Você pode usar o seu AppId ou usar o do GSM (1441571345942052935) para testar!
         private const string AppId = "1478238502486540288";
 
         public DiscordRpcService()
         {
-            // Tenta conectar em background assim que o serviço é injetado
+            // tries background connection to avoid blocking the UI on startup if Discord is not running
             _ = ConnectAsync();
         }
 
@@ -33,16 +31,16 @@ namespace VN2Anki.Services
             {
                 await _pipe.ConnectAsync(3000, _cts.Token);
 
-                // Handshake obrigatório do Discord
+                // Handshake
                 var handshake = new { v = 1, client_id = AppId };
                 await SendFrameAsync(0, JsonSerializer.Serialize(handshake));
 
-                // Inicia um loop apenas para manter o pipe lendo (o Discord exige isso)
+                // loop to keep pipe alive and read any incoming messages
                 _ = Task.Run(ReadLoopAsync);
             }
             catch (Exception)
             {
-                // Discord fechado, ignorar silenciosamente
+                // ignore if discord not running
             }
         }
 
@@ -51,17 +49,15 @@ namespace VN2Anki.Services
             if (_pipe == null || !_pipe.IsConnected) await ConnectAsync();
             if (_pipe == null || !_pipe.IsConnected) return;
 
-            // Usando o Dictionary para omitir o relógio com precisão militar
             var activity = new System.Collections.Generic.Dictionary<string, object>
-    {
-        { "name", gameName }, // Título Gigante em Negrito (Ex: Summer Pockets)
-        { "type", 0 }, // 0 = PLAYING
-        { "details", details }, // Primeira linha abaixo do título (Ex: Mining / Paused)
-        { "state", state }, // Segunda linha (Ex: 10 chars | 00:15:30)
-        { "assets", new { large_image = imageUrl, large_text = gameName } }
-    };
+            {
+                { "name", gameName },
+                { "type", 0 }, // 0 = PLAYING
+                { "details", details },
+                { "state", state },
+                { "assets", new { large_image = imageUrl, large_text = gameName } }
+            };
 
-            // Só manda a chave de tempo pro Discord se estiver rodando
             if (startTimestamp.HasValue)
             {
                 activity.Add("timestamps", new { start = ((DateTimeOffset)startTimestamp.Value).ToUnixTimeSeconds() });
@@ -109,7 +105,7 @@ namespace VN2Anki.Services
                 await _pipe.WriteAsync(buffer, 0, buffer.Length, _cts.Token);
                 await _pipe.FlushAsync(_cts.Token);
             }
-            catch { /* Ignorar caso o Discord tenha sido fechado */ }
+            catch { /* ignore if discord has been closed */ }
         }
 
         private async Task ReadLoopAsync()

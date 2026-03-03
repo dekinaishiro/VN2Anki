@@ -36,9 +36,6 @@ namespace VN2Anki.Messages
             VisualNovel = vn;
         }
     }
-
-    public class SessionSavedMessage
-    {
-        // "END" trigger
-    }
+    public class SessionEndedMessage{ }
+    public class SessionSavedMessage{ }
 }
