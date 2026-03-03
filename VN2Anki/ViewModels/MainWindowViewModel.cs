@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
+using System.Collections.Generic;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -336,6 +337,125 @@ namespace VN2Anki.ViewModels
                 _configService.Save();
                 _miningService.TargetVideoWindow = string.Empty;
             }
+        }
+
+        public async Task CheckRunningVNsAsync()
+        {
+            await Task.Delay(1500);
+
+            List<VN2Anki.Models.Entities.VisualNovel> vns = null;
+
+            using (var scope = App.Current.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<VN2Anki.Data.AppDbContext>();
+                vns = db.VisualNovels.ToList();
+            }
+
+            if (vns == null || vns.Count == 0) return;
+
+            var windows = _videoEngine.GetWindows();
+
+            // NOVO: Lista para armazenar todos os matches encontrados
+            var matchedVns = new System.Collections.Generic.List<VN2Anki.Models.Entities.VisualNovel>();
+
+            foreach (var win in windows)
+            {
+                var match = vns.FirstOrDefault(v =>
+                    (v.ExecutablePath == win.ExecutablePath && !string.IsNullOrEmpty(win.ExecutablePath)) ||
+                    (v.ProcessName == win.ProcessName && !string.IsNullOrEmpty(win.ProcessName)));
+
+                // Evita adicionar a mesma VN duas vezes se o jogo criar múltiplos processos iguais
+                if (match != null && !matchedVns.Any(v => v.Id == match.Id))
+                {
+                    matchedVns.Add(match);
+                }
+            }
+
+            if (matchedVns.Count == 0) return;
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                VN2Anki.Models.Entities.VisualNovel selectedVn = null;
+
+                if (matchedVns.Count == 1)
+                {
+                    // Fluxo normal: Apenas 1 VN encontrada
+                    var result = MessageBox.Show(
+                        $"Detectamos que '{matchedVns[0].Title}' está em execução.\nDeseja vinculá-la e iniciar a sessão agora?",
+                        "Visual Novel Detectada", MessageBoxButton.YesNo, MessageBoxImage.Information);
+
+                    if (result == MessageBoxResult.Yes) selectedVn = matchedVns[0];
+                }
+                else
+                {
+                    // Fluxo Múltiplo: Constrói uma janela de seleção dinamicamente para não poluir o projeto com mais arquivos XAML
+                    var win = new Window
+                    {
+                        Title = "Múltiplas VNs Detectadas",
+                        Width = 350,
+                        Height = 200,
+                        WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                        WindowStyle = WindowStyle.ToolWindow,
+                        ResizeMode = ResizeMode.NoResize,
+                        Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#252526")),
+                        Foreground = Brushes.White
+                    };
+
+                    var stack = new System.Windows.Controls.StackPanel { Margin = new Thickness(15) };
+
+                    stack.Children.Add(new System.Windows.Controls.TextBlock
+                    {
+                        Text = "Múltiplas VNs em execução detectadas.\nSelecione qual deseja vincular:",
+                        Foreground = Brushes.White,
+                        Margin = new Thickness(0, 0, 0, 15)
+                    });
+
+                    var combo = new System.Windows.Controls.ComboBox
+                    {
+                        ItemsSource = matchedVns,
+                        DisplayMemberPath = "Title",
+                        SelectedIndex = 0,
+                        Margin = new Thickness(0, 0, 0, 15),
+                        Padding = new Thickness(5)
+                    };
+                    stack.Children.Add(combo);
+
+                    var btn = new System.Windows.Controls.Button
+                    {
+                        Content = "Vincular Selecionada",
+                        Padding = new Thickness(10, 8, 10, 8),
+                        Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#007ACC")),
+                        Foreground = Brushes.White,
+                        BorderThickness = new Thickness(0),
+                        Cursor = System.Windows.Input.Cursors.Hand
+                    };
+
+                    btn.Click += (s, e) => { selectedVn = combo.SelectedItem as VN2Anki.Models.Entities.VisualNovel; win.DialogResult = true; win.Close(); };
+                    stack.Children.Add(btn);
+
+                    win.Content = stack;
+                    win.ShowDialog();
+                }
+
+                // Se o usuário selecionou algo (seja no Yes/No ou no ComboBox), fazemos o bind!
+                if (selectedVn != null)
+                {
+                    if (CurrentVN != null) EndSession();
+
+                    CurrentVN = selectedVn;
+
+                    // Acha a janela correspondente ao selectedVn para pegar o ProcessName correto
+                    var targetWin = windows.First(w => w.ExecutablePath == selectedVn.ExecutablePath || w.ProcessName == selectedVn.ProcessName);
+
+                    var config = _configService.CurrentConfig;
+                    config.Media.VideoWindow = targetWin.ProcessName;
+                    _configService.Save();
+
+                    _miningService.TargetVideoWindow = targetWin.ProcessName;
+
+                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = $"Sessão vinculada: {selectedVn.Title}", IsError = false }));
+                }
+            });
         }
     }
 }

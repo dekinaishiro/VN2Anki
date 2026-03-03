@@ -35,7 +35,7 @@ namespace VN2Anki
             this.Closing += (s, e) => { SaveWindowPosition(); };
         }
 
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+        private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
             _viewModel.ApplyConfigToServices();
 
@@ -52,11 +52,13 @@ namespace VN2Anki
 
             if (config.OpenSettingsOnStartup)
             {
-                Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
                     BtnOpenSettings_Click(this, new RoutedEventArgs());
-                }), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
             }
+
+            await _viewModel.CheckRunningVNsAsync();
         }
 
         private void SaveWindowPosition()
