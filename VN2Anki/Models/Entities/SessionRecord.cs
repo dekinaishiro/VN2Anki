@@ -5,7 +5,7 @@ namespace VN2Anki.Models.Entities
     public class SessionRecord
     {
         public int Id { get; set; }
-        public int VisualNovelId { get; set; }
+        public int? VisualNovelId { get; set; }
         public VisualNovel VisualNovel { get; set; } 
 
         public DateTime StartTime { get; set; }

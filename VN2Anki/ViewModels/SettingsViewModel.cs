@@ -13,6 +13,7 @@ namespace VN2Anki.ViewModels
         private readonly IConfigurationService _configService;
         private readonly AudioEngine _audioEngine;
         private readonly VideoEngine _videoEngine;
+        public SessionTracker Tracker { get; }
 
         [ObservableProperty]
         private AppConfig _config;
@@ -23,13 +24,14 @@ namespace VN2Anki.ViewModels
         [ObservableProperty]
         private ObservableCollection<VideoEngine.VideoWindowItem> _videoWindows = new();
 
-        public SettingsViewModel(IConfigurationService configService, AudioEngine audioEngine, VideoEngine videoEngine)
+        public bool IsVideoSelectionEnabled => !Tracker.IsTracking && Tracker.ValidCharacterCount == 0 && Tracker.Elapsed.TotalSeconds == 0;
+        public SettingsViewModel(IConfigurationService configService, AudioEngine audioEngine, VideoEngine videoEngine, SessionTracker tracker)
         {
             _configService = configService;
             _audioEngine = audioEngine;
             _videoEngine = videoEngine;
+            Tracker = tracker;
 
-            // points directly to the current in-memory configuration, so changes are reflected immediately
             Config = _configService.CurrentConfig;
         }
 

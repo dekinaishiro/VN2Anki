@@ -173,29 +173,52 @@ namespace VN2Anki.ViewModels
 
         public void EndSession()
         {
-            // real vn and session validation: only saves if there's a valid VN and some activity
-            if (CurrentVN != null && (Tracker.Elapsed.TotalSeconds > 0 || Tracker.ValidCharacterCount > 0))
+            // verify if there's progress (chars)
+            bool hasProgress = Tracker.Elapsed.TotalSeconds > 0 || Tracker.ValidCharacterCount > 0;
+
+            if (hasProgress)
             {
-                using (var scope = App.Current.Services.CreateScope())
+                int? vnIdToSave = CurrentVN?.Id;
+
+                // progress but no VN linked
+                if (CurrentVN == null)
                 {
-                    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    var record = new SessionRecord
+                    var result = MessageBox.Show(
+                        "Você leu alguns caracteres, mas nenhuma Visual Novel está selecionada.\nDeseja salvar este progresso no histórico para vinculá-lo a um jogo mais tarde?",
+                        "Salvar Sessão Órfã?",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Question);
+
+                    if (result == MessageBoxResult.No)
                     {
-                        VisualNovelId = CurrentVN.Id,
-                        StartTime = System.DateTime.Now - Tracker.Elapsed,
-                        EndTime = System.DateTime.Now,
-                        DurationSeconds = (int)Tracker.Elapsed.TotalSeconds,
-                        CharactersRead = Tracker.ValidCharacterCount,
-                        CardsMined = 0 // Expansão futura
-                    };
-                    db.Sessions.Add(record);
-                    db.SaveChanges();
+                        hasProgress = false; // Cancela o salvamento da sessão
+                    }
                 }
 
-                // tells hub to update list
-                WeakReferenceMessenger.Default.Send(new SessionSavedMessage());
+                // Se tinha VN ou o usuário clicou em 'Sim' no prompt acima, salva no banco
+                if (hasProgress)
+                {
+                    using (var scope = App.Current.Services.CreateScope())
+                    {
+                        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                        var record = new SessionRecord
+                        {
+                            VisualNovelId = vnIdToSave,
+                            StartTime = System.DateTime.Now - Tracker.Elapsed,
+                            EndTime = System.DateTime.Now,
+                            DurationSeconds = (int)Tracker.Elapsed.TotalSeconds,
+                            CharactersRead = Tracker.ValidCharacterCount,
+                            CardsMined = 0
+                        };
+                        db.Sessions.Add(record);
+                        db.SaveChanges();
+                    }
+
+                    WeakReferenceMessenger.Default.Send(new SessionSavedMessage());
+                }
             }
 
+            // cleaning routine 
             if (IsBufferActive) ToggleBuffer();
             Tracker.Reset();
             foreach (var slot in _miningService.HistorySlots) slot.Dispose();

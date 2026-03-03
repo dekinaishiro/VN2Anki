@@ -20,6 +20,11 @@
             <Style x:Key="StandardComboBox" TargetType="ComboBox">
                 <Setter Property="Margin" Value="5"/>
                 <Setter Property="Padding" Value="5"/>
+                <Style.Triggers>
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Opacity" Value="0.5"/>
+                    </Trigger>
+                </Style.Triggers>
             </Style>
 
             <Style x:Key="StandardButton" TargetType="Button">
@@ -29,6 +34,13 @@
                 <Setter Property="Foreground" Value="White"/>
                 <Setter Property="BorderThickness" Value="0"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
+                <Style.Triggers>
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Opacity" Value="0.5"/>
+                        <Setter Property="Background" Value="#222222"/>
+                        <Setter Property="Foreground" Value="#888888"/>
+                    </Trigger>
+                </Style.Triggers>
             </Style>
 
             <Style x:Key="SaveButton" TargetType="Button" BasedOn="{StaticResource StandardButton}">
@@ -120,8 +132,8 @@
                         </Button>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblVideoSource}" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboVideo" Grid.Row="1" Grid.Column="1" ItemsSource="{Binding VideoWindows}" DisplayMemberPath="DisplayName" SelectedValuePath="ProcessName" SelectedValue="{Binding Config.Media.VideoWindow}"/>
-                        <Button Style="{StaticResource StandardButton}" Grid.Row="1" Grid.Column="2" Width="35" Height="35" Click="BtnRefreshVideo_Click" Padding="0">
+                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboVideo" Grid.Row="1" Grid.Column="1" ItemsSource="{Binding VideoWindows}" DisplayMemberPath="DisplayName" SelectedValuePath="ProcessName" SelectedValue="{Binding Config.Media.VideoWindow}" IsEnabled="{Binding IsVideoSelectionEnabled}"/>
+                        <Button Style="{StaticResource StandardButton}" Grid.Row="1" Grid.Column="2" Width="35" Height="35" Click="BtnRefreshVideo_Click" Padding="0" IsEnabled="{Binding IsVideoSelectionEnabled}">
                             <TextBlock Text="🔄" FontSize="18"/>
                         </Button>
 
