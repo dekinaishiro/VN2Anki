@@ -16,10 +16,14 @@ namespace VN2Anki
             var addWindow = App.Current.Services.GetRequiredService<AddVnWindow>();
             addWindow.Owner = this;
 
+            var vm = addWindow.DataContext as VN2Anki.ViewModels.Hub.AddVnViewModel;
+            // context flag
+            vm.IsOpenedFromLibrary = true;
+
             if (addWindow.ShowDialog() == true)
             {
-                var vm = this.DataContext as VN2Anki.ViewModels.Hub.LibraryViewModel;
-                vm?.LoadLibrary();
+                var libraryVm = this.DataContext as VN2Anki.ViewModels.Hub.LibraryViewModel;
+                libraryVm?.LoadLibrary();
             }
         }
     }

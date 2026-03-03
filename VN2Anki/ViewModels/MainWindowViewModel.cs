@@ -624,20 +624,29 @@ private Visibility _manualLinkVisibility = Visibility.Collapsed;
             else
             {
                 var videoSource = _configService.CurrentConfig.Media.VideoWindow;
-                if (string.IsNullOrEmpty(videoSource)) return;
 
                 var addWindow = App.Current.Services.GetRequiredService<AddVnWindow>();
                 var vm = addWindow.DataContext as VN2Anki.ViewModels.Hub.AddVnViewModel;
 
-                var matchWin = vm.OpenWindows.FirstOrDefault(w => w.ProcessName == videoSource);
-                if (matchWin != null) vm.SelectedWindow = matchWin;
+                // context flag
+                vm.IsOpenedFromLibrary = false;
+
+                if (!string.IsNullOrEmpty(videoSource))
+                {
+                    var matchWin = vm.OpenWindows.FirstOrDefault(w => w.BaseItem.ProcessName == videoSource);
+                    if (matchWin != null) vm.SelectedWindow = matchWin;
+                }
 
                 if (addWindow.ShowDialog() == true)
                 {
-                    _ = CheckAndLinkRunningVNsAsync(videoSource);
+                    var processToLink = vm.SelectedWindow?.BaseItem.ProcessName;
+                    if (!string.IsNullOrEmpty(processToLink))
+                    {
+                        _ = CheckAndLinkRunningVNsAsync(processToLink);
+                    }
                 }
             }
-            UpdateVisualCurrentVN();
+            UpdateVisualCurrentVN(); ;
         }
         private void IdleWindowCheckTimer_Tick(object? sender, System.EventArgs e)
         {
