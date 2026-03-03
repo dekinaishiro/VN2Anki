@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Threading;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -11,12 +12,13 @@ using VN2Anki.Services;
 
 namespace VN2Anki.ViewModels
 {
-    public partial class MainWindowViewModel : ObservableObject, IRecipient<StatusMessage>
+    public partial class MainWindowViewModel : ObservableObject, IRecipient<StatusMessage>, IRecipient<PlayVnMessage>
     {
         private readonly MiningService _miningService;
         private readonly IConfigurationService _configService;
         private readonly AnkiExportService _ankiExportService;
         private readonly AnkiHandler _ankiHandler;
+        private CancellationTokenSource _pollingCts;
 
         public SessionTracker Tracker { get; }
 
@@ -34,23 +36,29 @@ namespace VN2Anki.ViewModels
         [NotifyPropertyChangedFor(nameof(BufferBtnBackground))]
         private bool _isBufferActive;
 
+        private readonly VideoEngine _videoEngine;
+
+        [ObservableProperty]
+        private VN2Anki.Models.Entities.VisualNovel _currentVN;
+
         public string BufferBtnText => IsBufferActive ? "ON" : "OFF";
         public Brush BufferBtnBackground => IsBufferActive ? Brushes.Green : Brushes.Crimson;
 
-        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiExportService ankiExportService, AnkiHandler ankiHandler)
+        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiExportService ankiExportService, AnkiHandler ankiHandler, VideoEngine videoEngine)
         {
             Tracker = tracker;
             _miningService = miningService;
             _configService = configService;
             _ankiExportService = ankiExportService;
             _ankiHandler = ankiHandler;
+            _videoEngine = videoEngine;
 
             _miningService.OnBufferStoppedUnexpectedly += () =>
             {
                 Application.Current.Dispatcher.Invoke(() => IsBufferActive = false);
             };
 
-            WeakReferenceMessenger.Default.Register(this);
+            WeakReferenceMessenger.Default.RegisterAll(this); // listen to multiple message types
         }
 
         public void ApplyConfigToServices()
@@ -166,6 +174,9 @@ namespace VN2Anki.ViewModels
             Tracker.Reset();
             foreach (var slot in _miningService.HistorySlots) slot.Dispose();
             _miningService.HistorySlots.Clear();
+
+            CurrentVN = null;
+
             StatusText = Strings.StatusSessionEnded;
             StatusVisibility = Visibility.Visible;
         }
@@ -177,6 +188,105 @@ namespace VN2Anki.ViewModels
                 StatusText = message.Value;
                 StatusVisibility = string.IsNullOrEmpty(message.Value) ? Visibility.Collapsed : Visibility.Visible;
             });
+        }
+
+        public async void Receive(PlayVnMessage message)
+        {
+            var vn = message.VisualNovel;
+
+            // verifies if current session is active and prompts the user to confirm if they want to end it before starting a new one
+            if (CurrentVN != null && (Tracker.ValidCharacterCount > 0 || Tracker.Elapsed.TotalSeconds > 0 || IsBufferActive))
+            {
+                var result = MessageBox.Show($"Uma sessão está ativa com '{CurrentVN.Title}'.\nDeseja encerrá-la e iniciar outra com '{vn.Title}'?", "Atenção", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    EndSession();
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            // polling duplicate prevention: cancels any existing polling loop before starting a new one
+            _pollingCts?.Cancel();
+            _pollingCts = new CancellationTokenSource();
+            var token = _pollingCts.Token;
+
+            CurrentVN = vn;
+
+            if (IsBufferActive) ToggleBuffer();
+
+            if (string.IsNullOrEmpty(vn.ExecutablePath) || !System.IO.File.Exists(vn.ExecutablePath))
+            {
+                WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Executável não encontrado!", IsError = true }));
+                CurrentVN = null;
+                return;
+            }
+
+            try
+            {
+                var pInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = vn.ExecutablePath,
+                    WorkingDirectory = System.IO.Path.GetDirectoryName(vn.ExecutablePath),
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(pInfo);
+            }
+            catch (System.Exception)
+            {
+                WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Erro ao abrir o jogo!", IsError = true }));
+                CurrentVN = null;
+                return;
+            }
+
+            WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = $"Aguardando janela: {vn.Title}...", IsError = false }));
+
+            bool windowFound = false;
+
+            try
+            {
+                // token injected delay loop to wait for the game window to appear
+                // timeout is harded coded for now
+                for (int i = 0; i < 30; i++)
+                {
+                    await Task.Delay(1000, token); // Passa o token para a espera!
+
+                    var windows = _videoEngine.GetWindows();
+                    var targetWin = windows.FirstOrDefault(w => w.ExecutablePath == vn.ExecutablePath || w.ProcessName == vn.ProcessName);
+
+                    if (targetWin != null)
+                    {
+                        var config = _configService.CurrentConfig;
+                        config.Media.VideoWindow = targetWin.ProcessName;
+                        _configService.Save();
+
+                        _miningService.TargetVideoWindow = targetWin.ProcessName;
+                        windowFound = true;
+
+                        WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Vídeo conectado! Pronto para o Play.", IsError = false }));
+                        break;
+                    }
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                // prevents overlapping polls
+                return;
+            }
+
+            if (!windowFound)
+            {
+                WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Timeout: A janela não apareceu.", IsError = true }));
+                CurrentVN = null;
+
+                var config = _configService.CurrentConfig;
+                config.Media.VideoWindow = string.Empty;
+                _configService.Save();
+                _miningService.TargetVideoWindow = string.Empty;
+            }
         }
     }
 }

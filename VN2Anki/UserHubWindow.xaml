@@ -45,7 +45,7 @@
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
 
-                                                <Button Grid.Column="0" Content="▶ Ligar Tracker" Background="#007ACC" Foreground="White" FontWeight="Bold" BorderThickness="0" Padding="5" Cursor="Hand" Margin="0,0,5,0"/>
+                                                <Button Grid.Column="0" Content="▶ Play" Command="{Binding DataContext.PlayVnCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Background="#007ACC" Foreground="White" FontWeight="Bold" BorderThickness="0" Padding="5" Cursor="Hand" Margin="0,0,5,0"/>
 
                                                 <Button Grid.Column="1" Content="🗑" Command="{Binding DataContext.DeleteVnCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}" Background="#DC3545" Foreground="White" BorderThickness="0" Padding="8,5" Cursor="Hand" ToolTip="Remover da Biblioteca"/>
                                             </Grid>

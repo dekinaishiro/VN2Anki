@@ -149,7 +149,7 @@ namespace VN2Anki
                 {
                     WindowStyle = WindowStyle.None,
                     AllowsTransparency = true,
-                    Background = Brushes.Transparent, // O fundo da Window DEVE ser transparente
+                    Background = Brushes.Transparent,
                     Topmost = true,
                     ShowInTaskbar = false,
                     Width = toastWidth,
@@ -158,13 +158,12 @@ namespace VN2Anki
                     Top = topPos
                 };
 
-                // Criamos um Border para segurar o conteúdo e o arredondamento
                 var border = new Border
                 {
                     Background = message.Value.IsError ? Brushes.Crimson : Brushes.SeaGreen,
                     BorderBrush = Brushes.White,
                     BorderThickness = new Thickness(1),
-                    CornerRadius = new CornerRadius(8), // Agora sim, aqui funciona!
+                    CornerRadius = new CornerRadius(8),
                     Child = new TextBlock
                     {
                         Text = message.Value.Message,
@@ -176,7 +175,7 @@ namespace VN2Anki
                     }
                 };
 
-                f.Content = border; // O Border é o conteúdo principal da Window
+                f.Content = border;
                 f.Show();
 
                 var t = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1.8) };

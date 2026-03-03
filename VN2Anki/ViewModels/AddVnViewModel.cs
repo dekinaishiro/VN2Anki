@@ -26,7 +26,6 @@ namespace VN2Anki.ViewModels.Hub
         [ObservableProperty]
         private VideoEngine.VideoWindowItem _selectedWindow;
 
-        // NOVO: Propriedade para guardar o print da janela selecionada
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(HasThumbnail))]
         private BitmapImage _windowThumbnail;
@@ -59,12 +58,10 @@ namespace VN2Anki.ViewModels.Hub
             foreach (var win in windows) OpenWindows.Add(win);
         }
 
-        // NOVO: Gatilho automático disparado sempre que o usuário seleciona uma janela
         partial void OnSelectedWindowChanged(VideoEngine.VideoWindowItem value)
         {
             if (value == null) return;
 
-            // 1. Tenta capturar a miniatura da janela (largura reduzida para performance)
             var imgBytes = _videoEngine.CaptureWindow(value.ProcessName, 400);
             if (imgBytes != null && imgBytes.Length > 0)
             {
@@ -90,7 +87,6 @@ namespace VN2Anki.ViewModels.Hub
                 WindowThumbnail = null;
             }
 
-            // 2. Preenche a busca e dispara a VNDB
             if (!string.IsNullOrWhiteSpace(value.Title))
             {
                 SearchQuery = value.Title;
@@ -109,7 +105,6 @@ namespace VN2Anki.ViewModels.Hub
             var results = await _vndbService.SearchVisualNovelAsync(SearchQuery);
             foreach (var r in results) SearchResults.Add(r);
 
-            // Seleciona automaticamente o primeiro resultado se houver
             if (SearchResults.Count > 0) SelectedVndbResult = SearchResults[0];
 
             IsLoading = false;
@@ -124,7 +119,6 @@ namespace VN2Anki.ViewModels.Hub
                 return;
             }
 
-            // NOVO: Bloqueio de Duplicatas (Checa se a VN já existe pelo VndbId)
             bool alreadyExists = _db.VisualNovels.Any(v => v.VndbId == SelectedVndbResult.Id);
             if (alreadyExists)
             {
@@ -140,7 +134,7 @@ namespace VN2Anki.ViewModels.Hub
             {
                 Title = SelectedVndbResult.Title,
                 ProcessName = SelectedWindow.ProcessName,
-                ExecutablePath = SelectedWindow.ExecutablePath, // Propriedade da Fase 1 salva no Banco!
+                ExecutablePath = SelectedWindow.ExecutablePath,
                 VndbId = SelectedVndbResult.Id,
                 CoverImagePath = coverPath
             };

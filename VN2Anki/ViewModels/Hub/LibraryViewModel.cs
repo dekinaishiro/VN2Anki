@@ -1,8 +1,10 @@
-﻿using System.Collections.ObjectModel;
-using System.Linq;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using System.Collections.ObjectModel;
+using System.Linq;
 using VN2Anki.Data;
+using VN2Anki.Messages;
 using VN2Anki.Models.Entities;
 
 namespace VN2Anki.ViewModels.Hub
@@ -50,6 +52,14 @@ namespace VN2Anki.ViewModels.Hub
             _db.VisualNovels.Remove(vn);
             _db.SaveChanges();
             VisualNovels.Remove(vn);
+        }
+
+        [RelayCommand]
+        private void PlayVn(VisualNovel vn)
+        {
+            if (vn == null) return;
+
+            WeakReferenceMessenger.Default.Send(new PlayVnMessage(vn));
         }
     }
 }

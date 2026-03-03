@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.Messaging.Messages;
 using VN2Anki.Models;
+using VN2Anki.Models.Entities;
 
 namespace VN2Anki.Messages
 {
@@ -25,5 +26,14 @@ namespace VN2Anki.Messages
     public class ShowFlashMessage : ValueChangedMessage<FlashMessagePayload>
     {
         public ShowFlashMessage(FlashMessagePayload value) : base(value) { }
+    }
+
+    public class PlayVnMessage
+    {
+        public VisualNovel VisualNovel { get; }
+        public PlayVnMessage(VisualNovel vn)
+        {
+            VisualNovel = vn;
+        }
     }
 }
