@@ -19,7 +19,7 @@ using VN2Anki.Services.Interfaces;
 
 namespace VN2Anki.ViewModels
 {
-    public partial class MainWindowViewModel : ObservableObject, IRecipient<StatusMessage>, IRecipient<PlayVnMessage>
+    public partial class MainWindowViewModel : ObservableObject, IRecipient<StatusMessage>, IRecipient<PlayVnMessage>, IRecipient<BufferStoppedMessage>
     {
         private readonly MiningService _miningService;
         private readonly IConfigurationService _configService;
@@ -81,18 +81,6 @@ namespace VN2Anki.ViewModels
             _videoEngine = videoEngine;
             _discordRpc = discordRpc;
             _windowService = windowService;
-
-            _miningService.OnBufferStoppedUnexpectedly += () =>
-            {
-                Application.Current.Dispatcher.Invoke(() => IsBufferActive = false);
-                _ = _discordRpc.UpdatePresenceAsync(
-                    "VN2Anki",             
-                    "No Session",        
-                    "Waiting...", 
-                    null,                   
-                    "default_icon"        
-                );
-            };
 
             _idleWindowCheckTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
             _idleWindowCheckTimer.Tick += IdleWindowCheckTimer_Tick;
@@ -697,6 +685,18 @@ namespace VN2Anki.ViewModels
 
                 UpdateVisualCurrentVN();
             }
+        }
+
+        public void Receive(BufferStoppedMessage message)
+        {
+            Application.Current.Dispatcher.Invoke(() => IsBufferActive = false);
+            _ = _discordRpc.UpdatePresenceAsync(
+                "Taking a Break",
+                "No Session",
+                "Waiting...",
+                null,
+                "default_icon"
+            );
         }
     }
 }

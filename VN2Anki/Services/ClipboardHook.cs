@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using System;
 using System.Threading.Tasks;
 using System.Windows;
 using WK.Libraries.SharpClipboardNS;
@@ -8,7 +9,7 @@ namespace VN2Anki.Services
     public class ClipboardHook : ITextHook
     {
         private SharpClipboard _clipboard;
-        public event Action<string, DateTime> OnTextCopied;
+        //public event Action<string, DateTime> OnTextCopied;
 
         private string _lastText = string.Empty;
         private DateTime _lastTime = DateTime.MinValue;
@@ -56,7 +57,7 @@ namespace VN2Anki.Services
 
                 _lastText = text;
                 _lastTime = DateTime.Now;
-                OnTextCopied?.Invoke(text, DateTime.Now);
+                WeakReferenceMessenger.Default.Send(new Messages.TextCopiedMessage(text, DateTime.Now));
             }
         }
 

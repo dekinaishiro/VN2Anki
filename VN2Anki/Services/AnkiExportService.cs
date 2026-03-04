@@ -56,13 +56,13 @@ namespace VN2Anki.Services
 
             var result = await _anki.UpdateLastCardAsync(ankiConfig.Deck, ankiConfig.AudioField, ankiConfig.ImageField, hasAudio ? audioFilename : null, hasImage ? imageFilename : null);
 
-            // Force GC collection after heavy media processing
-            _ = Task.Run(async () =>
-            {
-                await Task.Delay(1000);
-                System.Runtime.GCSettings.LargeObjectHeapCompactionMode = System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
-                GC.Collect(2, GCCollectionMode.Forced, false, true);
-            });
+            // force GC collection after heavy media processing
+            //_ = Task.Run(async () =>
+            //{
+            //    await Task.Delay(1000);
+            //    System.Runtime.GCSettings.LargeObjectHeapCompactionMode = System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
+            //    GC.Collect(2, GCCollectionMode.Forced, false, true);
+            //});
 
             return result;
         }

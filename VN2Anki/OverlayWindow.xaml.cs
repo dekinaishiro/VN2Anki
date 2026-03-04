@@ -14,7 +14,7 @@ using VN2Anki.Messages;
 
 namespace VN2Anki
 {
-    public partial class OverlayWindow : Window, IRecipient<OverlayConfigUpdatedMessage>
+    public partial class OverlayWindow : Window, IRecipient<OverlayConfigUpdatedMessage>, IRecipient<TextCopiedMessage>
     {
         [DllImport("user32.dll")]
         private static extern short GetAsyncKeyState(int vKey);
@@ -83,7 +83,7 @@ namespace VN2Anki
             InitializeWebViewAsync();
             SetupHoldTimer();
 
-            WeakReferenceMessenger.Default.Register(this);
+            WeakReferenceMessenger.Default.RegisterAll(this); // CHECK LATER
         }
 
         private void DetermineModifierKey()
@@ -221,7 +221,7 @@ namespace VN2Anki
                 this.Left = conf.Left;
             }
 
-            _textHook.OnTextCopied += HandleNewText;
+            //_textHook.OnTextCopied += HandleNewText;
             ApplyPassThroughState();
         }
 
@@ -474,7 +474,7 @@ namespace VN2Anki
             conf.Left = this.Left;
 
             _configService.Save();
-            _textHook.OnTextCopied -= HandleNewText;
+            //_textHook.OnTextCopied -= HandleNewText;
 
             if (_webViewRenderHostHandle != IntPtr.Zero)
             {
@@ -537,6 +537,11 @@ namespace VN2Anki
                 ApplyDynamicStyles();
                 ApplyTransparencyState();
             });
+        }
+
+        public void Receive(TextCopiedMessage message)
+        {
+            HandleNewText(message.Text, message.Timestamp);
         }
     }
 }

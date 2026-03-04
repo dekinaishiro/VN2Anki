@@ -10,7 +10,7 @@ using VN2Anki.Models;
 
 namespace VN2Anki.Services
 {
-    public class MiningService
+    public class MiningService : IRecipient<TextCopiedMessage>, IRecipient<AudioErrorMessage>
     {
         public ITextHook TextHook { get; }
         public SessionTracker Tracker { get; }
@@ -21,8 +21,6 @@ namespace VN2Anki.Services
         private readonly DispatcherTimer _videoCheckTimer;
 
         public ObservableCollection<MiningSlot> HistorySlots { get; }
-        public event Action<MiningSlot> OnSlotCaptured;
-        public event Action OnBufferStoppedUnexpectedly;
 
         public string TargetVideoWindow { get; set; }
         public int MaxSlots { get; set; } = 25;
@@ -43,11 +41,10 @@ namespace VN2Anki.Services
             _idleTimer = new DispatcherTimer();
             _idleTimer.Tick += IdleTimer_Tick;
 
-            TextHook.OnTextCopied += ProcessCaptureSequence;
-            Audio.OnRecordingError += HandleAudioError;
-
             _videoCheckTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
             _videoCheckTimer.Tick += VideoCheckTimer_Tick;
+
+            WeakReferenceMessenger.Default.RegisterAll(this);
         }
 
         private void SendStatus(string message)
@@ -75,7 +72,7 @@ namespace VN2Anki.Services
             SendStatus("Buffer stopped.");
         }
 
-        private void ProcessCaptureSequence(string text, DateTime timestamp)
+        public void Receive(TextCopiedMessage message)
         {
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
@@ -83,12 +80,12 @@ namespace VN2Anki.Services
                 SealAllOpenSlots(DateTime.Now);
 
                 byte[] imgBytes = _mediaService.CaptureScreenshot(TargetVideoWindow, MaxImageWidth);
-                string safeText = text.Length > 1000 ? text.Substring(0, 1000) + " [...]" : text;
+                string safeText = message.Text.Length > 1000 ? message.Text.Substring(0, 1000) + " [...]" : message.Text;
 
                 var newSlot = new MiningSlot
                 {
                     Text = safeText,
-                    Timestamp = timestamp,
+                    Timestamp = message.Timestamp,
                     ScreenshotBytes = imgBytes
                 };
 
@@ -126,7 +123,7 @@ namespace VN2Anki.Services
 
                 string modeText = UseDynamicTimeout ? "Dynamic" : "Fixed";
                 SendStatus($"Slot captured! Sealing in {finalSeconds:F1}s ({modeText})");
-                OnSlotCaptured?.Invoke(newSlot);
+                WeakReferenceMessenger.Default.Send(new SlotCapturedMessage(newSlot));
             });
         }
 
@@ -159,7 +156,7 @@ namespace VN2Anki.Services
                 {
                     StopBuffer();
                     SendStatus("⚠️ Vídeo desconectado! Buffer pausado.");
-                    OnBufferStoppedUnexpectedly?.Invoke();
+                    WeakReferenceMessenger.Default.Send(new BufferStoppedMessage());
                 });
             }
         }
@@ -207,13 +204,13 @@ namespace VN2Anki.Services
             return Regex.Matches(text, @"[\p{IsHiragana}\p{IsKatakana}\p{IsCJKUnifiedIdeographs}]").Count;
         }
 
-        private void HandleAudioError(string msg)
+        public void Receive(AudioErrorMessage message)
         {
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
                 StopBuffer();
-                SendStatus($"⚠️ ERROR: {msg}");
-                OnBufferStoppedUnexpectedly?.Invoke();
+                SendStatus($"⚠️ ERROR: {message.Value}");
+                WeakReferenceMessenger.Default.Send(new BufferStoppedMessage());
             });
         }
     }

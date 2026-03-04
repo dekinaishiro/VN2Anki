@@ -38,4 +38,22 @@ namespace VN2Anki.Messages
     }
     public class SessionEndedMessage{ }
     public class SessionSavedMessage{ }
+
+    public class TextCopiedMessage
+    {
+        public string Text { get; }
+        public DateTime Timestamp { get; }
+        public TextCopiedMessage(string text, DateTime timestamp)
+        {
+            Text = text;
+            Timestamp = timestamp;
+        }
+    }
+
+    public class AudioErrorMessage : ValueChangedMessage<string>
+    {
+        public AudioErrorMessage(string value) : base(value) { }
+    }
+
+    public class BufferStoppedMessage { }
 }

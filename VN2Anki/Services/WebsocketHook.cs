@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using System;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
@@ -9,7 +10,7 @@ namespace VN2Anki.Services
 {
     public class WebsocketHook
     {
-        public event Action<string, DateTime> OnTextCopied;
+        //public event Action<string, DateTime> OnTextCopied;
 
         private readonly IConfigurationService _configService;
         private ClientWebSocket _webSocket;
@@ -97,7 +98,7 @@ namespace VN2Anki.Services
                     if (result.MessageType == WebSocketMessageType.Text)
                     {
                         string message = Encoding.UTF8.GetString(ms.ToArray());
-                        OnTextCopied?.Invoke(message, DateTime.Now);
+                        WeakReferenceMessenger.Default.Send(new Messages.TextCopiedMessage(message, DateTime.Now));
                     }
                 }
             }

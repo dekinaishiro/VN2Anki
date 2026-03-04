@@ -4,7 +4,7 @@ namespace VN2Anki.Services
 {
     public class HookManager : ITextHook
     {
-        public event Action<string, DateTime> OnTextCopied;
+        //public event Action<string, DateTime> OnTextCopied;
 
         private readonly ClipboardHook _clipboardHook;
         private readonly WebsocketHook _websocketHook;
@@ -18,9 +18,6 @@ namespace VN2Anki.Services
             _websocketHook = websocketHook;
             _configService = configService;
 
-            // Route both events to the main output
-            _clipboardHook.OnTextCopied += (text, time) => OnTextCopied?.Invoke(text, time);
-            _websocketHook.OnTextCopied += (text, time) => OnTextCopied?.Invoke(text, time);
         }
 
         public void Start()

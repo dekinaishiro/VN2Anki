@@ -1,4 +1,5 @@
-﻿using NAudio.CoreAudioApi;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using NAudio.CoreAudioApi;
 using NAudio.Wave;
 using System;
 using System.Collections.Generic;
@@ -26,7 +27,7 @@ namespace VN2Anki.Services
         private bool _isRecording = false;
 
         // event to notify errors from silent audio dc
-        public event Action<string> OnRecordingError;
+
         private bool _isManualStop = false; 
 
         public int DurationSeconds { get; }
@@ -91,7 +92,7 @@ namespace VN2Anki.Services
                     if (!_isManualStop)
                     {
                         string errorMsg = e.Exception != null ? e.Exception.Message : "Disconnected Device.";
-                        OnRecordingError?.Invoke(errorMsg);
+                        WeakReferenceMessenger.Default.Send(new Messages.AudioErrorMessage(errorMsg));
                     }
                 };
 
