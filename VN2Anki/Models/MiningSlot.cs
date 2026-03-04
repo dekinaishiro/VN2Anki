@@ -40,26 +40,8 @@ namespace VN2Anki.Models
                 if (_thumbnail != null) return _thumbnail;
 
                 if (ScreenshotBytes == null || ScreenshotBytes.Length == 0) return null;
-                try
-                {
-                    var image = new BitmapImage();
-                    using (var mem = new MemoryStream(ScreenshotBytes))
-                    {
-                        mem.Position = 0;
-                        image.BeginInit();
-                        image.CreateOptions = BitmapCreateOptions.PreservePixelFormat;
-                        image.CacheOption = BitmapCacheOption.OnLoad;
-                        image.UriSource = null;
-                        image.StreamSource = mem;
-                        image.DecodePixelWidth = 150;
-                        image.EndInit();
-                    }
-                    image.Freeze();
-
-                    _thumbnail = image; // store the generated thumbnail in the private field for future access
-                    return _thumbnail;
-                }
-                catch { return null; }
+                _thumbnail = VN2Anki.Helpers.ImageHelper.BytesToBitmap(ScreenshotBytes, 150);
+                return _thumbnail;
             }
         }
 

@@ -144,20 +144,7 @@ namespace VN2Anki.ViewModels.Hub
 
             // Thumbnail
             var imgBytes = _videoEngine.CaptureWindow(value.BaseItem.ProcessName, 400);
-            if (imgBytes != null && imgBytes.Length > 0)
-            {
-                try
-                {
-                    var image = new BitmapImage();
-                    using (var mem = new MemoryStream(imgBytes))
-                    {
-                        mem.Position = 0; image.BeginInit(); image.CreateOptions = BitmapCreateOptions.PreservePixelFormat; image.CacheOption = BitmapCacheOption.OnLoad; image.StreamSource = mem; image.EndInit();
-                    }
-                    image.Freeze(); WindowThumbnail = image;
-                }
-                catch { WindowThumbnail = null; }
-            }
-            else { WindowThumbnail = null; }
+            WindowThumbnail = VN2Anki.Helpers.ImageHelper.BytesToBitmap(imgBytes);
         }
 
         [RelayCommand]

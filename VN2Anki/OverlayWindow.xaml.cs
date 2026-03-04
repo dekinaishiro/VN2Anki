@@ -50,6 +50,7 @@ namespace VN2Anki
 
         private readonly IConfigurationService _configService;
         private readonly ITextHook _textHook;
+        private readonly VN2Anki.Services.Interfaces.IWindowService _windowService;
 
         private IntPtr _webViewRenderHostHandle = IntPtr.Zero;
         private DispatcherTimer _holdTimer;
@@ -62,11 +63,12 @@ namespace VN2Anki
         private bool _isMouseOverHeader = false; 
         private int _modifierKeyVk = 0xA2;
 
-        public OverlayWindow(IConfigurationService configService, ITextHook textHook)
+        public OverlayWindow(IConfigurationService configService, ITextHook textHook, VN2Anki.Services.Interfaces.IWindowService windowService)
         {
             InitializeComponent();
             _configService = configService;
             _textHook = textHook;
+            _windowService = windowService;
 
             _webViewSubclassProc = new SUBCLASSPROC(WebViewSubclassProc);
 
@@ -180,25 +182,11 @@ namespace VN2Anki
         private async void LoadExtensions()
         {
             var profile = webView.CoreWebView2.Profile;
-            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
-            string yomitanId = "likgccmbimhjbgkjambclfkhldnlhbnn";
-            string[] possiblePaths = {
-                Path.Combine(localAppData, $@"Microsoft\Edge\User Data\Default\Extensions\{yomitanId}"),
-                Path.Combine(localAppData, $@"Google\Chrome\User Data\Default\Extensions\{yomitanId}")
-            };
-
-            foreach (var path in possiblePaths)
+            string latestYomitan = VN2Anki.Helpers.BrowserExtensionHelper.GetYomitanLatestVersionPath();
+            if (!string.IsNullOrEmpty(latestYomitan))
             {
-                if (Directory.Exists(path))
-                {
-                    var versionDirs = Directory.GetDirectories(path);
-                    if (versionDirs.Length > 0)
-                    {
-                        string latestVersion = versionDirs.OrderByDescending(d => d).First();
-                        try { await profile.AddBrowserExtensionAsync(latestVersion); break; } catch { }
-                    }
-                }
+                try { await profile.AddBrowserExtensionAsync(latestYomitan); } catch { }
             }
 
             foreach (var extPath in _configService.CurrentConfig.Overlay.CustomExtensions)
@@ -372,67 +360,15 @@ namespace VN2Anki
 
         private void BtnYomitan_Click(object sender, RoutedEventArgs e)
         {
-            var settingsWin = new Window
+            string latestYomitan = VN2Anki.Helpers.BrowserExtensionHelper.GetYomitanLatestVersionPath();
+            if (!string.IsNullOrEmpty(latestYomitan))
             {
-                Title = "Yomitan Settings",
-                Width = 900,
-                Height = 700,
-                WindowStartupLocation = WindowStartupLocation.CenterScreen
-            };
-
-            var settingsWebView = new Microsoft.Web.WebView2.Wpf.WebView2();
-            settingsWin.Content = settingsWebView;
-
-            settingsWin.Loaded += async (ss, ee) =>
+                _windowService.OpenExtensionSettingsWindow(latestYomitan);
+            }
+            else
             {
-                var options = new CoreWebView2EnvironmentOptions { AreBrowserExtensionsEnabled = true };
-                var environment = await CoreWebView2Environment.CreateAsync(null, null, options);
-                await settingsWebView.EnsureCoreWebView2Async(environment);
-
-                try
-                {
-                    var loadedExtensions = await settingsWebView.CoreWebView2.Profile.GetBrowserExtensionsAsync();
-
-                    var yomitanExt = loadedExtensions.FirstOrDefault(ext =>
-                        ext.Id == "likgccmbimhjbgkjambclfkhldnlhbnn" ||
-                        (ext.Name != null && ext.Name.Contains("Yomitan")));
-
-                    if (yomitanExt != null)
-                    {
-                        settingsWebView.CoreWebView2.Navigate($"chrome-extension://{yomitanExt.Id}/settings.html");
-                    }
-                    else
-                    {
-                        string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                        string yomitanId = "likgccmbimhjbgkjambclfkhldnlhbnn";
-                        string[] possiblePaths = {
-                            Path.Combine(localAppData, $@"Microsoft\Edge\User Data\Default\Extensions\{yomitanId}"),
-                            Path.Combine(localAppData, $@"Google\Chrome\User Data\Default\Extensions\{yomitanId}")
-                        };
-
-                        foreach (var path in possiblePaths)
-                        {
-                            if (Directory.Exists(path))
-                            {
-                                var versionDirs = Directory.GetDirectories(path);
-                                if (versionDirs.Length > 0)
-                                {
-                                    string latestVersion = versionDirs.OrderByDescending(d => d).First();
-                                    var newExt = await settingsWebView.CoreWebView2.Profile.AddBrowserExtensionAsync(latestVersion);
-                                    settingsWebView.CoreWebView2.Navigate($"chrome-extension://{newExt.Id}/settings.html");
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Erro ao abrir configurações do Yomitan:\n{ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            };
-
-            settingsWin.Show();
+                MessageBox.Show("Yomitan não encontrado nos diretórios padrão do Chrome/Edge.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
         private void BtnPosition_Click(object sender, RoutedEventArgs e)
@@ -485,7 +421,7 @@ namespace VN2Anki
             webView?.Dispose();
 
             // unregister from messages to prevent memory leaks
-            WeakReferenceMessenger.Default.Unregister<OverlayConfigUpdatedMessage>(this);
+            WeakReferenceMessenger.Default.UnregisterAll(this);
         }
 
         private string WpfHexToCss(string hexColor)

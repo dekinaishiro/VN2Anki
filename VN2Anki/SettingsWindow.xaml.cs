@@ -19,13 +19,15 @@ namespace VN2Anki
         private readonly SettingsViewModel _viewModel;
         private readonly IConfigurationService _configService;
         private readonly AnkiHandler _anki;
+        private readonly VN2Anki.Services.Interfaces.IWindowService _windowService;
 
-        public SettingsWindow(SettingsViewModel viewModel, IConfigurationService configService, AnkiHandler anki)
+        public SettingsWindow(SettingsViewModel viewModel, IConfigurationService configService, AnkiHandler anki, VN2Anki.Services.Interfaces.IWindowService windowService)
         {
             InitializeComponent();
             _viewModel = viewModel;
             _configService = configService;
             _anki = anki;
+            _windowService = windowService;
 
             this.DataContext = _viewModel;
             this.Loaded += async (s, e) => await InitializeDataAsync();
@@ -94,9 +96,8 @@ namespace VN2Anki
 
         private void BtnAddExtension_Click(object sender, RoutedEventArgs e)
         {
-            string defaultChromePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Google\Chrome\User Data\Default\Extensions");
-            string defaultEdgePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Microsoft\Edge\User Data\Default\Extensions");
-            string startPath = Directory.Exists(defaultChromePath) ? defaultChromePath : (Directory.Exists(defaultEdgePath) ? defaultEdgePath : Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
+            var defaultPaths = VN2Anki.Helpers.BrowserExtensionHelper.GetDefaultExtensionBasePaths();
+            string startPath = defaultPaths.FirstOrDefault(Directory.Exists) ?? Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
             var dialog = new Microsoft.Win32.OpenFileDialog { Title = "Select Extension Folder", ValidateNames = false, CheckFileExists = false, CheckPathExists = true, FileName = "Select Folder", Filter = "Folders|\n", InitialDirectory = startPath };
             if (dialog.ShowDialog(this) == true)
@@ -113,39 +114,7 @@ namespace VN2Anki
         {
             if (ListExtensions.SelectedItem is string selectedExtPath)
             {
-                var settingsWin = new Window { Title = "Extension Settings", Width = 900, Height = 700, WindowStartupLocation = WindowStartupLocation.CenterScreen };
-                var settingsWebView = new Microsoft.Web.WebView2.Wpf.WebView2();
-                settingsWin.Content = settingsWebView;
-                settingsWin.Loaded += async (ss, ee) =>
-                {
-                    var options = new CoreWebView2EnvironmentOptions { AreBrowserExtensionsEnabled = true };
-                    var environment = await CoreWebView2Environment.CreateAsync(null, null, options);
-                    await settingsWebView.EnsureCoreWebView2Async(environment);
-                    try
-                    {
-                        string manifestPath = Path.Combine(selectedExtPath, "manifest.json");
-                        string optionsHtmlPage = "options.html";
-                        string targetExtName = "";
-                        if (File.Exists(manifestPath))
-                        {
-                            var json = File.ReadAllText(manifestPath);
-                            using var doc = JsonDocument.Parse(json);
-                            if (doc.RootElement.TryGetProperty("name", out JsonElement nameProp)) targetExtName = nameProp.GetString();
-                            if (doc.RootElement.TryGetProperty("options_ui", out JsonElement optUi) && optUi.TryGetProperty("page", out JsonElement page)) optionsHtmlPage = page.GetString();
-                            else if (doc.RootElement.TryGetProperty("options_page", out JsonElement optPage)) optionsHtmlPage = optPage.GetString();
-                        }
-                        var loadedExtensions = await settingsWebView.CoreWebView2.Profile.GetBrowserExtensionsAsync();
-                        var existingExt = loadedExtensions.FirstOrDefault(ext => ext.Name == targetExtName || (ext.Name != null && ext.Name.Contains("Yomitan")));
-                        if (existingExt != null) settingsWebView.CoreWebView2.Navigate($"chrome-extension://{existingExt.Id}/{optionsHtmlPage}");
-                        else
-                        {
-                            var newExtension = await settingsWebView.CoreWebView2.Profile.AddBrowserExtensionAsync(selectedExtPath);
-                            settingsWebView.CoreWebView2.Navigate($"chrome-extension://{newExtension.Id}/{optionsHtmlPage}");
-                        }
-                    }
-                    catch (Exception ex) { MessageBox.Show($"Could not load extension settings:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
-                };
-                settingsWin.Show();
+                _windowService.OpenExtensionSettingsWindow(selectedExtPath);
             }
         }
         private void BtnRemoveExtension_Click(object sender, RoutedEventArgs e)

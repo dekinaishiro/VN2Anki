@@ -52,5 +52,48 @@ namespace VN2Anki.Services
 
             return selectedVn;
         }
+
+        public void OpenExtensionSettingsWindow(string extensionPath)
+        {
+            if (string.IsNullOrEmpty(extensionPath) || !System.IO.Directory.Exists(extensionPath))
+            {
+                MessageBox.Show("Caminho da extensão inválido ou não encontrado.", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            var settingsWin = new Window { Title = "Extension Settings", Width = 900, Height = 700, WindowStartupLocation = WindowStartupLocation.CenterScreen };
+            var settingsWebView = new Microsoft.Web.WebView2.Wpf.WebView2();
+            settingsWin.Content = settingsWebView;
+            settingsWin.Loaded += async (ss, ee) =>
+            {
+                var options = new Microsoft.Web.WebView2.Core.CoreWebView2EnvironmentOptions { AreBrowserExtensionsEnabled = true };
+                var environment = await Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(null, null, options);
+                await settingsWebView.EnsureCoreWebView2Async(environment);
+                try
+                {
+                    string manifestPath = System.IO.Path.Combine(extensionPath, "manifest.json");
+                    string optionsHtmlPage = "options.html";
+                    string targetExtName = "";
+                    if (System.IO.File.Exists(manifestPath))
+                    {
+                        var json = System.IO.File.ReadAllText(manifestPath);
+                        using var doc = System.Text.Json.JsonDocument.Parse(json);
+                        if (doc.RootElement.TryGetProperty("name", out System.Text.Json.JsonElement nameProp)) targetExtName = nameProp.GetString();
+                        if (doc.RootElement.TryGetProperty("options_ui", out System.Text.Json.JsonElement optUi) && optUi.TryGetProperty("page", out System.Text.Json.JsonElement page)) optionsHtmlPage = page.GetString();
+                        else if (doc.RootElement.TryGetProperty("options_page", out System.Text.Json.JsonElement optPage)) optionsHtmlPage = optPage.GetString();
+                    }
+                    var loadedExtensions = await settingsWebView.CoreWebView2.Profile.GetBrowserExtensionsAsync();
+                    var existingExt = System.Linq.Enumerable.FirstOrDefault(loadedExtensions, ext => ext.Name == targetExtName || (ext.Name != null && ext.Name.Contains(targetExtName)) || (ext.Name != null && ext.Name.Contains("Yomitan")));
+                    if (existingExt != null) settingsWebView.CoreWebView2.Navigate($"chrome-extension://{existingExt.Id}/{optionsHtmlPage}");
+                    else
+                    {
+                        var newExtension = await settingsWebView.CoreWebView2.Profile.AddBrowserExtensionAsync(extensionPath);
+                        settingsWebView.CoreWebView2.Navigate($"chrome-extension://{newExtension.Id}/{optionsHtmlPage}");
+                    }
+                }
+                catch (System.Exception ex) { MessageBox.Show($"Could not load extension settings:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
+            };
+            settingsWin.Show();
+        }
     }
 }

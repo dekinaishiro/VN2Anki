@@ -7,5 +7,6 @@ namespace VN2Anki.Services.Interfaces
     {
         void CloseWindow(object viewModel, bool dialogResult);
         VisualNovel ShowMultipleVnPrompt(List<VisualNovel> vns);
+        void OpenExtensionSettingsWindow(string extensionPath);
     }
 }
