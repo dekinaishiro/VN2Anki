@@ -72,8 +72,9 @@ namespace VN2Anki.ViewModels
         private bool _isFirstLoad = true;
         private readonly IWindowService _windowService;
         private readonly IGameLauncherService _gameLauncher;
+        private readonly IVnDatabaseService _vnDatabaseService;
 
-        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiExportService ankiExportService, AnkiHandler ankiHandler, VideoEngine videoEngine, DiscordRpcService discordRpc, IWindowService windowService, ISessionManagerService sessionManager, IGameLauncherService gameLauncher)
+        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiExportService ankiExportService, AnkiHandler ankiHandler, VideoEngine videoEngine, DiscordRpcService discordRpc, IWindowService windowService, ISessionManagerService sessionManager, IGameLauncherService gameLauncher, IVnDatabaseService vnDatabaseService)
         {
             Tracker = tracker;
             _miningService = miningService;
@@ -85,6 +86,7 @@ namespace VN2Anki.ViewModels
             _windowService = windowService;
             _sessionManager = sessionManager;
             _gameLauncher = gameLauncher;
+            _vnDatabaseService = vnDatabaseService;
 
             _idleWindowCheckTimer = new DispatcherTimer { Interval = System.TimeSpan.FromSeconds(2) };
             _idleWindowCheckTimer.Tick += IdleWindowCheckTimer_Tick;
@@ -95,7 +97,7 @@ namespace VN2Anki.ViewModels
             Tracker.PropertyChanged += Tracker_PropertyChanged;
         }
 
-        public void ApplyConfigToServices()
+        public async void ApplyConfigToServices()
         {
             var config = _configService.CurrentConfig;
             _miningService.TargetVideoWindow = config.Media.VideoWindow;
@@ -115,7 +117,7 @@ namespace VN2Anki.ViewModels
             }
             else if (!isSessionActive)
             {
-                _ = CheckAndLinkRunningVNsAsync(config.Media.VideoWindow);
+                await TryAutoLinkAsync(config.Media.VideoWindow);
             }
             else
             {
@@ -282,111 +284,6 @@ namespace VN2Anki.ViewModels
                 );
             }
         }
-        public async Task CheckAndLinkRunningVNsAsync(string specificProcessName = null)
-        {
-            if (IsBufferActive || Tracker.ValidCharacterCount > 0 || Tracker.Elapsed.TotalSeconds > 0)
-            {
-                Application.Current.Dispatcher.Invoke(() => UpdateVisualCurrentVN());
-                return;
-            }
-
-            await Task.Delay(1000);
-
-            List<VN2Anki.Models.Entities.VisualNovel> vnsDb;
-            using (var scope = App.Current.Services.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<VN2Anki.Data.AppDbContext>();
-                vnsDb = db.VisualNovels.ToList();
-            }
-
-            if (vnsDb.Count == 0)
-            {
-                Application.Current.Dispatcher.Invoke(() => UpdateVisualCurrentVN());
-                return;
-            }
-
-            var runningWindows = _videoEngine.GetWindows();
-            var matchedVns = new System.Collections.Generic.List<VN2Anki.Models.Entities.VisualNovel>();
-
-            var windowsToCheck = string.IsNullOrEmpty(specificProcessName)
-                ? runningWindows
-                : runningWindows.Where(w => w.ProcessName == specificProcessName).ToList();
-
-            foreach (var win in windowsToCheck)
-            {
-                var match = vnsDb.FirstOrDefault(v =>
-                    (!string.IsNullOrEmpty(v.ExecutablePath) && !string.IsNullOrEmpty(win.ExecutablePath) && v.ExecutablePath == win.ExecutablePath) ||
-                    (!string.IsNullOrEmpty(v.ProcessName) && v.ProcessName == win.ProcessName));
-
-                if (match != null && !matchedVns.Any(v => v.Id == match.Id))
-                {
-                    matchedVns.Add(match);
-                }
-            }
-
-            // if VN is already linked but process isn't running, keep it linked but show "No Video Source" with red color and + button to allow manual 
-            if (matchedVns.Count == 0)
-            {
-                if (!string.IsNullOrEmpty(specificProcessName)) CurrentVN = null;
-                Application.Current.Dispatcher.Invoke(() => UpdateVisualCurrentVN());
-                return;
-            }
-
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                VN2Anki.Models.Entities.VisualNovel selectedVn = null;
-
-                if (matchedVns.Count == 1)
-                {
-                    if (string.IsNullOrEmpty(specificProcessName))
-                    {
-                        bool result = _windowService.ShowConfirmation(
-                            $"Detectamos que '{matchedVns[0].Title}' está em execução.\nDeseja vinculá-la e iniciar a sessão agora?",
-                            "Visual Novel Detectada");
-
-                        if (result) selectedVn = matchedVns[0];
-                    }
-                    else
-                    {
-                        selectedVn = matchedVns[0];
-                    }
-                }
-                else
-                {
-                    selectedVn = _windowService.ShowMultipleVnPrompt(matchedVns);
-                }
-
-                if (selectedVn != null)
-                {
-                    CurrentVN = selectedVn;
-
-                    var targetWin = runningWindows.First(w => w.ExecutablePath == selectedVn.ExecutablePath || w.ProcessName == selectedVn.ProcessName);
-                    var config = _configService.CurrentConfig;
-                    config.Media.VideoWindow = targetWin.ProcessName;
-                    _configService.Save();
-
-                    _miningService.TargetVideoWindow = targetWin.ProcessName;
-                    if (string.IsNullOrEmpty(specificProcessName))
-                        WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = $"Sessão vinculada: {selectedVn.Title}", IsError = false }));
-                }
-                else
-                {
-                    // FIX: O usuário clicou em "NÃO" ou fechou a janela de múltiplas VNs.
-                    // Se o processo salvo na config for o mesmo da VN rejeitada, nós esvaziamos a Video Source.
-                    var config = _configService.CurrentConfig;
-                    var savedProcess = config.Media.VideoWindow;
-
-                    if (!string.IsNullOrEmpty(savedProcess) && matchedVns.Any(v => v.ProcessName == savedProcess))
-                    {
-                        config.Media.VideoWindow = string.Empty;
-                        _configService.Save();
-                        _miningService.TargetVideoWindow = string.Empty;
-                    }
-                }
-
-                UpdateVisualCurrentVN();
-            });
-        }
 
         // main window vsource/vn title
         partial void OnCurrentVNChanged(VN2Anki.Models.Entities.VisualNovel value)
@@ -435,8 +332,31 @@ namespace VN2Anki.ViewModels
             VnTitleColor = Brushes.Crimson;
         }
 
+        public async Task TryAutoLinkAsync(string specificProcessName = null)
+        {
+            var selectedVn = await _sessionManager.AutoSyncRunningVnAsync(specificProcessName);
+            if (selectedVn != null)
+            {
+                CurrentVN = selectedVn;
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(_configService.CurrentConfig.Media.VideoWindow))
+                {
+                   CurrentVN = null;
+                }
+            }
+            Application.Current.Dispatcher.Invoke(() => UpdateVisualCurrentVN());
+        }
+
+        public async Task InitializeStartupAsync()
+        {
+            var config = _configService.CurrentConfig;
+            await TryAutoLinkAsync(config.Media.VideoWindow);
+        }
+
         [RelayCommand]
-        private void ManualLinkAction()
+        private async Task ManualLinkActionAsync()
         {
             if (IsBufferActive || Tracker.ValidCharacterCount > 0 || Tracker.Elapsed.TotalSeconds > 0)
             {
@@ -452,6 +372,7 @@ namespace VN2Anki.ViewModels
                 config.Media.VideoWindow = string.Empty;
                 _configService.Save();
                 _miningService.TargetVideoWindow = string.Empty;
+                UpdateVisualCurrentVN();
             }
             else
             {
@@ -474,11 +395,14 @@ namespace VN2Anki.ViewModels
                     var processToLink = vm.SelectedWindow?.BaseItem.ProcessName;
                     if (!string.IsNullOrEmpty(processToLink))
                     {
-                        _ = CheckAndLinkRunningVNsAsync(processToLink);
+                        await TryAutoLinkAsync(processToLink);
                     }
                 }
+                else
+                {
+                    UpdateVisualCurrentVN();
+                }
             }
-            UpdateVisualCurrentVN(); ;
         }
 
         // checks for registered running VN processes 
@@ -493,40 +417,16 @@ namespace VN2Anki.ViewModels
                 return;
             }
 
-            await CheckAndLinkRunningVNsAsync();
+            await TryAutoLinkAsync();
         }
 
         private void IdleWindowCheckTimer_Tick(object? sender, System.EventArgs e)
         {
-            // verify if session has progress
-            bool isZeroed = Tracker.ValidCharacterCount == 0 && Tracker.Elapsed.TotalSeconds == 0 && !IsBufferActive;
+            bool wasDisconnected = _sessionManager.PerformIdleCheck();
 
-            if (!isZeroed) return;
-
-            // if no progress, checks if the configured video source is still running
-            // if not, resets the config and UI
-            var videoSource = _configService.CurrentConfig.Media.VideoWindow;
-            if (string.IsNullOrEmpty(videoSource)) return; 
-
-            var procs = System.Diagnostics.Process.GetProcessesByName(videoSource);
-            bool isRunning = false;
-            foreach (var p in procs)
-            {
-                if (p.MainWindowHandle != System.IntPtr.Zero) isRunning = true;
-                p.Dispose();
-            }
-
-            // process closed while app was idle = reset video source, unlink
-            if (!isRunning)
+            if (wasDisconnected)
             {
                 CurrentVN = null;
-
-                var config = _configService.CurrentConfig;
-                config.Media.VideoWindow = string.Empty;
-                _configService.Save();
-
-                _miningService.TargetVideoWindow = string.Empty;
-
                 UpdateVisualCurrentVN();
             }
         }

@@ -8,5 +8,7 @@ namespace VN2Anki.Services.Interfaces
         bool IsBufferActive { get; set; }
         bool ToggleBuffer(VisualNovel currentVN);
         void EndSession(VisualNovel currentVN);
+        Task<VisualNovel> AutoSyncRunningVnAsync(string specificProcessName = null);
+        bool PerformIdleCheck();
     }
 }

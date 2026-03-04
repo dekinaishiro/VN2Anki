@@ -39,7 +39,7 @@ namespace VN2Anki
         {
             _viewModel.ApplyConfigToServices();
 
-            var config = _configService.CurrentConfig.General;
+            var config = _configService.CurrentConfig.General;   
             if (!double.IsNaN(config.MainWindowTop) && !double.IsNaN(config.MainWindowLeft))
             {
                 this.Top = config.MainWindowTop;
@@ -58,9 +58,8 @@ namespace VN2Anki
                 }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
             }
 
-            await _viewModel.CheckAndLinkRunningVNsAsync();
+            await _viewModel.InitializeStartupAsync();
         }
-
         private void SaveWindowPosition()
         {
             _configService.CurrentConfig.General.MainWindowTop = this.Top;
