@@ -38,5 +38,19 @@ https://github.com/user-attachments/assets/d2f8f085-0c69-4e2e-821e-8662a7a81102
 * **Timeout (Settings):** *(Not recommended)* If Dynamic Timeout is disabled, sets a fixed recording time for every audio clip.
 * **Timeout (Anki):** The maximum time (in seconds) the program will wait for AnkiConnect to respond. Increase this if you have a huge Anki database that takes a while to save.
 
+## Jiten Reader Parsing Rule
+Use this:
+```json
+[
+  {
+    "host": "http://vn.local/*",
+    "parserClass": "vn2anki-parser",
+    "addedObserver": {
+      "notifyFor": ".vn-text-line"
+    }
+  }
+]
+```
+
 ## Troubleshooting
 - Downloading NET 8.0 Desktop Runtime might be necessary (most likely won't)

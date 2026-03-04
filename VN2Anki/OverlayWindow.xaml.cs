@@ -225,7 +225,15 @@ namespace VN2Anki
                                       .Replace("\\", "\\\\")
                                       .Replace("'", "\\'");
 
-                webView.CoreWebView2.ExecuteScriptAsync($"document.getElementById('text-box').innerHTML = '{safeText}';");
+                string injectScript = $@"
+                    var container = document.getElementById('text-box');
+                    container.innerHTML = '';
+                    var newSpan = document.createElement('span');
+                    newSpan.className = 'vn-text-line';
+                    newSpan.innerHTML = '{safeText}';
+                    container.appendChild(newSpan);
+                ";
+                webView.CoreWebView2.ExecuteScriptAsync(injectScript);
             });
         }
 
@@ -454,7 +462,7 @@ namespace VN2Anki
                 }}
                 style.innerHTML = `
                     #text-box {{
-                        color: {cssFontColor} !important; 
+                        color: {cssFontColor}; 
                         font-size: {conf.FontSize}px !important;
                         background-color: {cssBgColor} !important;
                         text-shadow: none !important;
