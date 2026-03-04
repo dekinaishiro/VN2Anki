@@ -690,12 +690,17 @@ namespace VN2Anki.ViewModels
         public void Receive(BufferStoppedMessage message)
         {
             Application.Current.Dispatcher.Invoke(() => IsBufferActive = false);
+
+            string vnTitle = CurrentVN?.Title ?? "VN2Anki";
+            string imageUrl = CurrentVN?.CoverImageUrl ?? "default_icon";
+            string elapsedStr = Tracker.Elapsed.ToString(@"hh\:mm\:ss");
+
             _ = _discordRpc.UpdatePresenceAsync(
-                "Taking a Break",
-                "No Session",
-                "Waiting...",
+                vnTitle,
+                CurrentVN != null ? "Paused (Disconnected)" : "No Session",
+                CurrentVN != null ? $"{Tracker.ValidCharacterCount} chars | {elapsedStr}" : "Waiting...",
                 null,
-                "default_icon"
+                imageUrl
             );
         }
     }
