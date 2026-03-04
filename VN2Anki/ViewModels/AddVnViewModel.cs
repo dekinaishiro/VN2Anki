@@ -10,6 +10,7 @@ using VN2Anki.Data;
 using VN2Anki.Models;
 using VN2Anki.Models.Entities;
 using VN2Anki.Services;
+using VN2Anki.Services.Interfaces;
 
 namespace VN2Anki.ViewModels.Hub
 {
@@ -68,11 +69,15 @@ namespace VN2Anki.ViewModels.Hub
         [ObservableProperty]
         private string _registeredWarningText = "";
 
-        public AddVnViewModel(AppDbContext db, VideoEngine videoEngine, VndbService vndbService)
+        private readonly IWindowService _windowService;
+
+        public AddVnViewModel(AppDbContext db, VideoEngine videoEngine, VndbService vndbService, IWindowService windowService)
         {
             _db = db;
             _videoEngine = videoEngine;
             _vndbService = vndbService;
+            _windowService = windowService;
+
             LoadWindows();
         }
 
@@ -169,7 +174,7 @@ namespace VN2Anki.ViewModels.Hub
         }
 
         [RelayCommand]
-        private async Task SaveAndCloseAsync(Window window)
+        private async Task SaveAndCloseAsync()
         {
             if (SelectedWindow == null) return;
 
@@ -179,13 +184,12 @@ namespace VN2Anki.ViewModels.Hub
                 if (IsOpenedFromLibrary)
                 {
                     MessageBox.Show("Este executável já está sendo usado por outro jogo na Biblioteca.", "Atenção", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return; 
+                    return;
                 }
                 else
                 {
                     // open through quick sync
-                    window.DialogResult = true;
-                    window.Close();
+                    _windowService.CloseWindow(this, true); 
                     return;
                 }
             }
@@ -221,8 +225,8 @@ namespace VN2Anki.ViewModels.Hub
             await _db.SaveChangesAsync();
 
             IsLoading = false;
-            window.DialogResult = true;
-            window.Close();
+
+            _windowService.CloseWindow(this, true); 
         }
     }
 }

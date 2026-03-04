@@ -15,5 +15,6 @@ namespace VN2Anki.Models.Entities
         public int TotalTimePlayedSeconds { get; set; }
         public int TotalCharactersRead { get; set; }
         public List<SessionRecord> Sessions { get; set; } = new();
+        public string? OriginalTitle { get; set; }
     }
 }

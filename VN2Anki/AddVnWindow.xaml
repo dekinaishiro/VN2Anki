@@ -74,6 +74,6 @@
             </ListBox>
         </Grid>
 
-        <Button Grid.Row="4" Content="{Binding ActionButtonText}" Command="{Binding SaveAndCloseCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}" Padding="10" Background="#28A745" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
+        <Button Grid.Row="4" Content="{Binding ActionButtonText}" Command="{Binding SaveAndCloseCommand}" Padding="10" Background="#28A745" Foreground="White" FontWeight="Bold" BorderThickness="0" Cursor="Hand"/>
     </Grid>
 </Window>

@@ -1,13 +1,15 @@
-﻿using System;
-using System.IO;
-using System.Threading;
-using System.Windows;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using System;
+using System.IO;
+using System.Threading;
+using System.Windows;
+using VN2Anki.Data;
 using VN2Anki.Models;
 using VN2Anki.Services;
-using VN2Anki.Data;
+using VN2Anki.Services.Interfaces;
 
 namespace VN2Anki
 {
@@ -82,6 +84,9 @@ namespace VN2Anki
             services.AddTransient<ViewModels.Hub.AddVnViewModel>();
             services.AddTransient<AddVnWindow>();
 
+            services.AddSingleton<IDispatcherService, WpfDispatcherService>();
+            services.AddSingleton<IWindowService, WpfWindowService>();
+
             return services.BuildServiceProvider();
         }
 
@@ -109,7 +114,8 @@ namespace VN2Anki
             using (var scope = Services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                dbContext.Database.EnsureCreated();
+                //dbContext.Database.EnsureCreated();
+                dbContext.Database.Migrate();
             }
 
             // Resolve and show MainWindow via DI

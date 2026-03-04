@@ -14,6 +14,7 @@ using VN2Anki.Locales;
 using VN2Anki.Messages;
 using VN2Anki.Models.Entities;
 using VN2Anki.Services;
+using VN2Anki.Services.Interfaces;
 
 
 namespace VN2Anki.ViewModels
@@ -49,7 +50,7 @@ namespace VN2Anki.ViewModels
         private VN2Anki.Models.Entities.VisualNovel _currentVN;
 
         [ObservableProperty]
-private Visibility _manualLinkVisibility = Visibility.Collapsed;
+        private Visibility _manualLinkVisibility = Visibility.Collapsed;
         public string BufferBtnText => IsBufferActive ? "ON" : "OFF";
         public Brush BufferBtnBackground => IsBufferActive ? Brushes.Green : Brushes.Crimson;
         
@@ -68,8 +69,9 @@ private Visibility _manualLinkVisibility = Visibility.Collapsed;
         private readonly DispatcherTimer _idleWindowCheckTimer;
 
         private bool _isFirstLoad = true;
+        private readonly IWindowService _windowService;
 
-        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiExportService ankiExportService, AnkiHandler ankiHandler, VideoEngine videoEngine, DiscordRpcService discordRpc)
+        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiExportService ankiExportService, AnkiHandler ankiHandler, VideoEngine videoEngine, DiscordRpcService discordRpc, IWindowService windowService)
         {
             Tracker = tracker;
             _miningService = miningService;
@@ -78,6 +80,7 @@ private Visibility _manualLinkVisibility = Visibility.Collapsed;
             _ankiHandler = ankiHandler;
             _videoEngine = videoEngine;
             _discordRpc = discordRpc;
+            _windowService = windowService;
 
             _miningService.OnBufferStoppedUnexpectedly += () =>
             {
@@ -518,26 +521,7 @@ private Visibility _manualLinkVisibility = Visibility.Collapsed;
                 }
                 else
                 {
-                    var win = new Window
-                    {
-                        Title = "Múltiplas VNs Detectadas",
-                        Width = 350,
-                        Height = 200,
-                        WindowStartupLocation = WindowStartupLocation.CenterScreen,
-                        WindowStyle = WindowStyle.ToolWindow,
-                        ResizeMode = ResizeMode.NoResize,
-                        Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#252526")),
-                        Foreground = Brushes.White
-                    };
-                    var stack = new System.Windows.Controls.StackPanel { Margin = new Thickness(15) };
-                    stack.Children.Add(new System.Windows.Controls.TextBlock { Text = "Múltiplas VNs em execução detectadas.\nSelecione qual deseja vincular:", Foreground = Brushes.White, Margin = new Thickness(0, 0, 0, 15) });
-                    var combo = new System.Windows.Controls.ComboBox { ItemsSource = matchedVns, DisplayMemberPath = "Title", SelectedIndex = 0, Margin = new Thickness(0, 0, 0, 15), Padding = new Thickness(5) };
-                    stack.Children.Add(combo);
-                    var btn = new System.Windows.Controls.Button { Content = "Vincular Selecionada", Padding = new Thickness(10, 8, 10, 8), Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#007ACC")), Foreground = Brushes.White, BorderThickness = new Thickness(0), Cursor = System.Windows.Input.Cursors.Hand };
-                    btn.Click += (s, e) => { selectedVn = combo.SelectedItem as VN2Anki.Models.Entities.VisualNovel; win.DialogResult = true; win.Close(); };
-                    stack.Children.Add(btn);
-                    win.Content = stack;
-                    win.ShowDialog();
+                    selectedVn = _windowService.ShowMultipleVnPrompt(matchedVns);
                 }
 
                 if (selectedVn != null)

@@ -7,8 +7,8 @@ using VN2Anki.Data;
 using VN2Anki.Messages;
 using VN2Anki.Models.Entities;
 using Microsoft.EntityFrameworkCore;
-using CommunityToolkit.Mvvm.Messaging;
-using VN2Anki.Messages;
+// using CommunityToolkit.Mvvm.Messaging;
+// using VN2Anki.Messages;
 
 namespace VN2Anki.ViewModels.Hub
 {
