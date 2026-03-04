@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Windows.Threading;
 using VN2Anki.Messages;
 using VN2Anki.Models;
+using VN2Anki.Services.Interfaces;
 
 namespace VN2Anki.Services
 {
@@ -19,6 +20,9 @@ namespace VN2Anki.Services
         private readonly MediaService _mediaService;
         private readonly DispatcherTimer _idleTimer;
         private readonly DispatcherTimer _videoCheckTimer;
+        // injetar dispatcher service para evitar dependência direta do WPF
+        private readonly IDispatcherService _dispatcherService;
+        private readonly IConfigurationService _configService;
 
         public ObservableCollection<MiningSlot> HistorySlots { get; }
 
@@ -29,12 +33,14 @@ namespace VN2Anki.Services
         public int MaxImageWidth { get; set; } = 1280;
 
 
-        public MiningService(ITextHook textHook, SessionTracker tracker, AudioEngine audio, MediaService mediaService)
+        public MiningService(ITextHook textHook, SessionTracker tracker, AudioEngine audio, MediaService mediaService, IDispatcherService dispatcherService, IConfigurationService configService)
         {
             TextHook = textHook;
             Tracker = tracker;
             Audio = audio;
             _mediaService = mediaService;
+            _dispatcherService = dispatcherService;
+            _configService = configService;
 
             HistorySlots = new ObservableCollection<MiningSlot>();
 
@@ -103,10 +109,11 @@ namespace VN2Anki.Services
                 }
 
                 double finalSeconds;
-                double baseSeconds = 0.75;
-                double perCharSeconds = 0.25;
-                double perPauseSeconds = 0.50;
-                double minSeconds = 2.0;
+                var sessionConfig = _configService.CurrentConfig.Session;
+                double baseSeconds = sessionConfig.DynamicBaseSeconds;
+                double perCharSeconds = sessionConfig.DynamicPerCharSeconds;
+                double perPauseSeconds = sessionConfig.DynamicPerPauseSeconds;
+                double minSeconds = sessionConfig.DynamicMinSeconds;
 
                 if (UseDynamicTimeout)
                 {
@@ -165,14 +172,15 @@ namespace VN2Anki.Services
         {
             if (!slot.IsOpen) return;
 
-            double paddingSeconds = 0.250;
+            var sessionConfig = _configService.CurrentConfig.Session;
+            double paddingSeconds = sessionConfig.AudioPaddingSeconds;
             DateTime startT = slot.Timestamp.AddSeconds(-paddingSeconds);
 
             double startAgo = (DateTime.Now - startT).TotalSeconds;
             double endAgo = (DateTime.Now - endTime).TotalSeconds;
 
             if (endAgo < 0) endAgo = 0;
-            if (startAgo <= endAgo) startAgo = endAgo + 5.0;
+            if (startAgo <= endAgo) startAgo = endAgo + sessionConfig.AudioFallbackSeconds;
 
             slot.AudioBytes = _mediaService.GetAudioSegment(startAgo, endAgo);
         }

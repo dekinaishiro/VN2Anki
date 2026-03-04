@@ -43,6 +43,12 @@ namespace VN2Anki.Models
         public string IdleTime { get; set; } = "20";
         public string MaxSlots { get; set; } = "30";
         public bool UseDynamicTimeout { get; set; } = true;
+        public double DynamicBaseSeconds { get; set; } = 0.75;
+        public double DynamicPerCharSeconds { get; set; } = 0.25;
+        public double DynamicPerPauseSeconds { get; set; } = 0.50;
+        public double DynamicMinSeconds { get; set; } = 2.0;
+        public double AudioPaddingSeconds { get; set; } = 0.25;
+        public double AudioFallbackSeconds { get; set; } = 5.0;
     }
 
     public class HookConfig
