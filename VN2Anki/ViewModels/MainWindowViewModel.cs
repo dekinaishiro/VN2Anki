@@ -553,6 +553,20 @@ private Visibility _manualLinkVisibility = Visibility.Collapsed;
                     if (string.IsNullOrEmpty(specificProcessName))
                         WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = $"Sessão vinculada: {selectedVn.Title}", IsError = false }));
                 }
+                else
+                {
+                    // FIX: O usuário clicou em "NÃO" ou fechou a janela de múltiplas VNs.
+                    // Se o processo salvo na config for o mesmo da VN rejeitada, nós esvaziamos a Video Source.
+                    var config = _configService.CurrentConfig;
+                    var savedProcess = config.Media.VideoWindow;
+
+                    if (!string.IsNullOrEmpty(savedProcess) && matchedVns.Any(v => v.ProcessName == savedProcess))
+                    {
+                        config.Media.VideoWindow = string.Empty;
+                        _configService.Save();
+                        _miningService.TargetVideoWindow = string.Empty;
+                    }
+                }
 
                 UpdateVisualCurrentVN();
             });
@@ -568,10 +582,12 @@ private Visibility _manualLinkVisibility = Visibility.Collapsed;
         {
             bool isZeroed = Tracker.ValidCharacterCount == 0 && Tracker.Elapsed.TotalSeconds == 0 && !IsBufferActive;
 
-            ManualLinkVisibility = isZeroed ? Visibility.Visible : Visibility.Collapsed;
+            //ManualLinkVisibility = isZeroed ? Visibility.Visible : Visibility.Collapsed;
+            ManualLinkVisibility = Visibility.Visible;
             ManualLinkText = CurrentVN != null ? "-" : "+";
-            ManualLinkColor = CurrentVN != null ? Brushes.Orange : Brushes.Teal;
-
+            ManualLinkColor = CurrentVN != null
+                ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#DC3545"))
+                : new SolidColorBrush((Color)ColorConverter.ConvertFromString("#28A745"));
             if (CurrentVN != null)
             {
                 DisplayVnTitle = CurrentVN.Title;
@@ -648,6 +664,22 @@ private Visibility _manualLinkVisibility = Visibility.Collapsed;
             }
             UpdateVisualCurrentVN(); ;
         }
+
+        // checks for registered running VN processes 
+        [RelayCommand]
+        private async Task AutoSyncActionAsync()
+        {
+            // prevents if there's an ongoing session
+            // avoid data loss
+            if (IsBufferActive || Tracker.ValidCharacterCount > 0 || Tracker.Elapsed.TotalSeconds > 0)
+            {
+                MessageBox.Show("Você não pode realizar o Auto-Sync com uma sessão em andamento.\nFinalize a sessão atual primeiro clicando em END.", "Ação Bloqueada", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            await CheckAndLinkRunningVNsAsync();
+        }
+
         private void IdleWindowCheckTimer_Tick(object? sender, System.EventArgs e)
         {
             // verify if session has progress
