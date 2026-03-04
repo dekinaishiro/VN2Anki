@@ -27,6 +27,7 @@ namespace VN2Anki.ViewModels
         private readonly AnkiHandler _ankiHandler;
         private CancellationTokenSource _pollingCts;
         private readonly DiscordRpcService _discordRpc;
+        private readonly ISessionManagerService _sessionManager;
 
         public SessionTracker Tracker { get; }
 
@@ -70,8 +71,9 @@ namespace VN2Anki.ViewModels
 
         private bool _isFirstLoad = true;
         private readonly IWindowService _windowService;
+        private readonly IGameLauncherService _gameLauncher;
 
-        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiExportService ankiExportService, AnkiHandler ankiHandler, VideoEngine videoEngine, DiscordRpcService discordRpc, IWindowService windowService)
+        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiExportService ankiExportService, AnkiHandler ankiHandler, VideoEngine videoEngine, DiscordRpcService discordRpc, IWindowService windowService, ISessionManagerService sessionManager, IGameLauncherService gameLauncher)
         {
             Tracker = tracker;
             _miningService = miningService;
@@ -81,8 +83,10 @@ namespace VN2Anki.ViewModels
             _videoEngine = videoEngine;
             _discordRpc = discordRpc;
             _windowService = windowService;
+            _sessionManager = sessionManager;
+            _gameLauncher = gameLauncher;
 
-            _idleWindowCheckTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            _idleWindowCheckTimer = new DispatcherTimer { Interval = System.TimeSpan.FromSeconds(2) };
             _idleWindowCheckTimer.Tick += IdleWindowCheckTimer_Tick;
             _idleWindowCheckTimer.Start();
 
@@ -122,81 +126,7 @@ namespace VN2Anki.ViewModels
         [RelayCommand]
         private void ToggleBuffer()
         {
-            if (!IsBufferActive)
-            {
-                var config = _configService.CurrentConfig;
-
-                if (string.IsNullOrEmpty(config.Media.VideoWindow))
-                {
-                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Video Source vazia! Selecione o vídeo.", IsError = true }));
-                    return;
-                }
-
-                // checks if the process is still running, if not, clear the config and alert the user
-                var procs = System.Diagnostics.Process.GetProcessesByName(config.Media.VideoWindow);
-                bool isRunning = procs.Any(p => p.MainWindowHandle != IntPtr.Zero);
-                foreach (var p in procs) p.Dispose();
-
-                if (!isRunning)
-                {
-                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "A janela alvo está fechada! Abra o jogo e tente novamente.", IsError = true }));
-                    return;
-                }
-
-                // checks if audio device is configured and available
-                var devices = _miningService.Audio.GetDevices();
-                var deviceId = devices.FirstOrDefault(d => d.Name == config.Media.AudioDevice)?.Id;
-
-                if (string.IsNullOrEmpty(deviceId))
-                {
-                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Configure o Áudio primeiro!", IsError = true }));
-                    return;
-                }
-
-                // checks if there's no VN linked and no progress, prompts the user to confirm starting an unlinked session
-                if (CurrentVN == null && Tracker.ValidCharacterCount == 0 && Tracker.Elapsed.TotalSeconds == 0)
-                {
-                    var result = MessageBox.Show(
-                        "Nenhuma Visual Novel está vinculada a esta sessão.\nDeseja iniciar o rastreamento avulso mesmo assim?",
-                        "Aviso de Sessão Vazia",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Warning);
-
-                    if (result == MessageBoxResult.No) return;
-                }
-
-                // starts the buffer
-                _miningService.StartBuffer(deviceId);
-                IsBufferActive = true;
-
-                // updates RPC presence using current tracker values
-                string vnTitle = CurrentVN?.Title ?? "Unknown VN";
-                string imageUrl = CurrentVN?.CoverImageUrl ?? "default_icon";
-                DateTime startTime = DateTime.UtcNow.Subtract(Tracker.Elapsed);
-                _ = _discordRpc.UpdatePresenceAsync(
-                    vnTitle, 
-                    "Reading",
-                    $"{Tracker.ValidCharacterCount} chars", 
-                    startTime, 
-                    imageUrl
-                );
-            }
-            else
-            {
-                _miningService.StopBuffer();
-                IsBufferActive = false;
-
-                string vnTitle = CurrentVN?.Title ?? "Unknown VN";
-                string imageUrl = CurrentVN?.CoverImageUrl ?? "default_icon";
-                string elapsedStr = Tracker.Elapsed.ToString(@"hh\:mm\:ss");
-                _ = _discordRpc.UpdatePresenceAsync(
-                    vnTitle, 
-                    "Paused", 
-                    $"{Tracker.ValidCharacterCount} chars | {elapsedStr}", 
-                    null,
-                    imageUrl
-                );
-            }
+            IsBufferActive = _sessionManager.ToggleBuffer(CurrentVN);
         }
 
         [RelayCommand]
@@ -253,63 +183,13 @@ namespace VN2Anki.ViewModels
 
         public void EndSession()
         {
-            // verify if there's progress (chars)
-            bool hasProgress = Tracker.Elapsed.TotalSeconds > 0 || Tracker.ValidCharacterCount > 0;
+            _sessionManager.EndSession(CurrentVN);
 
-            if (hasProgress)
-            {
-                int? vnIdToSave = CurrentVN?.Id;
-
-                // progress but no VN linked
-                if (CurrentVN == null)
-                {
-                    var result = MessageBox.Show(
-                        "Você leu alguns caracteres, mas nenhuma Visual Novel está selecionada.\nDeseja salvar este progresso no histórico para vinculá-lo a um jogo mais tarde?",
-                        "Salvar Sessão Órfã?",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Question);
-
-                    if (result == MessageBoxResult.No)
-                    {
-                        hasProgress = false;
-                    }
-                }
-
-                if (hasProgress)
-                {
-                    using (var scope = App.Current.Services.CreateScope())
-                    {
-                        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                        var record = new SessionRecord
-                        {
-                            VisualNovelId = vnIdToSave,
-                            StartTime = System.DateTime.Now - Tracker.Elapsed,
-                            EndTime = System.DateTime.Now,
-                            DurationSeconds = (int)Tracker.Elapsed.TotalSeconds,
-                            CharactersRead = Tracker.ValidCharacterCount,
-                            CardsMined = 0
-                        };
-                        db.Sessions.Add(record);
-                        db.SaveChanges();
-                    }
-
-                    WeakReferenceMessenger.Default.Send(new SessionSavedMessage());
-                }
-            }
-
-            // cleaning routine 
-            _ = _discordRpc.ClearPresenceAsync();
-            if (IsBufferActive) ToggleBuffer();
-            Tracker.Reset();
-            foreach (var slot in _miningService.HistorySlots) slot.Dispose();
-            _miningService.HistorySlots.Clear();
-
+            IsBufferActive = false;
             UpdateVisualCurrentVN();
 
             StatusText = Strings.StatusSessionEnded;
             StatusVisibility = Visibility.Visible;
-
-            WeakReferenceMessenger.Default.Send(new SessionEndedMessage());
         }
 
         public void Receive(StatusMessage message)
@@ -328,9 +208,9 @@ namespace VN2Anki.ViewModels
             // verifies if current session is active and prompts the user to confirm if they want to end it before starting a new one
             if (CurrentVN != null && (Tracker.ValidCharacterCount > 0 || Tracker.Elapsed.TotalSeconds > 0 || IsBufferActive))
             {
-                var result = MessageBox.Show($"Uma sessão está ativa com '{CurrentVN.Title}'.\nDeseja encerrá-la e iniciar outra com '{vn.Title}'?", "Atenção", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                bool result = _windowService.ShowConfirmation($"Uma sessão está ativa com '{CurrentVN.Title}'.\nDeseja encerrá-la e iniciar outra com '{vn.Title}'?", "Atenção");
 
-                if (result == MessageBoxResult.Yes)
+                if (result)
                 {
                     EndSession();
                 }
@@ -349,74 +229,38 @@ namespace VN2Anki.ViewModels
 
             if (IsBufferActive) ToggleBuffer();
 
-            if (string.IsNullOrEmpty(vn.ExecutablePath) || !System.IO.File.Exists(vn.ExecutablePath))
+            WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = $"Iniciando {vn.Title}...", IsError = false }));
+
+            var launchResult = await _gameLauncher.LaunchAndHookAsync(vn, token);
+
+            switch (launchResult)
             {
-                WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Executável não encontrado!", IsError = true }));
-                CurrentVN = null;
-                return;
-            }
+                case GameLaunchResult.Success:
+                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Vídeo conectado! Pronto para o Play.", IsError = false }));
+                    break;
 
-            try
-            {
-                var pInfo = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = vn.ExecutablePath,
-                    WorkingDirectory = System.IO.Path.GetDirectoryName(vn.ExecutablePath),
-                    UseShellExecute = true
-                };
-                System.Diagnostics.Process.Start(pInfo);
-            }
-            catch (System.Exception)
-            {
-                WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Erro ao abrir o jogo!", IsError = true }));
-                CurrentVN = null;
-                return;
-            }
+                case GameLaunchResult.ExecutableNotFound:
+                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Executável não encontrado!", IsError = true }));
+                    CurrentVN = null;
+                    break;
 
-            WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = $"Aguardando janela: {vn.Title}...", IsError = false }));
+                case GameLaunchResult.LaunchFailed:
+                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Erro ao abrir o jogo!", IsError = true }));
+                    CurrentVN = null;
+                    break;
 
-            bool windowFound = false;
+                case GameLaunchResult.Timeout:
+                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Timeout: A janela não apareceu.", IsError = true }));
+                    CurrentVN = null;
+                    var config = _configService.CurrentConfig;
+                    config.Media.VideoWindow = string.Empty;
+                    _configService.Save();
+                    _miningService.TargetVideoWindow = string.Empty;
+                    break;
 
-            try
-            {
-                // token injected delay loop to wait for the game window to appear
-                // timeout is harded coded for now
-                for (int i = 0; i < 30; i++)
-                {
-                    await Task.Delay(1000, token); // Passa o token para a espera!
-
-                    var windows = _videoEngine.GetWindows();
-                    var targetWin = windows.FirstOrDefault(w => w.ExecutablePath == vn.ExecutablePath || w.ProcessName == vn.ProcessName);
-
-                    if (targetWin != null)
-                    {
-                        var config = _configService.CurrentConfig;
-                        config.Media.VideoWindow = targetWin.ProcessName;
-                        _configService.Save();
-
-                        _miningService.TargetVideoWindow = targetWin.ProcessName;
-                        windowFound = true;
-
-                        WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Vídeo conectado! Pronto para o Play.", IsError = false }));
-                        break;
-                    }
-                }
-            }
-            catch (TaskCanceledException)
-            {
-                // prevents overlapping polls
-                return;
-            }
-
-            if (!windowFound)
-            {
-                WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Timeout: A janela não apareceu.", IsError = true }));
-                CurrentVN = null;
-
-                var config = _configService.CurrentConfig;
-                config.Media.VideoWindow = string.Empty;
-                _configService.Save();
-                _miningService.TargetVideoWindow = string.Empty;
+                case GameLaunchResult.Cancelled:
+                    // do nothing, silently abort
+                    break;
             }
         }
 
@@ -424,10 +268,10 @@ namespace VN2Anki.ViewModels
         {
             if (e.PropertyName == nameof(Tracker.ValidCharacterCount) && IsBufferActive)
             {
-                string vnTitle = CurrentVN?.Title ?? "Unknown VN";
+                string vnTitle = CurrentVN?.Title ?? "Reading a VN";
                 string imageUrl = CurrentVN?.CoverImageUrl ?? "default_icon";
 
-                DateTime startTime = DateTime.UtcNow.Subtract(Tracker.Elapsed);
+                System.DateTime startTime = System.DateTime.UtcNow.Subtract(Tracker.Elapsed);
 
                 _ = _discordRpc.UpdatePresenceAsync(
                 vnTitle, 
@@ -496,11 +340,11 @@ namespace VN2Anki.ViewModels
                 {
                     if (string.IsNullOrEmpty(specificProcessName))
                     {
-                        var result = MessageBox.Show(
+                        bool result = _windowService.ShowConfirmation(
                             $"Detectamos que '{matchedVns[0].Title}' está em execução.\nDeseja vinculá-la e iniciar a sessão agora?",
-                            "Visual Novel Detectada", MessageBoxButton.YesNo, MessageBoxImage.Information);
+                            "Visual Novel Detectada");
 
-                        if (result == MessageBoxResult.Yes) selectedVn = matchedVns[0];
+                        if (result) selectedVn = matchedVns[0];
                     }
                     else
                     {
@@ -596,7 +440,7 @@ namespace VN2Anki.ViewModels
         {
             if (IsBufferActive || Tracker.ValidCharacterCount > 0 || Tracker.Elapsed.TotalSeconds > 0)
             {
-                MessageBox.Show("Você não pode alterar ou desvincular a Visual Novel com uma sessão em andamento.\nFinalize a sessão atual primeiro clicando em END.", "Ação Bloqueada", MessageBoxButton.OK, MessageBoxImage.Warning);
+                _windowService.ShowWarning("Você não pode alterar ou desvincular a Visual Novel com uma sessão em andamento.\nFinalize a sessão atual primeiro clicando em END.", "Ação Bloqueada");
                 return;
             }
 
@@ -645,7 +489,7 @@ namespace VN2Anki.ViewModels
             // avoid data loss
             if (IsBufferActive || Tracker.ValidCharacterCount > 0 || Tracker.Elapsed.TotalSeconds > 0)
             {
-                MessageBox.Show("Você não pode realizar o Auto-Sync com uma sessão em andamento.\nFinalize a sessão atual primeiro clicando em END.", "Ação Bloqueada", MessageBoxButton.OK, MessageBoxImage.Warning);
+                _windowService.ShowWarning("Você não pode realizar o Auto-Sync com uma sessão em andamento.\nFinalize a sessão atual primeiro clicando em END.", "Ação Bloqueada");
                 return;
             }
 
@@ -689,7 +533,11 @@ namespace VN2Anki.ViewModels
 
         public void Receive(BufferStoppedMessage message)
         {
-            Application.Current.Dispatcher.Invoke(() => IsBufferActive = false);
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                IsBufferActive = false;
+                _sessionManager.IsBufferActive = false;
+            });
 
             string vnTitle = CurrentVN?.Title ?? "VN2Anki";
             string imageUrl = CurrentVN?.CoverImageUrl ?? "default_icon";

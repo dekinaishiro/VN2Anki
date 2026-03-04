@@ -65,6 +65,8 @@ namespace VN2Anki
             services.AddSingleton<AnkiExportService>();
 
             services.AddSingleton<MiningService>();
+            services.AddSingleton<ISessionManagerService, SessionManagerService>();
+            services.AddSingleton<IGameLauncherService, GameLauncherService>();
 
             services.AddTransient<VN2Anki.ViewModels.MainWindowViewModel>();
             services.AddTransient<ViewModels.SettingsViewModel>();

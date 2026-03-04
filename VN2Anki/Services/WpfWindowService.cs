@@ -95,5 +95,17 @@ namespace VN2Anki.Services
             };
             settingsWin.Show();
         }
+
+        public bool ShowConfirmation(string message, string title, bool isWarning = false)
+        {
+            var icon = isWarning ? MessageBoxImage.Warning : MessageBoxImage.Question;
+            var result = MessageBox.Show(message, title, MessageBoxButton.YesNo, icon);
+            return result == MessageBoxResult.Yes;
+        }
+
+        public void ShowWarning(string message, string title)
+        {
+            MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 }
