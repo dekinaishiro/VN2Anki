@@ -50,10 +50,18 @@ namespace VN2Anki.Messages
         }
     }
 
-    public class AudioErrorMessage : ValueChangedMessage<string>
+    public class AudioErrorMessage : ValueChangedMessage<string> 
     {
-        public AudioErrorMessage(string value) : base(value) { }
+        public AudioErrorMessage(string value) : base(value) { } 
     }
 
+    public class BufferStartedMessage { }
     public class BufferStoppedMessage { }
-}
+
+    public class CurrentVnChangedMessage : ValueChangedMessage<VisualNovel>
+    {
+        public CurrentVnChangedMessage(VisualNovel value) : base(value) { }
+    }
+
+    public class CurrentVnUnlinkedMessage { }
+    }

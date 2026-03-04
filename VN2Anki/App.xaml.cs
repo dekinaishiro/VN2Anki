@@ -121,6 +121,9 @@ namespace VN2Anki
                 dbContext.Database.Migrate();
             }
 
+            // Force initialization of background services
+            _ = Services.GetRequiredService<DiscordRpcService>();
+
             // Resolve and show MainWindow via DI
             var mainWindow = Services.GetRequiredService<MainWindow>();
             this.MainWindow = mainWindow;

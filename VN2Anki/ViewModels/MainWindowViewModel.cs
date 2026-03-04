@@ -74,7 +74,7 @@ namespace VN2Anki.ViewModels
         private readonly IGameLauncherService _gameLauncher;
         private readonly IVnDatabaseService _vnDatabaseService;
 
-        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiExportService ankiExportService, AnkiHandler ankiHandler, VideoEngine videoEngine, DiscordRpcService discordRpc, IWindowService windowService, ISessionManagerService sessionManager, IGameLauncherService gameLauncher, IVnDatabaseService vnDatabaseService)
+        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiExportService ankiExportService, AnkiHandler ankiHandler, VideoEngine videoEngine, IWindowService windowService, ISessionManagerService sessionManager, IGameLauncherService gameLauncher, IVnDatabaseService vnDatabaseService)
         {
             Tracker = tracker;
             _miningService = miningService;
@@ -82,7 +82,6 @@ namespace VN2Anki.ViewModels
             _ankiExportService = ankiExportService;
             _ankiHandler = ankiHandler;
             _videoEngine = videoEngine;
-            _discordRpc = discordRpc;
             _windowService = windowService;
             _sessionManager = sessionManager;
             _gameLauncher = gameLauncher;
@@ -93,8 +92,6 @@ namespace VN2Anki.ViewModels
             _idleWindowCheckTimer.Start();
 
             WeakReferenceMessenger.Default.RegisterAll(this);
-
-            Tracker.PropertyChanged += Tracker_PropertyChanged;
         }
 
         public async void ApplyConfigToServices()
@@ -266,28 +263,18 @@ namespace VN2Anki.ViewModels
             }
         }
 
-        private void Tracker_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == nameof(Tracker.ValidCharacterCount) && IsBufferActive)
-            {
-                string vnTitle = CurrentVN?.Title ?? "Reading a VN";
-                string imageUrl = CurrentVN?.CoverImageUrl ?? "default_icon";
-
-                System.DateTime startTime = System.DateTime.UtcNow.Subtract(Tracker.Elapsed);
-
-                _ = _discordRpc.UpdatePresenceAsync(
-                vnTitle, 
-                "Reading", 
-                $"{Tracker.ValidCharacterCount} chars", 
-                startTime, 
-                imageUrl
-                );
-            }
-        }
-
         // main window vsource/vn title
         partial void OnCurrentVNChanged(VN2Anki.Models.Entities.VisualNovel value)
         {
+            if (value != null)
+            {
+                WeakReferenceMessenger.Default.Send(new CurrentVnChangedMessage(value));
+            }
+            else
+            {
+                WeakReferenceMessenger.Default.Send(new CurrentVnUnlinkedMessage());
+            }
+
             UpdateVisualCurrentVN();
         }
 
@@ -438,18 +425,6 @@ namespace VN2Anki.ViewModels
                 IsBufferActive = false;
                 _sessionManager.IsBufferActive = false;
             });
-
-            string vnTitle = CurrentVN?.Title ?? "VN2Anki";
-            string imageUrl = CurrentVN?.CoverImageUrl ?? "default_icon";
-            string elapsedStr = Tracker.Elapsed.ToString(@"hh\:mm\:ss");
-
-            _ = _discordRpc.UpdatePresenceAsync(
-                vnTitle,
-                CurrentVN != null ? "Paused (Disconnected)" : "No Session",
-                CurrentVN != null ? $"{Tracker.ValidCharacterCount} chars | {elapsedStr}" : "Waiting...",
-                null,
-                imageUrl
-            );
         }
     }
 }

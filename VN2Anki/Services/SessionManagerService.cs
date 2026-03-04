@@ -15,7 +15,6 @@ namespace VN2Anki.Services
     {
         private readonly MiningService _miningService;
         private readonly IConfigurationService _configService;
-        private readonly DiscordRpcService _discordRpc;
         private readonly IWindowService _windowService;
         private readonly IServiceProvider _serviceProvider;
         private readonly SessionTracker _tracker;
@@ -29,7 +28,6 @@ namespace VN2Anki.Services
             SessionTracker tracker,
             MiningService miningService,
             IConfigurationService configService,
-            DiscordRpcService discordRpc,
             IWindowService windowService,
             IServiceProvider serviceProvider,
             IVnDatabaseService vnDatabaseService,
@@ -39,7 +37,6 @@ namespace VN2Anki.Services
             _tracker = tracker;
             _miningService = miningService;
             _configService = configService;
-            _discordRpc = discordRpc;
             _windowService = windowService;
             _serviceProvider = serviceProvider;
             _vnDatabaseService = vnDatabaseService;
@@ -91,32 +88,14 @@ namespace VN2Anki.Services
                 _miningService.StartBuffer(deviceId);
                 IsBufferActive = true;
 
-                string vnTitle = currentVN?.Title ?? "Reading a VN";
-                string imageUrl = currentVN?.CoverImageUrl ?? "default_icon";
-                DateTime startTime = DateTime.UtcNow.Subtract(_tracker.Elapsed);
-                _ = _discordRpc.UpdatePresenceAsync(
-                    vnTitle,
-                    "Reading",
-                    $"{_tracker.ValidCharacterCount} chars",
-                    startTime,
-                    imageUrl
-                );
+                WeakReferenceMessenger.Default.Send(new BufferStartedMessage());
             }
             else
             {
                 _miningService.StopBuffer();
                 IsBufferActive = false;
 
-                string vnTitle = currentVN?.Title ?? "Reading a VN";
-                string imageUrl = currentVN?.CoverImageUrl ?? "default_icon";
-                string elapsedStr = _tracker.Elapsed.ToString(@"hh\:mm\:ss");
-                _ = _discordRpc.UpdatePresenceAsync(
-                    vnTitle,
-                    "Paused",
-                    $"{_tracker.ValidCharacterCount} chars | {elapsedStr}",
-                    null,
-                    imageUrl
-                );
+                WeakReferenceMessenger.Default.Send(new BufferStoppedMessage());
             }
 
             return IsBufferActive;
@@ -164,7 +143,6 @@ namespace VN2Anki.Services
                 }
             }
 
-            _ = _discordRpc.ClearPresenceAsync();
             if (IsBufferActive)
             {
                 _miningService.StopBuffer();
