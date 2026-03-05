@@ -24,6 +24,8 @@ namespace VN2Anki.Services
 
         public bool IsBufferActive { get; set; }
 
+        public bool HasUnsavedProgress => IsBufferActive || (_tracker != null && (_tracker.Elapsed.TotalSeconds > 0 || _tracker.ValidCharacterCount > 0));
+
         public SessionManagerService(
             SessionTracker tracker,
             MiningService miningService,

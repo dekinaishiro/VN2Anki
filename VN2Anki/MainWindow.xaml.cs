@@ -32,7 +32,31 @@ namespace VN2Anki
             WeakReferenceMessenger.Default.Register(this);
 
             this.Loaded += Window_Loaded;
-            this.Closing += (s, e) => { SaveWindowPosition(); };
+            this.Closing += Window_Closing;
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            SaveWindowPosition();
+
+            if (_viewModel.HasUnsavedProgress)
+            {
+                var result = MessageBox.Show(
+                    "You have an active session with unsaved progress. Do you want to end the session and save the progress before closing?",
+                    "Unsaved Progress",
+                    MessageBoxButton.YesNoCancel,
+                    MessageBoxImage.Warning);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    _viewModel.EndSession();
+                }
+                else if (result == MessageBoxResult.Cancel)
+                {
+                    e.Cancel = true;
+                }
+                // If No, let it close and discard.
+            }
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -185,7 +209,7 @@ namespace VN2Anki
             });
         }
 
-        private void BtnExitApp_Click(object sender, RoutedEventArgs e) => Application.Current.Shutdown();
+        private void BtnExitApp_Click(object sender, RoutedEventArgs e) => this.Close();
         private void BtnMinimize_Click(object sender, RoutedEventArgs e) => this.WindowState = WindowState.Minimized;
     }
 }

@@ -29,6 +29,8 @@ namespace VN2Anki.ViewModels
         private readonly DiscordRpcService _discordRpc;
         private readonly ISessionManagerService _sessionManager;
 
+        public bool HasUnsavedProgress => _sessionManager.HasUnsavedProgress;
+
         public SessionTracker Tracker { get; }
 
         [ObservableProperty]
