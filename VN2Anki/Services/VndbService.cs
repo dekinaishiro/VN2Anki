@@ -33,7 +33,7 @@ namespace VN2Anki.Services
             var requestBody = new
             {
                 filters = new object[] { "search", "=", query },
-                fields = "title, image.url"
+                fields = "title, alttitle, image.url"
             };
 
             string jsonBody = JsonSerializer.Serialize(requestBody);

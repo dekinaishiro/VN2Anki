@@ -204,6 +204,7 @@ namespace VN2Anki.ViewModels.Hub
             var vn = new VisualNovel
             {
                 Title = SelectedVndbResult.Title,
+                OriginalTitle = SelectedVndbResult.AltTitle,
                 ProcessName = SelectedWindow.BaseItem.ProcessName,
                 ExecutablePath = SelectedWindow.BaseItem.ExecutablePath,
                 VndbId = SelectedVndbResult.Id,

@@ -17,6 +17,9 @@ namespace VN2Anki.Models
         [JsonPropertyName("title")]
         public string Title { get; set; }
 
+        [JsonPropertyName("alttitle")]
+        public string AltTitle { get; set; }
+
         [JsonPropertyName("image")]
         public VndbImage Image { get; set; }
     }

@@ -81,7 +81,12 @@ namespace VN2Anki.Services
 
         private void UpdatePresence()
         {
-            string vnTitle = _currentVn?.Title ?? "Reading a VN";
+            string vnTitle = "Reading a VN";
+            if (_currentVn != null)
+            {
+                vnTitle = !string.IsNullOrWhiteSpace(_currentVn.OriginalTitle) ? _currentVn.OriginalTitle : _currentVn.Title;
+            }
+
             string imageUrl = _currentVn?.CoverImageUrl ?? "default_icon";
 
             if (_isBufferActive)
