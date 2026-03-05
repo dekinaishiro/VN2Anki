@@ -24,7 +24,7 @@ namespace VN2Anki.ViewModels.Hub
 
     public partial class AddVnViewModel : ObservableObject
     {
-        private readonly AppDbContext _db;
+        private readonly IVnDatabaseService _dbService;
         private readonly VideoEngine _videoEngine;
         private readonly VndbService _vndbService;
 
@@ -71,21 +71,20 @@ namespace VN2Anki.ViewModels.Hub
 
         private readonly IWindowService _windowService;
 
-        public AddVnViewModel(AppDbContext db, VideoEngine videoEngine, VndbService vndbService, IWindowService windowService)
+        public AddVnViewModel(IVnDatabaseService dbService, VideoEngine videoEngine, VndbService vndbService, IWindowService windowService)
         {
-            _db = db;
+            _dbService = dbService;
             _videoEngine = videoEngine;
             _vndbService = vndbService;
             _windowService = windowService;
 
-            LoadWindows();
+            _ = LoadWindowsAsync();
         }
 
-        public void LoadWindows()
+        public async Task LoadWindowsAsync()
         {
-            OpenWindows.Clear();
             var windows = _videoEngine.GetWindows();
-            var vns = _db.VisualNovels.ToList();
+            var vns = await _dbService.GetAllVisualNovelsAsync();
 
             var displayItems = new System.Collections.Generic.List<WindowDisplayItem>();
 
@@ -106,7 +105,11 @@ namespace VN2Anki.ViewModels.Hub
             // sort by registration status first, then alphabetically
             var sortedItems = displayItems.OrderByDescending(x => x.IsRegistered).ThenBy(x => x.BaseItem.DisplayName);
 
-            foreach (var item in sortedItems) OpenWindows.Add(item);
+            System.Windows.Application.Current.Dispatcher.Invoke(() => 
+            {
+                OpenWindows.Clear();
+                foreach (var item in sortedItems) OpenWindows.Add(item);
+            });
         }
 
         partial void OnSelectedWindowChanged(WindowDisplayItem value)
@@ -170,7 +173,7 @@ namespace VN2Anki.ViewModels.Hub
             {
                 if (IsOpenedFromLibrary)
                 {
-                    MessageBox.Show("Este executável já está sendo usado por outro jogo na Biblioteca.", "Atenção", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    _windowService.ShowWarning(Locales.Strings.MsgExeAlreadyInUse, Locales.Strings.MsgAttention);
                     return;
                 }
                 else
@@ -184,14 +187,14 @@ namespace VN2Anki.ViewModels.Hub
             // default behavior (new entry)
             if (SelectedVndbResult == null)
             {
-                MessageBox.Show("Por favor, selecione um resultado do VNDB!", "Atenção", MessageBoxButton.OK, MessageBoxImage.Warning);
+                _windowService.ShowWarning(Locales.Strings.MsgSelectVndbResult, Locales.Strings.MsgAttention);
                 return;
             }
 
-            bool alreadyExists = _db.VisualNovels.Any(v => v.VndbId == SelectedVndbResult.Id);
+            bool alreadyExists = await _dbService.ExistsByVndbIdAsync(SelectedVndbResult.Id);
             if (alreadyExists)
             {
-                MessageBox.Show("Esta Visual Novel já está adicionada à sua Library!", "Duplicata", MessageBoxButton.OK, MessageBoxImage.Information);
+                _windowService.ShowInformation(Locales.Strings.MsgVnAlreadyInLibrary, Locales.Strings.TitleDuplicate);
                 return;
             }
 
@@ -208,8 +211,7 @@ namespace VN2Anki.ViewModels.Hub
                 CoverImageUrl = SelectedVndbResult.Image?.Url
             };
 
-            _db.VisualNovels.Add(vn);
-            await _db.SaveChangesAsync();
+            await _dbService.AddVisualNovelAsync(vn);
 
             IsLoading = false;
 

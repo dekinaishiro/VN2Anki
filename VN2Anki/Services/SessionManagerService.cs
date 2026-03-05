@@ -123,21 +123,18 @@ namespace VN2Anki.Services
 
                 if (hasProgress)
                 {
-                    using (var scope = _serviceProvider.CreateScope())
+                    var record = new SessionRecord
                     {
-                        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                        var record = new SessionRecord
-                        {
-                            VisualNovelId = vnIdToSave,
-                            StartTime = System.DateTime.Now - _tracker.Elapsed,
-                            EndTime = System.DateTime.Now,
-                            DurationSeconds = (int)_tracker.Elapsed.TotalSeconds,
-                            CharactersRead = _tracker.ValidCharacterCount,
-                            CardsMined = 0
-                        };
-                        db.Sessions.Add(record);
-                        db.SaveChanges();
-                    }
+                        VisualNovelId = vnIdToSave,
+                        StartTime = System.DateTime.Now - _tracker.Elapsed,
+                        EndTime = System.DateTime.Now,
+                        DurationSeconds = (int)_tracker.Elapsed.TotalSeconds,
+                        CharactersRead = _tracker.ValidCharacterCount,
+                        CardsMined = 0
+                    };
+                    
+                    var dbService = _serviceProvider.GetRequiredService<IVnDatabaseService>();
+                    dbService.AddSessionAsync(record).GetAwaiter().GetResult();
 
                     WeakReferenceMessenger.Default.Send(new SessionSavedMessage());
                 }

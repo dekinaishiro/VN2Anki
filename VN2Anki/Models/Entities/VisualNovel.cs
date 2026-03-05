@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace VN2Anki.Models.Entities
 {
@@ -16,5 +17,8 @@ namespace VN2Anki.Models.Entities
         public int TotalCharactersRead { get; set; }
         public List<SessionRecord> Sessions { get; set; } = new();
         public string? OriginalTitle { get; set; }
+
+        [NotMapped]
+        public string FormattedTotalTime => TimeSpan.FromSeconds(TotalTimePlayedSeconds).ToString(@"hh\:mm\:ss");
     }
 }

@@ -240,4 +240,25 @@
   <data name="TitleHistoryWindow" xml:space="preserve">
     <value>Historial</value>
   </data>
+  <data name="MsgExeAlreadyInUse" xml:space="preserve">
+    <value>Este ejecutable ya está siendo utilizado por otro juego en la Biblioteca.</value>
+  </data>
+  <data name="MsgSelectVndbResult" xml:space="preserve">
+    <value>¡Por favor, seleccione un resultado de VNDB!</value>
+  </data>
+  <data name="MsgVnAlreadyInLibrary" xml:space="preserve">
+    <value>¡Esta Novela Visual ya está añadida a tu Biblioteca!</value>
+  </data>
+  <data name="TitleDuplicate" xml:space="preserve">
+    <value>Duplicado</value>
+  </data>
+  <data name="MsgYomitanNotFound" xml:space="preserve">
+    <value>Yomitan no se encontró en los directorios predeterminados de Chrome/Edge.</value>
+  </data>
+  <data name="TitleError" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="TitleWarning" xml:space="preserve">
+    <value>Aviso</value>
+  </data>
 </root>

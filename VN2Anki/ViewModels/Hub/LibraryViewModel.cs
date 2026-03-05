@@ -1,12 +1,13 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 using VN2Anki.Data;
 using VN2Anki.Messages;
 using VN2Anki.Models.Entities;
-using Microsoft.EntityFrameworkCore;
+using VN2Anki.Services.Interfaces;
 // using CommunityToolkit.Mvvm.Messaging;
 // using VN2Anki.Messages;
 
@@ -14,7 +15,7 @@ namespace VN2Anki.ViewModels.Hub
 {
     public partial class LibraryViewModel : ObservableObject, IRecipient<SessionSavedMessage>
     {
-        private readonly AppDbContext _db;
+        private readonly IVnDatabaseService _dbService;
 
         [ObservableProperty]
         private ObservableCollection<VisualNovel> _visualNovels = new();
@@ -25,41 +26,45 @@ namespace VN2Anki.ViewModels.Hub
         [ObservableProperty]
         private string _newVnTitle = "";
 
-        public LibraryViewModel(AppDbContext dbContext)
+        public LibraryViewModel(IVnDatabaseService dbService)
         {
-            _db = dbContext;
-            LoadLibrary();
-            LoadHistory();
-            WeakReferenceMessenger.Default.Register(this);
+            _dbService = dbService;
+            _ = LoadLibraryAsync();
+            _ = LoadHistoryAsync();
+            WeakReferenceMessenger.Default.Register(this);       
         }
 
-        public void LoadLibrary()
+        public async Task LoadLibraryAsync()
         {
-            VisualNovels.Clear();
-            var vns = _db.VisualNovels.ToList();
-            foreach (var vn in vns) VisualNovels.Add(vn);
+            var vns = await _dbService.GetAllVisualNovelsAsync();
+            System.Windows.Application.Current.Dispatcher.Invoke(() => 
+            {
+                VisualNovels.Clear();
+                foreach (var vn in vns) VisualNovels.Add(vn);
+            });
         }
 
         [RelayCommand]
-        private void AddVn()
+        private async Task AddVnAsync()
         {
-            if (string.IsNullOrWhiteSpace(NewVnTitle)) return;
+            if (string.IsNullOrWhiteSpace(NewVnTitle)) return;   
 
             var vn = new VisualNovel { Title = NewVnTitle, ProcessName = "Executável" };
-            _db.VisualNovels.Add(vn);
-            _db.SaveChanges();
+            await _dbService.AddVisualNovelAsync(vn);
 
-            VisualNovels.Add(vn);
-            NewVnTitle = "";
+            System.Windows.Application.Current.Dispatcher.Invoke(() => 
+            {
+                VisualNovels.Add(vn);
+                NewVnTitle = "";
+            });
         }
 
         [RelayCommand]
-        private void DeleteVn(VisualNovel vn)
+        private async Task DeleteVnAsync(VisualNovel vn)
         {
             if (vn == null) return;
-            _db.VisualNovels.Remove(vn);
-            _db.SaveChanges();
-            VisualNovels.Remove(vn);
+            await _dbService.DeleteVisualNovelAsync(vn);
+            System.Windows.Application.Current.Dispatcher.Invoke(() => VisualNovels.Remove(vn));
         }
 
         [RelayCommand]
@@ -72,24 +77,31 @@ namespace VN2Anki.ViewModels.Hub
 
         // sessions history related methods
 
-        public void LoadHistory()
+        public async Task LoadHistoryAsync()
         {
-            SessionHistory.Clear();
-            var sessions = _db.Sessions.Include(s => s.VisualNovel).OrderByDescending(s => s.EndTime).ToList();
-            foreach (var s in sessions) SessionHistory.Add(s);
+            var sessions = await _dbService.GetAllSessionsAsync();
+            System.Windows.Application.Current.Dispatcher.Invoke(() => 
+            {
+                SessionHistory.Clear();
+                foreach (var s in sessions) SessionHistory.Add(s);   
+            });
         }
         public void Receive(SessionSavedMessage message)
         {
-            System.Windows.Application.Current.Dispatcher.Invoke(() => LoadHistory());
+            _ = LoadHistoryAsync();
         }
 
         [RelayCommand]
-        private void DeleteSession(SessionRecord session)
+        private async Task DeleteSessionAsync(SessionRecord session)        
         {
             if (session == null) return;
-            _db.Sessions.Remove(session);
-            _db.SaveChanges();
-            SessionHistory.Remove(session);
+            await _dbService.DeleteSessionAsync(session);
+            System.Windows.Application.Current.Dispatcher.Invoke(() => 
+            {
+                SessionHistory.Remove(session);
+                // To update Visual Novels stats on UI after session deletion
+                _ = LoadLibraryAsync(); 
+            });
         }
     }
 }

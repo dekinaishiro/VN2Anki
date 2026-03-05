@@ -49,6 +49,7 @@
                     <TextBlock Grid.Column="0" Text="{Binding DisplayVnTitle}" 
                                Foreground="{Binding VnTitleColor}" 
                                FontWeight="Bold" VerticalAlignment="Center" 
+                               TextWrapping="Wrap" MaxHeight="40" MaxWidth="250"
                                TextTrimming="CharacterEllipsis"/>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">

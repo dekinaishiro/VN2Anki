@@ -103,9 +103,14 @@ namespace VN2Anki.Services
             return result == MessageBoxResult.Yes;
         }
 
-        public void ShowWarning(string message, string title)
+        public void ShowWarning(string message, string title)    
         {
             MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+
+        public void ShowInformation(string message, string title)
+        {
+            MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
 }

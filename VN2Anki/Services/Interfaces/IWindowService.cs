@@ -10,5 +10,6 @@ namespace VN2Anki.Services.Interfaces
         void OpenExtensionSettingsWindow(string extensionPath);
         bool ShowConfirmation(string message, string title, bool isWarning = false);
         void ShowWarning(string message, string title);
+        void ShowInformation(string message, string title);
     }
 }

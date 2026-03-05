@@ -39,7 +39,14 @@
                                             <TextBlock Text="{Binding Title}" Foreground="White" FontWeight="Bold" FontSize="14" TextTrimming="CharacterEllipsis" ToolTip="{Binding Title}"/>
                                             <TextBlock Text="{Binding ProcessName, StringFormat='Processo: {0}'}" Foreground="#AAAAAA" FontSize="11" Margin="0,2,0,8" TextTrimming="CharacterEllipsis"/>
 
-                                            <Grid Margin="0,10,0,0">
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                                <TextBlock Text="⏱ " Foreground="#007ACC" FontSize="12"/>
+                                                <TextBlock Text="{Binding FormattedTotalTime}" Foreground="#CCCCCC" FontSize="12" Margin="0,0,10,0"/>
+                                                <TextBlock Text="A " Foreground="#28A745" FontSize="12"/>
+                                                <TextBlock Text="{Binding TotalCharactersRead}" Foreground="#CCCCCC" FontSize="12"/>
+                                            </StackPanel>
+
+                                            <Grid Margin="0,5,0,0">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>

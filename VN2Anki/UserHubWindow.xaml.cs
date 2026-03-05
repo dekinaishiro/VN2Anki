@@ -23,7 +23,7 @@ namespace VN2Anki
             if (addWindow.ShowDialog() == true)
             {
                 var libraryVm = this.DataContext as VN2Anki.ViewModels.Hub.LibraryViewModel;
-                libraryVm?.LoadLibrary();
+                _ = libraryVm?.LoadLibraryAsync();
             }
         }
     }

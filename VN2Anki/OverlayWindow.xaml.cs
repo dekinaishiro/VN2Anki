@@ -375,7 +375,7 @@ namespace VN2Anki
             }
             else
             {
-                MessageBox.Show("Yomitan não encontrado nos diretórios padrão do Chrome/Edge.", "Aviso", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(Locales.Strings.MsgYomitanNotFound, Locales.Strings.TitleWarning, MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
