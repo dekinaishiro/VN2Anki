@@ -201,9 +201,14 @@ namespace VN2Anki
         private void OverlayWindow_Loaded(object sender, RoutedEventArgs e)
         {
             var conf = _configService.CurrentConfig.Overlay;
-            this.Width = conf.Width;
-            this.Height = conf.Height;
-            if (!double.IsNaN(conf.Top) && !double.IsNaN(conf.Left))
+            
+            if (!double.IsInfinity(conf.Width) && !double.IsNaN(conf.Width) && conf.Width > 0)
+                this.Width = conf.Width;
+            
+            if (!double.IsInfinity(conf.Height) && !double.IsNaN(conf.Height) && conf.Height > 0)
+                this.Height = conf.Height;
+                
+            if (!double.IsNaN(conf.Top) && !double.IsInfinity(conf.Top) && !double.IsNaN(conf.Left) && !double.IsInfinity(conf.Left))
             {
                 this.Top = conf.Top;
                 this.Left = conf.Left;
@@ -411,11 +416,21 @@ namespace VN2Anki
             conf.IsTransparent = _isTransparent;
             conf.IsPassThrough = _isPassThroughToggled;
 
-            // save current window position and size
-            conf.Width = this.Width;
-            conf.Height = this.Height;
-            conf.Top = this.Top;
-            conf.Left = this.Left;
+            // save current window position and size properly accounting for Minimized state
+            if (this.WindowState == WindowState.Normal)
+            {
+                conf.Width = this.Width;
+                conf.Height = this.Height;
+                conf.Top = this.Top;
+                conf.Left = this.Left;
+            }
+            else if (this.RestoreBounds != Rect.Empty)
+            {
+                conf.Width = this.RestoreBounds.Width;
+                conf.Height = this.RestoreBounds.Height;
+                conf.Top = this.RestoreBounds.Top;
+                conf.Left = this.RestoreBounds.Left;
+            }
 
             _configService.Save();
             //_textHook.OnTextCopied -= HandleNewText;
