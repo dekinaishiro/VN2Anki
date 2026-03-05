@@ -74,6 +74,8 @@ namespace VN2Anki
 
             this.Loaded += OverlayWindow_Loaded;
             this.Closed += OverlayWindow_Closed;
+            this.LocationChanged += OverlayWindow_LocationOrSizeChanged;
+            this.SizeChanged += OverlayWindow_LocationOrSizeChanged;
 
             var conf = _configService.CurrentConfig.Overlay;
             _isTextAtTop = conf.IsTextAtTop;
@@ -409,6 +411,22 @@ namespace VN2Anki
             this.WindowState = WindowState.Minimized;
         }
 
+        private double _lastNormalTop = double.NaN;
+        private double _lastNormalLeft = double.NaN;
+        private double _lastNormalWidth = double.NaN;
+        private double _lastNormalHeight = double.NaN;
+
+        private void OverlayWindow_LocationOrSizeChanged(object sender, EventArgs e)
+        {
+            if (this.WindowState == WindowState.Normal)
+            {
+                _lastNormalTop = this.Top;
+                _lastNormalLeft = this.Left;
+                _lastNormalWidth = this.Width;
+                _lastNormalHeight = this.Height;
+            }
+        }
+
         private void OverlayWindow_Closed(object sender, EventArgs e)
         {
             var conf = _configService.CurrentConfig.Overlay;
@@ -423,6 +441,13 @@ namespace VN2Anki
                 conf.Height = this.Height;
                 conf.Top = this.Top;
                 conf.Left = this.Left;
+            }
+            else if (!double.IsNaN(_lastNormalTop))
+            {
+                conf.Width = _lastNormalWidth;
+                conf.Height = _lastNormalHeight;
+                conf.Top = _lastNormalTop;
+                conf.Left = _lastNormalLeft;
             }
             else if (this.RestoreBounds != Rect.Empty)
             {
