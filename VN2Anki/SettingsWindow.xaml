@@ -185,12 +185,13 @@
                         <CheckBox x:Name="ChkOpenSettings" Content="{x:Static loc:Strings.LblOpenSettingsOnStartup}" Foreground="White" Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2" Margin="5,15,5,5" VerticalAlignment="Center" IsChecked="{Binding Config.General.OpenSettingsOnStartup}"/>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="Text Hook Source:" Grid.Row="9" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboHookType" Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="2" SelectedValuePath="Tag" SelectedValue="{Binding Config.Hook.ActiveHookType}">
+                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboHookType" Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="2" SelectedValuePath="Tag" SelectedValue="{Binding Config.Hook.ActiveHookType}" SelectionChanged="ComboHookType_SelectionChanged">
                             <ComboBoxItem Content="Clipboard" Tag="0"/>
-                            <ComboBoxItem Content="WebSocket (Luna/Textractor)" Tag="1"/>
+                            <ComboBoxItem Content="WebSocket (Luna)" Tag="1"/>
+                            <ComboBoxItem Content="WebSocket (Textractor)" Tag="2"/>
                         </ComboBox>
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="WebSocket URL:" Grid.Row="10" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <TextBlock Style="{StaticResource StandardTextBlock}" x:Name="LblWsUrl" Text="WebSocket URL:" Grid.Row="10" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
                         <TextBox x:Name="TxtWsUrl" Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5" Text="{Binding Config.Hook.WebSocketUrl}" ToolTip="Luna: ws://localhost:2333/api/ws/text/origin | Textractor: ws://localhost:6677"/>
                     </Grid>
                 </ScrollViewer>

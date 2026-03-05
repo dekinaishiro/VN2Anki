@@ -80,6 +80,33 @@ namespace VN2Anki
             }
         }
 
+        private void ComboHookType_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ComboHookType.SelectedItem is ComboBoxItem item && TxtWsUrl != null && LblWsUrl != null)
+            {
+                int tag = int.Parse(item.Tag.ToString());
+                if (tag == 0) // Clipboard
+                {
+                    TxtWsUrl.IsEnabled = false;
+                    LblWsUrl.Opacity = 0.5;
+                }
+                else 
+                {
+                    TxtWsUrl.IsEnabled = true;
+                    LblWsUrl.Opacity = 1.0;
+                    
+                    if (tag == 1) // Luna
+                    {
+                        TxtWsUrl.Text = "ws://localhost:2333/api/ws/text/origin";
+                    }
+                    else if (tag == 2) // Textractor
+                    {
+                        TxtWsUrl.Text = "ws://localhost:6677";
+                    }
+                }
+            }
+        }
+
         private void BtnSave_Click(object sender, RoutedEventArgs e)
         {
             var overlayConfig = _viewModel.Config.Overlay;
