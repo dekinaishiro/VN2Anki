@@ -95,7 +95,8 @@ namespace VN2Anki
             services.AddTransient<ViewModels.Hub.UserHubViewModel>();
 
             services.AddTransient<ViewModels.Hub.LibraryViewModel>();
-            services.AddTransient<ViewModels.Hub.HistoryViewModel>(); // <--- ADICIONE ESTA LINHA
+            services.AddTransient<ViewModels.Hub.HistoryViewModel>();
+            services.AddTransient<ViewModels.Hub.VnDetailsViewModel>();
 
             return services.BuildServiceProvider();
         }

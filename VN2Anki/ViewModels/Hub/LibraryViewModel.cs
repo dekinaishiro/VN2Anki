@@ -12,13 +12,15 @@ namespace VN2Anki.ViewModels.Hub
     public partial class LibraryViewModel : ObservableObject
     {
         private readonly IVnDatabaseService _dbService;
+        public INavigationService Navigation { get; }
 
         [ObservableProperty]
         private ObservableCollection<VisualNovel> _visualNovels = new();
 
-        public LibraryViewModel(IVnDatabaseService dbService)
+        public LibraryViewModel(IVnDatabaseService dbService, INavigationService navigation) // <--- NOVO PARÂMETRO
         {
             _dbService = dbService;
+            Navigation = navigation;
             _ = LoadLibraryAsync();
         }
 
@@ -45,6 +47,13 @@ namespace VN2Anki.ViewModels.Hub
         {
             if (vn == null) return;
             WeakReferenceMessenger.Default.Send(new PlayVnMessage(vn));
+        }
+
+        [RelayCommand]
+        private void GoToDetails(VisualNovel vn)
+        {
+            if (vn == null) return;
+            Navigation.Push<VnDetailsViewModel>(vm => vm.Initialize(vn));
         }
     }
 }

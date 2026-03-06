@@ -6,7 +6,7 @@ namespace VN2Anki.Services.Interfaces
     {
         ObservableObject CurrentViewModel { get; }
         void NavigateTo<TViewModel>() where TViewModel : ObservableObject;
-        void Push<TViewModel>() where TViewModel : ObservableObject;
+        void Push<TViewModel>(Action<TViewModel> configure = null) where TViewModel : ObservableObject;
         void Pop();
     }
 }

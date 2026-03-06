@@ -26,13 +26,16 @@ namespace VN2Anki.Services
             CurrentViewModel = vm;
         }
 
-        public void Push<TViewModel>() where TViewModel : ObservableObject
+        public void Push<TViewModel>(Action<TViewModel> configure = null) where TViewModel : ObservableObject
         {
             if (CurrentViewModel != null)
             {
                 _navigationStack.Push(CurrentViewModel);
             }
             var vm = _serviceProvider.GetRequiredService<TViewModel>();
+
+            configure?.Invoke(vm);
+
             CurrentViewModel = vm;
         }
 

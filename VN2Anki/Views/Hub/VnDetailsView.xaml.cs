@@ -15,11 +15,11 @@ using System.Windows.Shapes;
 namespace VN2Anki.Views.Hub
 {
     /// <summary>
-    /// Interaction logic for HistoryView.xaml
+    /// Interaction logic for VnDetailsView.xaml
     /// </summary>
-    public partial class HistoryView : UserControl
+    public partial class VnDetailsView : UserControl
     {
-        public HistoryView()
+        public VnDetailsView()
         {
             InitializeComponent();
         }

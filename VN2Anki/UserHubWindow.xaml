@@ -13,6 +13,9 @@
         <DataTemplate DataType="{x:Type vms:HistoryViewModel}">
             <views:HistoryView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vms:VnDetailsViewModel}">
+            <views:VnDetailsView />
+        </DataTemplate>
     </Window.Resources>
 
     <Grid>
