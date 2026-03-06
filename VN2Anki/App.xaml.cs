@@ -11,6 +11,7 @@ using VN2Anki.Models;
 using VN2Anki.Services;
 using VN2Anki.Services.Interfaces;
 
+
 namespace VN2Anki
 {
     public partial class App : Application
@@ -89,6 +90,12 @@ namespace VN2Anki
 
             services.AddSingleton<IDispatcherService, WpfDispatcherService>();
             services.AddSingleton<IWindowService, WpfWindowService>();
+
+            services.AddSingleton<INavigationService, NavigationService>();
+            services.AddTransient<ViewModels.Hub.UserHubViewModel>();
+
+            services.AddTransient<ViewModels.Hub.LibraryViewModel>();
+            services.AddTransient<ViewModels.Hub.HistoryViewModel>(); // <--- ADICIONE ESTA LINHA
 
             return services.BuildServiceProvider();
         }
