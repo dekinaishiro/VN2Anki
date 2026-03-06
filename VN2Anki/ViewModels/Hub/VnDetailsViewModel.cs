@@ -13,6 +13,7 @@ namespace VN2Anki.ViewModels.Hub
     public partial class VnDetailsViewModel : ObservableObject
     {
         private readonly IVnDatabaseService _dbService;
+        private readonly IWindowService _windowService;
         public INavigationService Navigation { get; }
 
         [ObservableProperty]
@@ -21,13 +22,18 @@ namespace VN2Anki.ViewModels.Hub
         [ObservableProperty]
         private ObservableCollection<SessionRecord> _recentSessions = new();
 
-        public VnDetailsViewModel(IVnDatabaseService dbService, INavigationService navigation)
+        // === ESTADOS DO MODAL DE EDIÇÃO ===
+        [ObservableProperty] private bool _isEditModalOpen;
+        [ObservableProperty] private string _editExecutablePath;
+        [ObservableProperty] private string _editVndbId;
+
+        public VnDetailsViewModel(IVnDatabaseService dbService, INavigationService navigation, IWindowService windowService)
         {
             _dbService = dbService;
             Navigation = navigation;
+            _windowService = windowService;
         }
 
-        // Método chamado pelo Motor de Navegação para injetar a VN selecionada
         public void Initialize(VisualNovel selectedVn)
         {
             Vn = selectedVn;
@@ -38,13 +44,57 @@ namespace VN2Anki.ViewModels.Hub
         {
             if (Vn == null) return;
             var allSessions = await _dbService.GetAllSessionsAsync();
-            var vnSessions = allSessions.Where(s => s.VisualNovelId == Vn.Id).Take(5).ToList(); // Pega só as 5 últimas
+            var vnSessions = allSessions.Where(s => s.VisualNovelId == Vn.Id).Take(5).ToList();
 
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
                 RecentSessions.Clear();
                 foreach (var s in vnSessions) RecentSessions.Add(s);
             });
+        }
+
+        // === COMANDOS DE EDIÇÃO ===
+        [RelayCommand]
+        private void OpenEditModal()
+        {
+            EditExecutablePath = Vn.ExecutablePath;
+            EditVndbId = Vn.VndbId;
+            IsEditModalOpen = true; // Abre o modal
+        }
+
+        [RelayCommand]
+        private void CloseEditModal() => IsEditModalOpen = false; // Fecha o modal
+
+        [RelayCommand]
+        private async Task SaveEditAsync()
+        {
+            Vn.ExecutablePath = EditExecutablePath;
+            Vn.VndbId = EditVndbId;
+
+            await _dbService.UpdateVisualNovelAsync(Vn);
+
+            IsEditModalOpen = false;
+            WeakReferenceMessenger.Default.Send(new VnUpdatedMessage(Vn)); // Avisa a Library
+        }
+
+        // === COMANDO DE SAFE DELETE ===
+        [RelayCommand]
+        private async Task DeleteVnAsync()
+        {
+            var allSessions = await _dbService.GetAllSessionsAsync();
+            int count = allSessions.Count(s => s.VisualNovelId == Vn.Id);
+
+            bool confirm = _windowService.ShowConfirmation(
+                $"Você está prestes a apagar '{Vn.Title}'.\nIsso removerá permanentemente {count} sessões registradas.\n\nDeseja continuar?",
+                "Safe Delete",
+                true);
+
+            if (confirm)
+            {
+                await _dbService.DeleteVisualNovelAsync(Vn);
+                WeakReferenceMessenger.Default.Send(new VnDeletedMessage(Vn)); // Avisa a Library
+                Navigation.Pop(); // Volta para a aba anterior
+            }
         }
 
         [RelayCommand]

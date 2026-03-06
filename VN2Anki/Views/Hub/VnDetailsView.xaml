@@ -6,93 +6,135 @@
 
     <UserControl.Resources>
         <conv:ImagePathConverter x:Key="ImgPathConverter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
     </UserControl.Resources>
 
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="250"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="250"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" ClipToBounds="True">
-            <Image Source="{Binding Vn.CoverImagePath, Converter={StaticResource ImgPathConverter}}" Stretch="UniformToFill" Opacity="0.3">
-                <Image.Effect>
-                    <BlurEffect Radius="20" KernelType="Gaussian"/>
-                </Image.Effect>
-            </Image>
-            <Border Background="#AA000000" />
-            <Button Command="{Binding GoBackCommand}" Content="← Voltar" Background="Transparent" Foreground="White" BorderThickness="0" 
-                    HorizontalAlignment="Left" VerticalAlignment="Top" Margin="15" FontSize="16" FontWeight="Bold" Cursor="Hand"/>
+            <Grid Grid.Row="0" ClipToBounds="True">
+                <Image Source="{Binding Vn.CoverImagePath, Converter={StaticResource ImgPathConverter}}" Stretch="UniformToFill" Opacity="0.3">
+                    <Image.Effect>
+                        <BlurEffect Radius="20" KernelType="Gaussian"/>
+                    </Image.Effect>
+                </Image>
+                <Border Background="#AA000000" />
 
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,30,0,0">
-                <TextBlock Text="{Binding Vn.OriginalTitle}" Foreground="White" FontWeight="Black" FontSize="36" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="600"/>
-                <TextBlock Text="{Binding Vn.Title}" Foreground="#AAAAAA" FontWeight="SemiBold" FontSize="18" HorizontalAlignment="Center" Margin="0,5,0,20"/>
-                <Button Command="{Binding PlayVnCommand}" Content="▶ JOGAR AGORA" Background="#007ACC" Foreground="White" FontWeight="Bold" FontSize="16" BorderThickness="0" Padding="30,12" Cursor="Hand" HorizontalAlignment="Center">
-                    <Button.Resources>
-                        <Style TargetType="Border">
-                            <Setter Property="CornerRadius" Value="20"/>
-                        </Style>
-                    </Button.Resources>
-                </Button>
-            </StackPanel>
+                <Button Command="{Binding GoBackCommand}" Content="← Voltar" Background="Transparent" Foreground="White" BorderThickness="0" 
+                        HorizontalAlignment="Left" VerticalAlignment="Top" Margin="15" FontSize="16" FontWeight="Bold" Cursor="Hand"/>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="15">
+                    <Button Command="{Binding OpenEditModalCommand}" Content="⚙️ Editar VN" Background="#3F3F46" Foreground="White" FontWeight="Bold" BorderThickness="0" Padding="12,8" Margin="0,0,10,0" Cursor="Hand">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    <Button Command="{Binding DeleteVnCommand}" Content="🗑️ Excluir" Background="#DC3545" Foreground="White" FontWeight="Bold" BorderThickness="0" Padding="12,8" Cursor="Hand">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                </StackPanel>
+
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,30,0,0">
+                    <TextBlock Text="{Binding Vn.OriginalTitle}" Foreground="White" FontWeight="Black" FontSize="36" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="600"/>
+                    <TextBlock Text="{Binding Vn.Title}" Foreground="#AAAAAA" FontWeight="SemiBold" FontSize="18" HorizontalAlignment="Center" Margin="0,5,0,20"/>
+                    <Button Command="{Binding PlayVnCommand}" Content="▶ JOGAR AGORA" Background="#007ACC" Foreground="White" FontWeight="Bold" FontSize="16" BorderThickness="0" Padding="30,12" Cursor="Hand" HorizontalAlignment="Center">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="20"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <Grid Grid.Row="1" Margin="20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Margin="0,0,20,0">
+                    <TextBlock Text="Estatísticas Totais" Foreground="White" FontSize="20" FontWeight="Bold" Margin="0,0,0,15"/>
+                    <WrapPanel>
+                        <Border Background="#2D2D30" CornerRadius="8" Padding="15" Margin="0,0,15,15" MinWidth="150">
+                            <StackPanel>
+                                <TextBlock Text="⏱ TEMPO" Foreground="#888888" FontWeight="Bold" FontSize="12"/>
+                                <TextBlock Text="{Binding Vn.FormattedTotalTime}" Foreground="#007ACC" FontWeight="Black" FontSize="24" Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#2D2D30" CornerRadius="8" Padding="15" Margin="0,0,15,15" MinWidth="150">
+                            <StackPanel>
+                                <TextBlock Text="🅰 CARACTERES" Foreground="#888888" FontWeight="Bold" FontSize="12"/>
+                                <TextBlock Text="{Binding Vn.TotalCharactersRead}" Foreground="#28A745" FontWeight="Black" FontSize="24" Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </WrapPanel>
+                    <TextBlock Text="Caminho do Jogo" Foreground="#888888" FontWeight="Bold" FontSize="12" Margin="0,15,0,5"/>
+                    <TextBlock Text="{Binding Vn.ExecutablePath}" Foreground="#CCCCCC" FontSize="14" TextWrapping="Wrap"/>
+                </StackPanel>
+
+                <Border Grid.Column="1" Background="#252526" CornerRadius="8" Padding="15">
+                    <StackPanel>
+                        <TextBlock Text="Últimas Sessões" Foreground="White" FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
+                        <ItemsControl ItemsSource="{Binding RecentSessions}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="#3E3E42" BorderThickness="0,0,0,1" Padding="0,10">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="{Binding EndTime, StringFormat='{}{0:dd MMM yyyy}'}" Foreground="#AAAAAA" FontSize="12"/>
+                                                <TextBlock Text="{Binding FormattedDuration}" Foreground="White" FontWeight="SemiBold" FontSize="14"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1" Text="{Binding CharactersRead, StringFormat='{} {0} chars'}" Foreground="#28A745" FontWeight="Bold" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </Grid>
         </Grid>
 
-        <Grid Grid.Row="1" Margin="20">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*"/>
-                <ColumnDefinition Width="1*"/>
-            </Grid.ColumnDefinitions>
-
-            <StackPanel Grid.Column="0" Margin="0,0,20,0">
-                <TextBlock Text="Estatísticas Totais" Foreground="White" FontSize="20" FontWeight="Bold" Margin="0,0,0,15"/>
-
-                <WrapPanel>
-                    <Border Background="#2D2D30" CornerRadius="8" Padding="15" Margin="0,0,15,15" MinWidth="150">
-                        <StackPanel>
-                            <TextBlock Text="⏱ TEMPO" Foreground="#888888" FontWeight="Bold" FontSize="12"/>
-                            <TextBlock Text="{Binding Vn.FormattedTotalTime}" Foreground="#007ACC" FontWeight="Black" FontSize="24" Margin="0,5,0,0"/>
-                        </StackPanel>
-                    </Border>
-                    <Border Background="#2D2D30" CornerRadius="8" Padding="15" Margin="0,0,15,15" MinWidth="150">
-                        <StackPanel>
-                            <TextBlock Text="🅰 CARACTERES" Foreground="#888888" FontWeight="Bold" FontSize="12"/>
-                            <TextBlock Text="{Binding Vn.TotalCharactersRead}" Foreground="#28A745" FontWeight="Black" FontSize="24" Margin="0,5,0,0"/>
-                        </StackPanel>
-                    </Border>
-                    <Border Background="#2D2D30" CornerRadius="8" Padding="15" Margin="0,0,15,15" MinWidth="150">
-                        <StackPanel>
-                            <TextBlock Text="🃏 CARTAS MINERADAS" Foreground="#888888" FontWeight="Bold" FontSize="12"/>
-                            <TextBlock Text="{Binding Vn.TotalCardsMined}" Foreground="#FFC107" FontWeight="Black" FontSize="24" Margin="0,5,0,0"/>
-                        </StackPanel>
-                    </Border>
-                </WrapPanel>
-
-                <TextBlock Text="Caminho do Jogo" Foreground="#888888" FontWeight="Bold" FontSize="12" Margin="0,15,0,5"/>
-                <TextBlock Text="{Binding Vn.ExecutablePath}" Foreground="#CCCCCC" FontSize="14" TextWrapping="Wrap"/>
-            </StackPanel>
-
-            <Border Grid.Column="1" Background="#252526" CornerRadius="8" Padding="15">
+        <Grid Background="#CC000000" Visibility="{Binding IsEditModalOpen, Converter={StaticResource BoolToVis}}" Panel.ZIndex="100">
+            <Border Background="#1E1E1E" BorderBrush="#3E3E42" BorderThickness="1" CornerRadius="8" Width="400" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20">
                 <StackPanel>
-                    <TextBlock Text="Últimas Sessões" Foreground="White" FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
-                    <ItemsControl ItemsSource="{Binding RecentSessions}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border BorderBrush="#3E3E42" BorderThickness="0,0,0,1" Padding="0,10">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel Grid.Column="0">
-                                            <TextBlock Text="{Binding EndTime, StringFormat='{}{0:dd MMM yyyy}'}" Foreground="#AAAAAA" FontSize="12"/>
-                                            <TextBlock Text="{Binding FormattedDuration}" Foreground="White" FontWeight="SemiBold" FontSize="14"/>
-                                        </StackPanel>
-                                        <TextBlock Grid.Column="1" Text="{Binding CharactersRead, StringFormat='{} {0} chars'}" Foreground="#28A745" FontWeight="Bold" VerticalAlignment="Center"/>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <TextBlock Text="Editar Visual Novel" Foreground="White" FontSize="18" FontWeight="Bold" Margin="0,0,0,20"/>
+
+                    <TextBlock Text="Caminho do Executável (.exe)" Foreground="#AAAAAA" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <TextBox Text="{Binding EditExecutablePath}" Background="#2D2D30" Foreground="White" BorderThickness="0" Padding="8" Margin="0,0,0,15"/>
+
+                    <TextBlock Text="VNDB ID (Ex: v1143)" Foreground="#AAAAAA" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <TextBox Text="{Binding EditVndbId}" Background="#2D2D30" Foreground="White" BorderThickness="0" Padding="8" Margin="0,0,0,25"/>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Content="Cancelar" Command="{Binding CloseEditModalCommand}" Background="Transparent" Foreground="#CCCCCC" BorderThickness="0" Padding="10" Margin="0,0,5,0" Cursor="Hand"/>
+                        <Button Grid.Column="1" Content="Salvar" Command="{Binding SaveEditCommand}" Background="#007ACC" Foreground="White" FontWeight="Bold" BorderThickness="0" Padding="10" Margin="5,0,0,0" Cursor="Hand">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="4"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+                    </Grid>
                 </StackPanel>
             </Border>
         </Grid>

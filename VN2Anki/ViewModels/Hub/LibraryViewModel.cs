@@ -9,7 +9,7 @@ using VN2Anki.Services.Interfaces;
 
 namespace VN2Anki.ViewModels.Hub
 {
-    public partial class LibraryViewModel : ObservableObject
+    public partial class LibraryViewModel : ObservableObject, IRecipient<SessionSavedMessage>, IRecipient<VnDeletedMessage>, IRecipient<VnUpdatedMessage>
     {
         private readonly IVnDatabaseService _dbService;
         public INavigationService Navigation { get; }
@@ -17,11 +17,13 @@ namespace VN2Anki.ViewModels.Hub
         [ObservableProperty]
         private ObservableCollection<VisualNovel> _visualNovels = new();
 
-        public LibraryViewModel(IVnDatabaseService dbService, INavigationService navigation) // <--- NOVO PARÂMETRO
+        public LibraryViewModel(IVnDatabaseService dbService, INavigationService navigation)
         {
             _dbService = dbService;
             Navigation = navigation;
             _ = LoadLibraryAsync();
+
+            WeakReferenceMessenger.Default.RegisterAll(this);
         }
 
         public async Task LoadLibraryAsync()
@@ -54,6 +56,26 @@ namespace VN2Anki.ViewModels.Hub
         {
             if (vn == null) return;
             Navigation.Push<VnDetailsViewModel>(vm => vm.Initialize(vn));
+        }
+        public void Receive(SessionSavedMessage message)
+        {
+            _ = LoadLibraryAsync();
+        }
+        public void Receive(VnDeletedMessage message)
+        {
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            {
+                var itemToRemove = VisualNovels.FirstOrDefault(v => v.Id == message.Value.Id);
+                if (itemToRemove != null)
+                {
+                    VisualNovels.Remove(itemToRemove);
+                }
+            });
+        }
+
+        public void Receive(VnUpdatedMessage message)
+        {
+            _ = LoadLibraryAsync();
         }
     }
 }

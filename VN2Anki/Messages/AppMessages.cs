@@ -65,3 +65,12 @@ namespace VN2Anki.Messages
 
     public class CurrentVnUnlinkedMessage { }
     }
+    public class VnDeletedMessage : ValueChangedMessage<VisualNovel>
+    {
+        public VnDeletedMessage(VisualNovel value) : base(value) { }
+    }
+
+    public class VnUpdatedMessage : ValueChangedMessage<VisualNovel>
+    {
+        public VnUpdatedMessage(VisualNovel value) : base(value) { }
+    }
