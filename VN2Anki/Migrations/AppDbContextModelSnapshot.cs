@@ -32,7 +32,13 @@ namespace VN2Anki.Migrations
                     b.Property<int>("DurationSeconds")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("EffectiveDurationSeconds")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("EndTime")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RawFilePath")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("StartTime")
@@ -60,7 +66,16 @@ namespace VN2Anki.Migrations
                     b.Property<string>("CoverImageUrl")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("EffectiveTimePlayedSeconds")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("ExecutablePath")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("FinishDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastPlayed")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("OriginalTitle")
@@ -69,9 +84,15 @@ namespace VN2Anki.Migrations
                     b.Property<string>("ProcessName")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("TotalCardsMined")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("TotalCharactersRead")
                         .HasColumnType("INTEGER");

@@ -53,8 +53,18 @@ namespace VN2Anki.Services
             using (var scope = _serviceProvider.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                var relatedSessions = await db.Sessions.Where(s => s.VisualNovelId == vn.Id).ToListAsync();
+                if (relatedSessions.Any()) db.Sessions.RemoveRange(relatedSessions);
+
                 db.VisualNovels.Remove(vn);
                 await db.SaveChangesAsync();
+            }
+
+            if (!string.IsNullOrEmpty(vn.CoverImagePath) && System.IO.File.Exists(vn.CoverImagePath))
+            {
+                try { System.IO.File.Delete(vn.CoverImagePath); }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Cleanup Error]: {ex.Message}"); }
             }
         }
 
