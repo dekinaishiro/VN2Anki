@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
+using System.Text.Json;
 using Microsoft.Web.WebView2.Core;
 using VN2Anki.Services;
 using CommunityToolkit.Mvvm.Messaging;
@@ -47,6 +48,28 @@ namespace VN2Anki
         private const int HTTRANSPARENT = -1;
         private const int GWL_EXSTYLE = -20;
         private const int WS_EX_TRANSPARENT = 0x00000020;
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr WindowFromPoint(POINT Point);
+
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        private static extern IntPtr PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("user32.dll")]
+        private static extern bool ScreenToClient(IntPtr hWnd, ref POINT lpPoint);
+
+        private const uint WM_LBUTTONDOWN = 0x0201;
+        private const uint WM_LBUTTONUP = 0x0202;
+        private const uint WM_RBUTTONDOWN = 0x0204;
+        private const uint WM_RBUTTONUP = 0x0205;
+
+        private static IntPtr MakeLParam(int loWord, int hiWord)
+        {
+            return (IntPtr)((hiWord << 16) | (loWord & 0xFFFF));
+        }
 
         private readonly IConfigurationService _configService;
         private readonly ITextHook _textHook;
@@ -152,6 +175,30 @@ namespace VN2Anki
     </head>
     <body>
         <div id='text-box'>Waiting for text...</div>
+        <script>
+            document.addEventListener('mousedown', (e) => {{
+                let textBox = document.getElementById('text-box');
+                let insideTextBox = false;
+                if (textBox) {{
+                    let r = textBox.getBoundingClientRect();
+                    insideTextBox = e.clientX >= r.left && e.clientX <= r.right &&
+                                    e.clientY >= r.top  && e.clientY <= r.bottom;
+                }}
+                
+                if (!insideTextBox) {{
+                    if (window.chrome && window.chrome.webview) {{
+                        window.chrome.webview.postMessage(JSON.stringify({{
+                            forwardClick: true,
+                            x: e.screenX,
+                            y: e.screenY,
+                            button: e.button
+                        }}));
+                    }}
+                    e.preventDefault();
+                    e.stopPropagation();
+                }}
+            }});
+        </script>
     </body>
     </html>";
 
@@ -166,8 +213,54 @@ namespace VN2Anki
 
             LoadExtensions();
 
+            webView.WebMessageReceived += (s, e) =>
+            {
+                try
+                {
+                    string json = e.TryGetWebMessageAsString();
+                    using (JsonDocument doc = JsonDocument.Parse(json))
+                    {
+                        var root = doc.RootElement;
+                        if (root.TryGetProperty("forwardClick", out JsonElement fwd) && fwd.GetBoolean())
+                        {
+                            int sx = (int)root.GetProperty("x").GetDouble();
+                            int sy = (int)root.GetProperty("y").GetDouble();
+                            int btn = (int)root.GetProperty("button").GetDouble();
+
+                            POINT p = new POINT { X = sx, Y = sy };
+
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                var handle = new WindowInteropHelper(this).Handle;
+                                int style = GetWindowLong(handle, GWL_EXSTYLE);
+                                SetWindowLong(handle, GWL_EXSTYLE, style | WS_EX_TRANSPARENT);
+                                
+                                IntPtr target = WindowFromPoint(p);
+                                
+                                SetWindowLong(handle, GWL_EXSTYLE, style);
+
+                                if (target != IntPtr.Zero && target != handle)
+                                {
+                                    uint downMsg = btn == 2 ? WM_RBUTTONDOWN : WM_LBUTTONDOWN;
+                                    uint upMsg   = btn == 2 ? WM_RBUTTONUP   : WM_LBUTTONUP;
+                                    
+                                    SetForegroundWindow(target);
+                                    
+                                    POINT clientP = p;
+                                    ScreenToClient(target, ref clientP);
+                                    
+                                    IntPtr lParam = MakeLParam(clientP.X, clientP.Y);
+                                    PostMessage(target, downMsg, IntPtr.Zero, lParam);
+                                    PostMessage(target, upMsg,   IntPtr.Zero, lParam);
+                                }
+                            });
+                        }
+                    }
+                }
+                catch { }
+            };
+
             webView.CoreWebView2.SetVirtualHostNameToFolderMapping("vn.local", AppDomain.CurrentDomain.BaseDirectory, CoreWebView2HostResourceAccessKind.Allow);
-            // ensures that the page is always reloaded fresh, preventing caching issues when the overlay is restarted multiple times during development
             webView.CoreWebView2.Navigate($"http://vn.local/overlay.html?t={DateTime.Now.Ticks}");
 
             webView.NavigationCompleted += (s, e) =>
