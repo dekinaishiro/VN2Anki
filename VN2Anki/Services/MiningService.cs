@@ -8,6 +8,9 @@ using System.Windows.Threading;
 using VN2Anki.Messages;
 using VN2Anki.Models;
 using VN2Anki.Services.Interfaces;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Threading.Channels;
 
 namespace VN2Anki.Services
 {
@@ -32,6 +35,8 @@ namespace VN2Anki.Services
         public bool UseDynamicTimeout { get; set; } = true;
         public int MaxImageWidth { get; set; } = 1280;
 
+        private readonly Channel<TextCopiedMessage> _textChannel;
+        private readonly CancellationTokenSource _cts = new();
 
         public MiningService(ITextHook textHook, SessionTracker tracker, AudioEngine audio, MediaService mediaService, IDispatcherService dispatcherService, IConfigurationService configService)
         {
@@ -49,6 +54,9 @@ namespace VN2Anki.Services
 
             _videoCheckTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
             _videoCheckTimer.Tick += VideoCheckTimer_Tick;
+
+            _textChannel = Channel.CreateUnbounded<TextCopiedMessage>();
+            _ = ProcessTextChannelAsync(); // Dispara o consumidor em background
 
             WeakReferenceMessenger.Default.RegisterAll(this);
         }
@@ -80,58 +88,9 @@ namespace VN2Anki.Services
 
         public void Receive(TextCopiedMessage message)
         {
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
-            {
-                _idleTimer.Stop();
-                SealAllOpenSlots(DateTime.Now);
-
-                byte[] imgBytes = _mediaService.CaptureScreenshot(TargetVideoWindow, MaxImageWidth);
-                string safeText = message.Text.Length > 1000 ? message.Text.Substring(0, 1000) + " [...]" : message.Text;
-
-                var newSlot = new MiningSlot
-                {
-                    Text = safeText,
-                    Timestamp = message.Timestamp,
-                    ScreenshotBytes = imgBytes
-                };
-
-                HistorySlots.Insert(0, newSlot);
-
-                char[] pauseChars = new[] { '。', '、', '？', '！', '…', '　' };
-                int spokenCharCount = CountJapaneseCharacters(safeText);
-                Tracker.AddCharacters(spokenCharCount);
-
-                while (HistorySlots.Count > MaxSlots)
-                {
-                    var oldSlot = HistorySlots[HistorySlots.Count - 1];
-                    oldSlot.Dispose();
-                    HistorySlots.RemoveAt(HistorySlots.Count - 1);
-                }
-
-                double finalSeconds;
-                var sessionConfig = _configService.CurrentConfig.Session;
-                double baseSeconds = sessionConfig.DynamicBaseSeconds;
-                double perCharSeconds = sessionConfig.DynamicPerCharSeconds;
-                double perPauseSeconds = sessionConfig.DynamicPerPauseSeconds;
-                double minSeconds = sessionConfig.DynamicMinSeconds;
-
-                if (UseDynamicTimeout)
-                {
-                    int pauseCount = safeText.Count(c => pauseChars.Contains(c));
-                    finalSeconds = Math.Max(minSeconds, baseSeconds + (spokenCharCount * perCharSeconds) + (pauseCount * perPauseSeconds));
-                }
-                else
-                {
-                    finalSeconds = IdleTimeoutFixo;
-                }
-
-                _idleTimer.Interval = TimeSpan.FromSeconds(finalSeconds);
-                _idleTimer.Start();
-
-                string modeText = UseDynamicTimeout ? "Dynamic" : "Fixed";
-                SendStatus($"Slot captured! Sealing in {finalSeconds:F1}s ({modeText})");
-                WeakReferenceMessenger.Default.Send(new SlotCapturedMessage(newSlot));
-            });
+            DebugLogger.Log($"[3-MINING-SVC] Received in Messenger. Inserting into Channel | Text: {message.Text}");
+            bool inserted = _textChannel.Writer.TryWrite(message);
+            if (!inserted) DebugLogger.Log($"[ERROR-MINING-SVC] Failed to write to Channel!");
         }
 
         private void IdleTimer_Tick(object sender, EventArgs e)
@@ -220,6 +179,82 @@ namespace VN2Anki.Services
                 SendStatus($"⚠️ ERROR: {message.Value}");
                 WeakReferenceMessenger.Default.Send(new BufferStoppedMessage());
             });
+        }
+
+        private async Task ProcessTextChannelAsync()
+        {
+            await foreach (var message in _textChannel.Reader.ReadAllAsync(_cts.Token))
+            {
+                // 1. FASE 3 (Fire-and-forget): Dispara a foto imediatamente no ThreadPool
+                string targetWin = TargetVideoWindow;
+                int maxWidth = MaxImageWidth;
+
+                Task<byte[]> screenshotTask = Task.Run(() =>
+                {
+                    return string.IsNullOrEmpty(targetWin) ? null : _mediaService.CaptureScreenshot(targetWin, maxWidth);
+                });
+
+                DebugLogger.Log($"[4-CHANNEL-READER] Pulled from channel by background thread | Text: {message.Text}");
+                // 2. Não travamos o consumidor! Jogamos para a UI e o loop volta a ler a rede no mesmo milissegundo.
+                _ = System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
+                {
+                    try
+                    {
+                        DebugLogger.Log($"[5-UI-THREAD] Starting Mining Slot creation | Text: {message.Text}");
+                        _idleTimer.Stop();
+                        SealAllOpenSlots(DateTime.Now);
+
+                        string safeText = message.Text.Length > 1000 ? message.Text.Substring(0, 1000) + " [...]" : message.Text;
+
+                        var newSlot = new MiningSlot
+                        {
+                            Text = safeText,
+                            Timestamp = message.Timestamp
+                        };
+
+                        HistorySlots.Insert(0, newSlot);
+
+                        int spokenCharCount = CountJapaneseCharacters(safeText);
+                        Tracker.AddCharacters(spokenCharCount);
+
+                        while (HistorySlots.Count > MaxSlots)
+                        {
+                            var oldSlot = HistorySlots[HistorySlots.Count - 1];
+                            oldSlot.Dispose();
+                            HistorySlots.RemoveAt(HistorySlots.Count - 1);
+                        }
+
+                        double finalSeconds;
+                        var sessionConfig = _configService.CurrentConfig.Session;
+
+                        if (UseDynamicTimeout)
+                        {
+                            char[] pauseChars = new[] { '。', '、', '？', '！', '…', '　' };
+                            int pauseCount = safeText.Count(c => pauseChars.Contains(c));
+                            finalSeconds = Math.Max(sessionConfig.DynamicMinSeconds, sessionConfig.DynamicBaseSeconds + (spokenCharCount * sessionConfig.DynamicPerCharSeconds) + (pauseCount * sessionConfig.DynamicPerPauseSeconds));
+                        }
+                        else
+                        {
+                            finalSeconds = IdleTimeoutFixo;
+                        }
+
+                        _idleTimer.Interval = TimeSpan.FromSeconds(finalSeconds);
+                        _idleTimer.Start();
+
+                        // Envia a frase para a OverlayWindow AGORA
+                        DebugLogger.Log($"[6-UI-THREAD] Slot created in list. Dispatching SlotCapturedMessage to Overlay.");
+                        WeakReferenceMessenger.Default.Send(new SlotCapturedMessage(newSlot));
+
+                        // 3. Aguarda silenciosamente a foto terminar e anexa ao slot (Trigga a UI via OnPropertyChanged)
+                        newSlot.ScreenshotBytes = await screenshotTask;
+                    }
+                    catch (Exception ex)
+                    {
+                        DebugLogger.Log($"[ERROR-UI-THREAD] Exception while processing slot: {ex.Message}");
+                        System.Diagnostics.Debug.WriteLine($"[UI Process Error] {ex.Message}");
+                    }
+                }, System.Windows.Threading.DispatcherPriority.Normal);
+            }
         }
     }
 }

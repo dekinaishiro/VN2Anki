@@ -17,6 +17,9 @@ namespace VN2Anki.Services
         private CancellationTokenSource _cancellationTokenSource;
         private bool _isRunning;
 
+        private string _lastText = string.Empty;
+        private DateTime _lastTime = DateTime.MinValue;
+
         public WebsocketHook(IConfigurationService configService)
         {
             _configService = configService;
@@ -55,6 +58,7 @@ namespace VN2Anki.Services
             {
                 using (_webSocket = new ClientWebSocket())
                 {
+                    _webSocket.Options.KeepAliveInterval = System.Threading.Timeout.InfiniteTimeSpan;
                     try
                     {
                         System.Diagnostics.Debug.WriteLine($"[WebSocket] Connecting to {url}...");
@@ -66,7 +70,7 @@ namespace VN2Anki.Services
                     catch (Exception ex)
                     {
                         System.Diagnostics.Debug.WriteLine($"[WebSocket Error] {ex.Message}");
-                        await Task.Delay(3000, _cancellationTokenSource.Token);
+                        await Task.Delay(500, _cancellationTokenSource.Token);
                     }
                 }
             }
@@ -74,34 +78,64 @@ namespace VN2Anki.Services
 
         private async Task ReceiveLoopAsync()
         {
-            var buffer = new byte[4096];
-
-            while (_webSocket.State == WebSocketState.Open && !_cancellationTokenSource.Token.IsCancellationRequested)
+            DebugLogger.Log($"[0-WEBSOCKET] Starting port reading loop...");
+            try
             {
-                using (var ms = new MemoryStream())
+                var buffer = new byte[4096];
+                while (_webSocket.State == WebSocketState.Open)
                 {
+                    using var ms = new MemoryStream();
                     WebSocketReceiveResult result;
+
                     do
                     {
-                        result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), _cancellationTokenSource.Token);
-
-                        if (result.MessageType == WebSocketMessageType.Close)
-                        {
-                            await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Server closed", CancellationToken.None);
-                            return;
-                        }
-
+                        result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                         ms.Write(buffer, 0, result.Count);
+                    } while (!result.EndOfMessage);
+
+                    DebugLogger.Log($"[0.5-RAW] Frame received. Type: {result.MessageType} | Size: {ms.Length}");
+
+                    if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        DebugLogger.Log("[WEBSOCKET-CLOSED] Server closed connection peacefully.");
+                        break;
                     }
-                    while (!result.EndOfMessage);
 
                     if (result.MessageType == WebSocketMessageType.Text)
                     {
-                        string message = Encoding.UTF8.GetString(ms.ToArray());
-                        WeakReferenceMessenger.Default.Send(new Messages.TextCopiedMessage(message, DateTime.Now));
+                        // Pega o texto EXATAMENTE como saiu do Luna, antes de qualquer formatação sua
+                        string rawMessage = Encoding.UTF8.GetString(ms.ToArray());
+                        DebugLogger.Log($"[1-WEBSOCKET] RAW packet decoded: {rawMessage}");
+
+                        // O SEGREDO ESTÁ AQUI: Qualquer erro de formatação/JSON que você tenha 
+                        // será pego aqui, impedindo que o loop morra e perca os próximos 3 segundos.
+                        try
+                        {
+                            // COLOQUE A SUA LÓGICA DE EXTRAÇÃO/JSON E TRIM AQUI
+                            string message = rawMessage.Trim(); // Substitua pela sua lógica
+
+                            if (string.IsNullOrWhiteSpace(message)) continue;
+
+                            DebugLogger.Log($"[2-WEBSOCKET] Dispatching TextCopiedMessage via Messenger | Text: {message}");
+
+                            Task.Run(() =>
+                            {
+                                WeakReferenceMessenger.Default.Send(new Messages.TextCopiedMessage(message, DateTime.Now));
+                            });
+                        }
+                        catch (Exception parseEx)
+                        {
+                            DebugLogger.Log($"[PARSE-ERROR] Code failed to handle raw string! Error: {parseEx.Message}");
+                        }
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                // SE O LOG MOSTRAR ISSO AQUI, ACHAMOS O ASSASSINO DAS FRASES
+                DebugLogger.Log($"[FATAL-CRASH] WebSocket loop crashed and will restart! Error: {ex.Message}");
+            }
+            DebugLogger.Log($"[0-WEBSOCKET] Reading loop ended.");
         }
     }
 }

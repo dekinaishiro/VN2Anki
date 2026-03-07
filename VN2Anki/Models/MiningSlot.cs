@@ -24,7 +24,18 @@ namespace VN2Anki.Models
             }
         }
 
-        public byte[] ScreenshotBytes { get; set; }
+        private byte[] _screenshotBytes;
+        public byte[] ScreenshotBytes
+        {
+            get => _screenshotBytes;
+            set
+            {
+                _screenshotBytes = value;
+                _thumbnail = null; // null the cached thumbnail so it will be regenerated with the new screenshot bytes when requested
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(Thumbnail));
+            }
+        }
         public string DisplayTime => Timestamp.ToString("HH:mm:ss");
 
         // this property is used to determine if the slot is still open (i.e. audio is still being recorded) or if it has been sealed with audio data, which affects how it's displayed in the UI and whether it can be mined to Anki

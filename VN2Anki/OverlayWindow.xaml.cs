@@ -15,7 +15,7 @@ using VN2Anki.Messages;
 
 namespace VN2Anki
 {
-    public partial class OverlayWindow : Window, IRecipient<OverlayConfigUpdatedMessage>, IRecipient<TextCopiedMessage>
+    public partial class OverlayWindow : Window, IRecipient<OverlayConfigUpdatedMessage>, IRecipient<SlotCapturedMessage>
     {
         [DllImport("user32.dll")]
         private static extern short GetAsyncKeyState(int vKey);
@@ -315,7 +315,7 @@ namespace VN2Anki
 
         private void HandleNewText(string text, DateTime timestamp)
         {
-            Application.Current.Dispatcher.Invoke(() =>
+            Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 if (webView.CoreWebView2 == null) return;
 
@@ -334,7 +334,7 @@ namespace VN2Anki
                     container.appendChild(newSpan);
                 ";
                 webView.CoreWebView2.ExecuteScriptAsync(injectScript);
-            });
+            }, System.Windows.Threading.DispatcherPriority.Normal);
         }
 
         private void InstallWebViewSubclass()
@@ -616,9 +616,10 @@ namespace VN2Anki
             });
         }
 
-        public void Receive(TextCopiedMessage message)
+        public void Receive(SlotCapturedMessage message)
         {
-            HandleNewText(message.Text, message.Timestamp);
+            DebugLogger.Log($"[7-OVERLAY] Message arrived at Overlay. Calling HandleNewText | Text: {message.Value.Text}");
+            HandleNewText(message.Value.Text, message.Value.Timestamp);
         }
     }
 }
