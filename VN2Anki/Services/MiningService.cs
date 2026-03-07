@@ -11,6 +11,7 @@ using VN2Anki.Services.Interfaces;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Channels;
+using VN2Anki.Locales;
 
 namespace VN2Anki.Services
 {
@@ -121,7 +122,7 @@ namespace VN2Anki.Services
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
                     StopBuffer();
-                    SendStatus("⚠️ Vídeo desconectado! Buffer pausado.");
+                    SendStatus(Locales.Strings.StatusVideoDisconnected);
                     WeakReferenceMessenger.Default.Send(new BufferStoppedMessage());
                 });
             }

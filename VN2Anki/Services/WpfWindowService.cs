@@ -28,7 +28,7 @@ namespace VN2Anki.Services
 
             var win = new Window
             {
-                Title = "Múltiplas VNs Detectadas",
+                Title = Locales.Strings.TitleMultipleVnsDetected,
                 Width = 350,
                 Height = 200,
                 WindowStartupLocation = WindowStartupLocation.CenterScreen,
@@ -38,12 +38,12 @@ namespace VN2Anki.Services
                 Foreground = Brushes.White
             };
             var stack = new StackPanel { Margin = new Thickness(15) };
-            stack.Children.Add(new TextBlock { Text = "Múltiplas VNs em execução detectadas.\nSelecione qual deseja vincular:", Foreground = Brushes.White, Margin = new Thickness(0, 0, 0, 15) });
+            stack.Children.Add(new TextBlock { Text = Locales.Strings.MsgMultipleVnsDetected, Foreground = Brushes.White, Margin = new Thickness(0, 0, 0, 15) });
 
             var combo = new ComboBox { ItemsSource = vns, DisplayMemberPath = "Title", SelectedIndex = 0, Margin = new Thickness(0, 0, 0, 15), Padding = new Thickness(5) };
             stack.Children.Add(combo);
 
-            var btn = new Button { Content = "Vincular Selecionada", Padding = new Thickness(10, 8, 10, 8), Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#007ACC")), Foreground = Brushes.White, BorderThickness = new Thickness(0), Cursor = System.Windows.Input.Cursors.Hand };
+            var btn = new Button { Content = Locales.Strings.BtnBindCurrentSession, Padding = new Thickness(10, 8, 10, 8), Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#007ACC")), Foreground = Brushes.White, BorderThickness = new Thickness(0), Cursor = System.Windows.Input.Cursors.Hand };
             btn.Click += (s, e) => { selectedVn = combo.SelectedItem as VisualNovel; win.DialogResult = true; win.Close(); };
             stack.Children.Add(btn);
 
@@ -57,7 +57,7 @@ namespace VN2Anki.Services
         {
             if (string.IsNullOrEmpty(extensionPath) || !System.IO.Directory.Exists(extensionPath))
             {
-                MessageBox.Show("Caminho da extensão inválido ou não encontrado.", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(Locales.Strings.MsgInvalidExtensionPath, Locales.Strings.TitleError, MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 

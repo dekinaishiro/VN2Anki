@@ -123,13 +123,13 @@ namespace VN2Anki.ViewModels.Hub
                 RegisteredWarningVisibility = Visibility.Visible;
                 if (IsOpenedFromLibrary)
                 {
-                    RegisteredWarningText = $"⚠️ Este executável já está registrado como '{value.MatchedVn?.Title}'.";
-                    ActionButtonText = "Processo Já Registrado";
+                    RegisteredWarningText = string.Format(Locales.Strings.MsgExeAlreadyRegistered, value.MatchedVn?.Title);
+                    ActionButtonText = Locales.Strings.BtnProcessAlreadyRegistered;
                 }
                 else
                 {
                     RegisteredWarningText = $"📚 Jogo identificado: {value.MatchedVn?.Title}";
-                    ActionButtonText = "Vincular Sessão Atual";
+                    ActionButtonText = Locales.Strings.BtnBindCurrentSession;
                 }
                 SearchQuery = string.Empty;
                 SearchResults.Clear();
@@ -137,7 +137,7 @@ namespace VN2Anki.ViewModels.Hub
             else
             {
                 RegisteredWarningVisibility = Visibility.Collapsed;
-                ActionButtonText = "Confirmar e Guardar";
+                ActionButtonText = Locales.Strings.BtnSaveClose;
                 if (!string.IsNullOrWhiteSpace(value.BaseItem.Title))
                 {
                     SearchQuery = value.BaseItem.Title;

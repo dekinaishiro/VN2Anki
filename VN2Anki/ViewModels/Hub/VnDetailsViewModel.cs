@@ -85,8 +85,8 @@ namespace VN2Anki.ViewModels.Hub
             int count = allSessions.Count(s => s.VisualNovelId == Vn.Id);
 
             bool confirm = _windowService.ShowConfirmation(
-                $"Você está prestes a apagar '{Vn.Title}'.\nIsso removerá permanentemente {count} sessões registradas.\n\nDeseja continuar?",
-                "Safe Delete",
+                string.Format(Locales.Strings.MsgConfirmVnDelete, Vn.Title, count),
+                Locales.Strings.MsgAttention,
                 true);
 
             if (confirm)

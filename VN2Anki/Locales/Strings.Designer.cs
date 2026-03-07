@@ -449,5 +449,98 @@ namespace VN2Anki.Locales {
         public static string TitleWarning {
             get { return ResourceManager.GetString("TitleWarning", resourceCulture); }
         }
+        public static string StatusVideoConnected {
+            get { return ResourceManager.GetString("StatusVideoConnected", resourceCulture); }
+        }
+        public static string StatusVideoDisconnected {
+            get { return ResourceManager.GetString("StatusVideoDisconnected", resourceCulture); }
+        }
+        public static string MsgExeNotFound {
+            get { return ResourceManager.GetString("MsgExeNotFound", resourceCulture); }
+        }
+        public static string MsgWindowTimeout {
+            get { return ResourceManager.GetString("MsgWindowTimeout", resourceCulture); }
+        }
+        public static string MsgActionBlockedSession {
+            get { return ResourceManager.GetString("MsgActionBlockedSession", resourceCulture); }
+        }
+        public static string MsgActionBlockedAutoSync {
+            get { return ResourceManager.GetString("MsgActionBlockedAutoSync", resourceCulture); }
+        }
+        public static string MsgConfirmVnDelete {
+            get { return ResourceManager.GetString("MsgConfirmVnDelete", resourceCulture); }
+        }
+        public static string MsgConfirmChangeSession {
+            get { return ResourceManager.GetString("MsgConfirmChangeSession", resourceCulture); }
+        }
+        public static string MsgConfirmVnDetected {
+            get { return ResourceManager.GetString("MsgConfirmVnDetected", resourceCulture); }
+        }
+        public static string MsgConfirmSaveOrphanSession {
+            get { return ResourceManager.GetString("MsgConfirmSaveOrphanSession", resourceCulture); }
+        }
+        public static string MsgConfirmStartTrackingWithoutVn {
+            get { return ResourceManager.GetString("MsgConfirmStartTrackingWithoutVn", resourceCulture); }
+        }
+        public static string TitleEmptySessionWarning {
+            get { return ResourceManager.GetString("TitleEmptySessionWarning", resourceCulture); }
+        }
+        public static string TitleSaveOrphanSession {
+            get { return ResourceManager.GetString("TitleSaveOrphanSession", resourceCulture); }
+        }
+        public static string TitleMultipleVnsDetected {
+            get { return ResourceManager.GetString("TitleMultipleVnsDetected", resourceCulture); }
+        }
+        public static string MsgMultipleVnsDetected {
+            get { return ResourceManager.GetString("MsgMultipleVnsDetected", resourceCulture); }
+        }
+        public static string MsgInvalidExtensionPath {
+            get { return ResourceManager.GetString("MsgInvalidExtensionPath", resourceCulture); }
+        }
+        public static string MsgVideoSourceEmpty {
+            get { return ResourceManager.GetString("MsgVideoSourceEmpty", resourceCulture); }
+        }
+        public static string MsgTargetWindowClosed {
+            get { return ResourceManager.GetString("MsgTargetWindowClosed", resourceCulture); }
+        }
+        public static string MsgConfigureAudioFirst {
+            get { return ResourceManager.GetString("MsgConfigureAudioFirst", resourceCulture); }
+        }
+        public static string MsgSessionLinked {
+            get { return ResourceManager.GetString("MsgSessionLinked", resourceCulture); }
+        }
+        public static string MsgExeAlreadyRegistered {
+            get { return ResourceManager.GetString("MsgExeAlreadyRegistered", resourceCulture); }
+        }
+        public static string BtnProcessAlreadyRegistered {
+            get { return ResourceManager.GetString("BtnProcessAlreadyRegistered", resourceCulture); }
+        }
+        public static string BtnBindCurrentSession {
+            get { return ResourceManager.GetString("BtnBindCurrentSession", resourceCulture); }
+        }
+        public static string HeaderTotalStats {
+            get { return ResourceManager.GetString("HeaderTotalStats", resourceCulture); }
+        }
+        public static string HeaderLastSessions {
+            get { return ResourceManager.GetString("HeaderLastSessions", resourceCulture); }
+        }
+        public static string LblExePath {
+            get { return ResourceManager.GetString("LblExePath", resourceCulture); }
+        }
+        public static string LblDuration {
+            get { return ResourceManager.GetString("LblDuration", resourceCulture); }
+        }
+        public static string StatusRecordingAudio {
+            get { return ResourceManager.GetString("StatusRecordingAudio", resourceCulture); }
+        }
+        public static string ToolTipPlayAudio {
+            get { return ResourceManager.GetString("ToolTipPlayAudio", resourceCulture); }
+        }
+        public static string LblWindowPreview {
+            get { return ResourceManager.GetString("LblWindowPreview", resourceCulture); }
+        }
+        public static string LblVndbSearch {
+            get { return ResourceManager.GetString("LblVndbSearch", resourceCulture); }
+        }
     }
 }

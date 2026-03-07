@@ -47,7 +47,7 @@
                                 <TextBlock Text="{Binding DisplayTime}" Grid.Row="0" Foreground="#007ACC" FontWeight="Bold" Margin="0,0,0,2" FontSize="12"/>
                                 <TextBlock Text="{Binding Text}" Grid.Row="1" Foreground="#EAEAEA" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="45" FontSize="16"/>
 
-                                <TextBlock Text="🔴 Gravando Áudio..." Grid.Row="2" Foreground="#FF5555" FontWeight="Bold" Margin="0,4,0,0" FontSize="12">
+                                <TextBlock Text="{x:Static loc:Strings.StatusRecordingAudio}" Grid.Row="2" Foreground="#FF5555" FontWeight="Bold" Margin="0,4,0,0" FontSize="12">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
                                             <Setter Property="Visibility" Value="Collapsed"/>
@@ -63,15 +63,15 @@
 
                             <Button Content="▶" Grid.Column="2" VerticalAlignment="Center" Cursor="Hand"
         Padding="12,8" Background="#28A745" Foreground="White" FontWeight="Bold" BorderThickness="0"
-        Click="BtnPlay_Click" Tag="{Binding}" Margin="0,0,5,0" ToolTip="Ouvir Áudio"/>
+        Click="BtnPlay_Click" Tag="{Binding}" Margin="0,0,5,0" ToolTip="{x:Static loc:Strings.ToolTipPlayAudio}"/>
                             
                             <Button Content="⛏" Grid.Column="3" VerticalAlignment="Center" Cursor="Hand"
         Padding="12,8" Background="#007ACC" Foreground="White" FontWeight="Bold" BorderThickness="0"
-        Click="BtnMiner_Click" Tag="{Binding}" Margin="0,0,5,0" ToolTip="Enviar para o Anki"/>
+        Click="BtnMiner_Click" Tag="{Binding}" Margin="0,0,5,0" ToolTip="Send to Anki"/>
 
                             <Button Content="🗑" Grid.Column="4" VerticalAlignment="Center" Cursor="Hand"
         Padding="12,8" Background="#DC3545" Foreground="White" FontWeight="Bold" BorderThickness="0"
-        Click="BtnDelete_Click" Tag="{Binding}" ToolTip="Excluir slot"/>
+        Click="BtnDelete_Click" Tag="{Binding}" ToolTip="Delete slot"/>
 
                         </Grid>
                     </Border>

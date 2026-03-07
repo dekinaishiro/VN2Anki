@@ -261,4 +261,97 @@
   <data name="TitleWarning" xml:space="preserve">
     <value>Aviso</value>
   </data>
+	<data name="StatusVideoConnected" xml:space="preserve">
+    <value>¡Video conectado! Listo para reproducir.</value>
+  </data>
+	<data name="StatusVideoDisconnected" xml:space="preserve">
+    <value>⚠️ ¡Video desconectado! Búfer pausado.</value>
+  </data>
+	<data name="MsgExeNotFound" xml:space="preserve">
+    <value>¡No se encontró el ejecutable!</value>
+  </data>
+	<data name="MsgWindowTimeout" xml:space="preserve">
+    <value>Tiempo agotado: La ventana no apareció.</value>
+  </data>
+	<data name="MsgActionBlockedSession" xml:space="preserve">
+    <value>No puedes cambiar o desvincular la VN mientras hay una sesión en curso.\nFinaliza la sesión actual primero.</value>
+  </data>
+	<data name="MsgActionBlockedAutoSync" xml:space="preserve">
+    <value>No puedes realizar la Sincronización Automática mientras hay una sesión en curso.\nFinaliza la sesión actual primero.</value>
+  </data>
+	<data name="MsgConfirmVnDelete" xml:space="preserve">
+    <value>Estás a punto de eliminar '{0}'.\nEsto borrará permanentemente {1} sesiones grabadas.\n\n¿Deseas continuar?</value>
+  </data>
+	<data name="MsgConfirmChangeSession" xml:space="preserve">
+    <value>Hay una sesión activa con '{0}'.\n¿Quieres finalizarla e iniciar otra con '{1}'?</value>
+  </data>
+	<data name="MsgConfirmVnDetected" xml:space="preserve">
+    <value>Detectamos que '{0}' se está ejecutando.\n¿Quieres vincularlo e iniciar la sesión ahora?</value>
+  </data>
+	<data name="MsgConfirmSaveOrphanSession" xml:space="preserve">
+    <value>Has leído algunos caracteres, pero no hay ninguna Novela Visual seleccionada.\n¿Quieres guardar este progreso en el historial para vincularlo a un juego más tarde?</value>
+  </data>
+	<data name="MsgConfirmStartTrackingWithoutVn" xml:space="preserve">
+    <value>No hay ninguna Novela Visual vinculada a esta sesión.\n¿Quieres empezar el seguimiento de todos modos?</value>
+  </data>
+	<data name="TitleEmptySessionWarning" xml:space="preserve">
+    <value>Advertencia de Sesión Vacía</value>
+  </data>
+	<data name="TitleSaveOrphanSession" xml:space="preserve">
+    <value>¿Guardar Sesión Huérfana?</value>
+  </data>
+	<data name="TitleMultipleVnsDetected" xml:space="preserve">
+    <value>Múltiples VN Detectadas</value>
+  </data>
+	<data name="MsgMultipleVnsDetected" xml:space="preserve">
+    <value>Se detectaron varias VN en ejecución.\nSelecciona cuál quieres vincular:</value>
+  </data>
+	<data name="MsgInvalidExtensionPath" xml:space="preserve">
+    <value>Ruta de extensión no válida o no encontrada.</value>
+  </data>
+	<data name="MsgVideoSourceEmpty" xml:space="preserve">
+    <value>¡Fuente de video vacía! Selecciona el video.</value>
+  </data>
+	<data name="MsgTargetWindowClosed" xml:space="preserve">
+    <value>¡La ventana de destino está cerrada! Abre el juego e inténtalo de nuevo.</value>
+  </data>
+	<data name="MsgConfigureAudioFirst" xml:space="preserve">
+    <value>¡Configura el audio primero!</value>
+  </data>
+	<data name="MsgSessionLinked" xml:space="preserve">
+    <value>Sesión vinculada: {0}</value>
+  </data>
+	<data name="MsgExeAlreadyRegistered" xml:space="preserve">
+    <value>⚠️ Este ejecutable ya está registrado como '{0}'.</value>
+  </data>
+	<data name="BtnProcessAlreadyRegistered" xml:space="preserve">
+    <value>Proceso ya Registrado</value>
+  </data>
+	<data name="BtnBindCurrentSession" xml:space="preserve">
+    <value>Vincular Sesión Actual</value>
+  </data>
+	<data name="HeaderTotalStats" xml:space="preserve">
+    <value>Estadísticas Totales</value>
+  </data>
+	<data name="HeaderLastSessions" xml:space="preserve">
+    <value>Últimas Sesiones</value>
+  </data>
+	<data name="LblExePath" xml:space="preserve">
+    <value>Ruta del Ejecutable (.exe)</value>
+  </data>
+	<data name="LblDuration" xml:space="preserve">
+    <value>DURACIÓN</value>
+  </data>
+	<data name="StatusRecordingAudio" xml:space="preserve">
+    <value>🔴 Grabando audio...</value>
+  </data>
+	<data name="ToolTipPlayAudio" xml:space="preserve">
+    <value>Escuchar audio</value>
+  </data>
+	<data name="LblWindowPreview" xml:space="preserve">
+    <value>Vista previa de la ventana:</value>
+  </data>
+	<data name="LblVndbSearch" xml:space="preserve">
+    <value>2. Búsqueda en VNDB (Romaji/Inglés):</value>
+  </data>
 </root>

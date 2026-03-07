@@ -209,7 +209,7 @@ namespace VN2Anki.ViewModels
             // verifies if current session is active and prompts the user to confirm if they want to end it before starting a new one
             if (CurrentVN != null && (Tracker.ValidCharacterCount > 0 || Tracker.Elapsed.TotalSeconds > 0 || IsBufferActive))
             {
-                bool result = _windowService.ShowConfirmation($"Uma sessão está ativa com '{CurrentVN.Title}'.\nDeseja encerrá-la e iniciar outra com '{vn.Title}'?", "Atenção");
+                bool result = _windowService.ShowConfirmation(string.Format(Locales.Strings.MsgConfirmChangeSession, CurrentVN.Title, vn.Title), Locales.Strings.MsgAttention);
 
                 if (result)
                 {
@@ -237,11 +237,11 @@ namespace VN2Anki.ViewModels
             switch (launchResult)
             {
                 case GameLaunchResult.Success:
-                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Vídeo conectado! Pronto para o Play.", IsError = false }));
+                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = Locales.Strings.StatusVideoConnected, IsError = false }));
                     break;
 
                 case GameLaunchResult.ExecutableNotFound:
-                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Executável não encontrado!", IsError = true }));
+                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = Locales.Strings.MsgExeNotFound, IsError = true }));
                     CurrentVN = null;
                     break;
 
@@ -251,7 +251,7 @@ namespace VN2Anki.ViewModels
                     break;
 
                 case GameLaunchResult.Timeout:
-                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Timeout: A janela não apareceu.", IsError = true }));
+                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = Locales.Strings.MsgWindowTimeout, IsError = true }));
                     CurrentVN = null;
                     var config = _configService.CurrentConfig;
                     config.Media.VideoWindow = string.Empty;
@@ -349,7 +349,7 @@ namespace VN2Anki.ViewModels
         {
             if (IsBufferActive || Tracker.ValidCharacterCount > 0 || Tracker.Elapsed.TotalSeconds > 0)
             {
-                _windowService.ShowWarning("Você não pode alterar ou desvincular a Visual Novel com uma sessão em andamento.\nFinalize a sessão atual primeiro clicando em END.", "Ação Bloqueada");
+                _windowService.ShowWarning(Locales.Strings.MsgActionBlockedSession, Locales.Strings.TitleWarning);
                 return;
             }
 
@@ -402,7 +402,7 @@ namespace VN2Anki.ViewModels
             // avoid data loss
             if (IsBufferActive || Tracker.ValidCharacterCount > 0 || Tracker.Elapsed.TotalSeconds > 0)
             {
-                _windowService.ShowWarning("Você não pode realizar o Auto-Sync com uma sessão em andamento.\nFinalize a sessão atual primeiro clicando em END.", "Ação Bloqueada");
+                _windowService.ShowWarning(Locales.Strings.MsgActionBlockedAutoSync, Locales.Strings.TitleWarning);
                 return;
             }
 

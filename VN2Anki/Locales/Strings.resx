@@ -261,4 +261,97 @@
   <data name="TitleWarning" xml:space="preserve">
     <value>Warning</value>
   </data>
+  <data name="StatusVideoConnected" xml:space="preserve">
+    <value>Video connected! Ready to play.</value>
+  </data>
+  <data name="StatusVideoDisconnected" xml:space="preserve">
+    <value>⚠️ Video disconnected! Buffer paused.</value>
+  </data>
+  <data name="MsgExeNotFound" xml:space="preserve">
+    <value>Executable not found!</value>
+  </data>
+  <data name="MsgWindowTimeout" xml:space="preserve">
+    <value>Timeout: Window did not appear.</value>
+  </data>
+  <data name="MsgActionBlockedSession" xml:space="preserve">
+    <value>You cannot change or unbind the VN while a session is in progress.\nEnd the current session first.</value>
+  </data>
+  <data name="MsgActionBlockedAutoSync" xml:space="preserve">
+    <value>You cannot perform Auto-Sync while a session is in progress.\nEnd the current session first.</value>
+  </data>
+  <data name="MsgConfirmVnDelete" xml:space="preserve">
+    <value>You are about to delete '{0}'.\nThis will permanently remove {1} recorded sessions.\n\nDo you wish to continue?</value>
+  </data>
+  <data name="MsgConfirmChangeSession" xml:space="preserve">
+    <value>A session is active with '{0}'.\nDo you want to end it and start another with '{1}'?</value>
+  </data>
+  <data name="MsgConfirmVnDetected" xml:space="preserve">
+    <value>We detected that '{0}' is running.\nDo you want to bind it and start the session now?</value>
+  </data>
+  <data name="MsgConfirmSaveOrphanSession" xml:space="preserve">
+    <value>You read some characters, but no Visual Novel is selected.\nDo you want to save this progress to history to bind it to a game later?</value>
+  </data>
+  <data name="MsgConfirmStartTrackingWithoutVn" xml:space="preserve">
+    <value>No Visual Novel is bound to this session.\nDo you want to start tracking anyway?</value>
+  </data>
+  <data name="TitleEmptySessionWarning" xml:space="preserve">
+    <value>Empty Session Warning</value>
+  </data>
+  <data name="TitleSaveOrphanSession" xml:space="preserve">
+    <value>Save Orphan Session?</value>
+  </data>
+  <data name="TitleMultipleVnsDetected" xml:space="preserve">
+    <value>Multiple VNs Detected</value>
+  </data>
+  <data name="MsgMultipleVnsDetected" xml:space="preserve">
+    <value>Multiple running VNs detected.\nSelect which one you want to bind:</value>
+  </data>
+  <data name="MsgInvalidExtensionPath" xml:space="preserve">
+    <value>Invalid extension path or not found.</value>
+  </data>
+  <data name="MsgVideoSourceEmpty" xml:space="preserve">
+    <value>Video Source empty! Select the video.</value>
+  </data>
+  <data name="MsgTargetWindowClosed" xml:space="preserve">
+    <value>The target window is closed! Open the game and try again.</value>
+  </data>
+  <data name="MsgConfigureAudioFirst" xml:space="preserve">
+    <value>Configure Audio first!</value>
+  </data>
+  <data name="MsgSessionLinked" xml:space="preserve">
+    <value>Session linked: {0}</value>
+  </data>
+  <data name="MsgExeAlreadyRegistered" xml:space="preserve">
+    <value>⚠️ This executable is already registered as '{0}'.</value>
+  </data>
+  <data name="BtnProcessAlreadyRegistered" xml:space="preserve">
+    <value>Process Already Registered</value>
+  </data>
+  <data name="BtnBindCurrentSession" xml:space="preserve">
+    <value>Bind Current Session</value>
+  </data>
+  <data name="HeaderTotalStats" xml:space="preserve">
+    <value>Total Statistics</value>
+  </data>
+  <data name="HeaderLastSessions" xml:space="preserve">
+    <value>Last Sessions</value>
+  </data>
+  <data name="LblExePath" xml:space="preserve">
+    <value>Executable Path (.exe)</value>
+  </data>
+  <data name="LblDuration" xml:space="preserve">
+    <value>DURATION</value>
+  </data>
+  <data name="StatusRecordingAudio" xml:space="preserve">
+    <value>🔴 Recording Audio...</value>
+  </data>
+  <data name="ToolTipPlayAudio" xml:space="preserve">
+    <value>Listen to Audio</value>
+  </data>
+  <data name="LblWindowPreview" xml:space="preserve">
+    <value>Window Preview:</value>
+  </data>
+  <data name="LblVndbSearch" xml:space="preserve">
+    <value>2. VNDB Search (Romaji/English):</value>
+  </data>
 </root>

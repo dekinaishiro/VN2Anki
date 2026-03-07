@@ -54,7 +54,7 @@ namespace VN2Anki.Services
 
                 if (string.IsNullOrEmpty(config.Media.VideoWindow))
                 {
-                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Video Source vazia! Selecione o vídeo.", IsError = true }));
+                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = Locales.Strings.MsgVideoSourceEmpty, IsError = true }));
                     return false;
                 }
 
@@ -64,7 +64,7 @@ namespace VN2Anki.Services
 
                 if (!isRunning)
                 {
-                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "A janela alvo está fechada! Abra o jogo e tente novamente.", IsError = true }));
+                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = Locales.Strings.MsgTargetWindowClosed, IsError = true }));
                     return false;
                 }
 
@@ -73,15 +73,15 @@ namespace VN2Anki.Services
 
                 if (string.IsNullOrEmpty(deviceId))
                 {
-                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Configure o Áudio primeiro!", IsError = true }));
+                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = Locales.Strings.MsgConfigureAudioFirst, IsError = true }));
                     return false;
                 }
 
                 if (currentVN == null && _tracker.ValidCharacterCount == 0 && _tracker.Elapsed.TotalSeconds == 0)
                 {
                     bool result = _windowService.ShowConfirmation(
-                        "Nenhuma Visual Novel está vinculada a esta sessão.\nDeseja iniciar o rastreamento avulso mesmo assim?",
-                        "Aviso de Sessão Vazia",
+                        Locales.Strings.MsgConfirmStartTrackingWithoutVn,
+                        Locales.Strings.TitleEmptySessionWarning,
                         true);
 
                     if (!result) return false;
@@ -114,8 +114,8 @@ namespace VN2Anki.Services
                 if (currentVN == null)
                 {
                     bool result = _windowService.ShowConfirmation(
-                        "Você leu alguns caracteres, mas nenhuma Visual Novel está selecionada.\nDeseja salvar este progresso no histórico para vinculá-lo a um jogo mais tarde?",
-                        "Salvar Sessão Órfã?");
+                        Locales.Strings.MsgConfirmSaveOrphanSession,
+                        Locales.Strings.TitleSaveOrphanSession);
 
                     if (!result)
                     {
@@ -218,8 +218,8 @@ namespace VN2Anki.Services
                     if (string.IsNullOrEmpty(specificProcessName))
                     {
                         bool result = _windowService.ShowConfirmation(
-                            $"Detectamos que '{matchedVns[0].Title}' está em execução.\nDeseja vinculá-la e iniciar a sessão agora?",
-                            "Visual Novel Detectada");
+                            string.Format(Locales.Strings.MsgConfirmVnDetected, matchedVns[0].Title),
+                            Locales.Strings.MsgAttention);
 
                         if (result) selectedVn = matchedVns[0];
                     }
@@ -246,7 +246,7 @@ namespace VN2Anki.Services
 
                 if (string.IsNullOrEmpty(specificProcessName) && targetWin != null)
                 {
-                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = $"Sessão vinculada: {selectedVn.Title}", IsError = false }));
+                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = string.Format(Locales.Strings.MsgSessionLinked, selectedVn.Title), IsError = false }));
                 }
 
                 return selectedVn;
