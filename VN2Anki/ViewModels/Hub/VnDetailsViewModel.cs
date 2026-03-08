@@ -22,6 +22,12 @@ namespace VN2Anki.ViewModels.Hub
         [ObservableProperty]
         private ObservableCollection<SessionRecord> _recentSessions = new();
 
+        [ObservableProperty]
+        private double _averageSpeed;
+
+        [ObservableProperty]
+        private string _currentGraphType = "HeatMap";
+
         // === ESTADOS DO MODAL DE EDIÇÃO ===
         [ObservableProperty] private bool _isEditModalOpen;
         [ObservableProperty] private string _editExecutablePath;
@@ -37,7 +43,26 @@ namespace VN2Anki.ViewModels.Hub
         public void Initialize(VisualNovel selectedVn)
         {
             Vn = selectedVn;
+            CalculateStats();
             _ = LoadRecentSessionsAsync();
+        }
+
+        private void CalculateStats()
+        {
+            if (Vn == null || Vn.TotalTimePlayedSeconds <= 0)
+            {
+                AverageSpeed = 0;
+                return;
+            }
+            // Converte segundos para horas e calcula caracteres por hora
+            double totalHours = Vn.TotalTimePlayedSeconds / 3600.0;
+            AverageSpeed = (double)Vn.TotalCharactersRead / totalHours;
+        }
+
+        [RelayCommand]
+        private void SetGraphType(string type)
+        {
+            CurrentGraphType = type;
         }
 
         private async Task LoadRecentSessionsAsync()

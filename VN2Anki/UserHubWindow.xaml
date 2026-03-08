@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vms="clr-namespace:VN2Anki.ViewModels.Hub"
         xmlns:views="clr-namespace:VN2Anki.Views.Hub"
-        Title="VN2Anki - User Hub" Height="600" Width="950"
+        Title="VN2Anki - User Hub" Height="700" Width="1050"
         Background="#1E1E1E" Foreground="White" WindowStartupLocation="CenterScreen">
 
     <Window.Resources>

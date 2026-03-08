@@ -147,60 +147,60 @@ namespace VN2Anki
             string htmlPath = Path.Combine(appDir, "overlay.html");
 
             string htmlBase = $@"
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset='utf-8'>
-        <style>
-            html, body {{
-                margin: 0; padding: 0; height: 100vh;
-                background-color: rgba(0, 0, 0, 0.0) !important;
-                overflow: hidden;
-                display: flex; flex-direction: column; 
-                justify-content: flex-end;
-            }}
-            #text-box {{
-                color: {cssFontColor}; 
-                background-color: {cssBgColor};
-                font-size: {conf.FontSize}px; 
-                padding: 10px;
-                font-family: 'Segoe UI', sans-serif;
-                border-radius: 8px; margin: 15px;
-                transition: background 0.3s ease, color 0.3s ease;
-                text-align: center;
-                box-shadow: none;
-                text-shadow: none;
-            }}
-        </style>
-    </head>
-    <body>
-        <div id='text-box'>Waiting for text...</div>
-        <script>
-            document.addEventListener('mousedown', (e) => {{
-                let textBox = document.getElementById('text-box');
-                let insideTextBox = false;
-                if (textBox) {{
-                    let r = textBox.getBoundingClientRect();
-                    insideTextBox = e.clientX >= r.left && e.clientX <= r.right &&
-                                    e.clientY >= r.top  && e.clientY <= r.bottom;
-                }}
-                
-                if (!insideTextBox) {{
-                    if (window.chrome && window.chrome.webview) {{
-                        window.chrome.webview.postMessage(JSON.stringify({{
-                            forwardClick: true,
-                            x: e.screenX,
-                            y: e.screenY,
-                            button: e.button
-                        }}));
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset='utf-8'>
+                <style>
+                    html, body {{
+                        margin: 0; padding: 0; height: 100vh;
+                        background-color: rgba(0, 0, 0, 0.0) !important;
+                        overflow: hidden;
+                        display: flex; flex-direction: column; 
+                        justify-content: flex-end;
                     }}
-                    e.preventDefault();
-                    e.stopPropagation();
-                }}
-            }});
-        </script>
-    </body>
-    </html>";
+                    #text-box {{
+                        color: {cssFontColor}; 
+                        background-color: {cssBgColor};
+                        font-size: {conf.FontSize}px; 
+                        padding: 10px;
+                        font-family: 'Segoe UI', sans-serif;
+                        border-radius: 8px; margin: 15px;
+                        transition: background 0.3s ease, color 0.3s ease;
+                        text-align: center;
+                        box-shadow: none;
+                        text-shadow: none;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div id='text-box'>Waiting for text...</div>
+                <script>
+                    document.addEventListener('mousedown', (e) => {{
+                        let textBox = document.getElementById('text-box');
+                        let insideTextBox = false;
+                        if (textBox) {{
+                            let r = textBox.getBoundingClientRect();
+                            insideTextBox = e.clientX >= r.left && e.clientX <= r.right &&
+                                            e.clientY >= r.top  && e.clientY <= r.bottom;
+                        }}
+                
+                        if (!insideTextBox) {{
+                            if (window.chrome && window.chrome.webview) {{
+                                window.chrome.webview.postMessage(JSON.stringify({{
+                                    forwardClick: true,
+                                    x: e.screenX,
+                                    y: e.screenY,
+                                    button: e.button
+                                }}));
+                            }}
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }}
+                    }});
+                </script>
+            </body>
+            </html>";
 
             File.WriteAllText(htmlPath, htmlBase);
         }
