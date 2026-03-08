@@ -37,7 +37,8 @@
             </StackPanel>
         </Border>
 
-        <ContentControl Grid.Column="1" Content="{Binding Navigation.CurrentViewModel}" Margin="10"/>
+        <ContentControl Grid.Column="1" Content="{Binding Navigation.CurrentViewModel}" Margin="10" 
+                        HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
 
     </Grid>
 </Window>

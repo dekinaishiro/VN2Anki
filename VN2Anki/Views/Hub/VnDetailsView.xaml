@@ -5,7 +5,7 @@
              xmlns:loc="clr-namespace:VN2Anki.Locales"
              xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
              Background="Transparent"
-             VerticalContentAlignment="Top"> <!-- Força o alinhamento do conteúdo do UserControl ao topo -->
+             VerticalContentAlignment="Stretch">
 
     <UserControl.Resources>
         <conv:ImagePathConverter x:Key="ImgPathConverter"/>
@@ -34,8 +34,7 @@
         </Style>
     </UserControl.Resources>
 
-    <!-- Adicionado VerticalAlignment="Top" para o Grid não tentar preencher o espaço vertical e centralizar o conteúdo -->
-    <Grid Margin="20" VerticalAlignment="Top">
+    <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/> <!-- 0: Navigation/Actions -->
             <RowDefinition Height="Auto"/> <!-- 1: Header (Capa + Info) -->
@@ -74,13 +73,27 @@
 
             <!-- Título e Stats -->
             <StackPanel Grid.Column="1" VerticalAlignment="Top">
-                <TextBlock Text="{Binding Vn.OriginalTitle}" 
-                           Foreground="White" FontWeight="Black" FontSize="44" 
+                <TextBlock Foreground="White" FontWeight="Black" FontSize="44" 
                            TextTrimming="CharacterEllipsis" 
                            Padding="0" Margin="0" 
                            LineHeight="44"
                            LineStackingStrategy="BlockLineHeight"
-                           VerticalAlignment="Top"/>
+                           VerticalAlignment="Top">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="{Binding Vn.OriginalTitle}" />
+                            <Setter Property="Visibility" Value="Visible" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Vn.OriginalTitle}" Value="{x:Null}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Vn.OriginalTitle}" Value="">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
                 
                 <TextBlock Text="{Binding Vn.Title}" 
                            Foreground="#888888" FontSize="22" 
@@ -114,14 +127,14 @@
         </Grid>
 
         <!-- 2: CORPO (HISTÓRICO + AVANÇADO) -->
-        <Grid Grid.Row="2" VerticalAlignment="Top">
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="350"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
             <!-- Histórico -->
-            <Border Grid.Column="0" Background="#252526" CornerRadius="8" Padding="15" Margin="0,0,20,0" VerticalAlignment="Top">
+            <Border Grid.Column="0" Background="#252526" CornerRadius="8" Padding="15" Margin="0,0,20,0">
                 <DockPanel LastChildFill="True">
                     <TextBlock DockPanel.Dock="Top" Text="RECENT SESSIONS" Foreground="#888888" FontSize="14" FontWeight="Bold" Margin="0,0,0,15"/>
                     <ItemsControl ItemsSource="{Binding RecentSessions}">
@@ -147,7 +160,7 @@
             </Border>
 
             <!-- Status Avançado -->
-            <Grid Grid.Column="1" VerticalAlignment="Top">
+            <Grid Grid.Column="1">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
