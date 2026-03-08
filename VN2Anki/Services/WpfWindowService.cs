@@ -9,6 +9,13 @@ namespace VN2Anki.Services
 {
     public class WpfWindowService : IWindowService
     {
+        private readonly IConfigurationService _configService;
+
+        public WpfWindowService(IConfigurationService configService)
+        {
+            _configService = configService;
+        }
+
         public void CloseWindow(object viewModel, bool dialogResult)
         {
             foreach (Window window in Application.Current.Windows)
@@ -67,7 +74,8 @@ namespace VN2Anki.Services
             settingsWin.Loaded += async (ss, ee) =>
             {
                 var options = new Microsoft.Web.WebView2.Core.CoreWebView2EnvironmentOptions { AreBrowserExtensionsEnabled = true };
-                var environment = await Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(null, null, options);
+                string userDataFolder = VN2Anki.Helpers.BrowserExtensionHelper.GetAppDataFolder();
+                var environment = await Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(null, userDataFolder, options);
                 await settingsWebView.EnsureCoreWebView2Async(environment);
                 try
                 {
@@ -94,6 +102,12 @@ namespace VN2Anki.Services
                 catch (System.Exception ex) { MessageBox.Show($"Could not load extension settings:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
             };
             settingsWin.Show();
+        }
+
+        public void OpenExtensionsManager()
+        {
+            var manager = new ExtensionsWindow(_configService, this);
+            manager.Show();
         }
 
         public bool ShowConfirmation(string message, string title, bool isWarning = false)

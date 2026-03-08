@@ -67,6 +67,7 @@ namespace VN2Anki.Models
         public int FontSize { get; set; } = 32;
         public string PassThroughModifier { get; set; } = "Ctrl";
         public List<string> CustomExtensions { get; set; } = new List<string>();
+        public ExtensionSettings Extensions { get; set; } = new ExtensionSettings();
         // states
         public bool IsTextAtTop { get; set; } = false;
         public bool IsTransparent { get; set; } = true;
@@ -76,5 +77,11 @@ namespace VN2Anki.Models
         public double Height { get; set; } = 250;
         public double Top { get; set; } = double.NaN;
         public double Left { get; set; } = double.NaN;
+    }
+
+    public class ExtensionSettings
+    {
+        public string SelectedBrowser { get; set; } = "Chrome";
+        public string CustomPath { get; set; } = "";
     }
 }

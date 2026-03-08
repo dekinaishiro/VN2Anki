@@ -17,6 +17,8 @@ namespace VN2Anki.Messages
     {
         // Overlay config update trigger
     }
+
+    public class BrowserExtensionUpdatedMessage { }
     public class FlashMessagePayload
     {
         public string Message { get; set; }

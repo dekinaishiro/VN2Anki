@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -15,7 +15,7 @@ using VN2Anki.Messages;
 
 namespace VN2Anki
 {
-    public partial class OverlayWindow : Window, IRecipient<OverlayConfigUpdatedMessage>, IRecipient<SlotCapturedMessage>
+    public partial class OverlayWindow : Window, IRecipient<OverlayConfigUpdatedMessage>, IRecipient<SlotCapturedMessage>, IRecipient<BrowserExtensionUpdatedMessage>
     {
         [DllImport("user32.dll")]
         private static extern short GetAsyncKeyState(int vKey);
@@ -110,7 +110,7 @@ namespace VN2Anki
             InitializeWebViewAsync();
             SetupHoldTimer();
 
-            WeakReferenceMessenger.Default.RegisterAll(this); // CHECK LATER
+            WeakReferenceMessenger.Default.RegisterAll(this); 
         }
 
         private void DetermineModifierKey()
@@ -208,7 +208,8 @@ namespace VN2Anki
         private async void InitializeWebViewAsync()
         {
             var options = new CoreWebView2EnvironmentOptions { AreBrowserExtensionsEnabled = true };
-            var environment = await CoreWebView2Environment.CreateAsync(null, null, options);
+            string userDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VN2Anki", "WebView2Data");
+            var environment = await CoreWebView2Environment.CreateAsync(null, userDataFolder, options);
             await webView.EnsureCoreWebView2Async(environment);
 
             LoadExtensions();
@@ -276,19 +277,38 @@ namespace VN2Anki
 
         private async void LoadExtensions()
         {
+            if (webView.CoreWebView2 == null) return;
             var profile = webView.CoreWebView2.Profile;
 
-            string latestYomitan = VN2Anki.Helpers.BrowserExtensionHelper.GetYomitanLatestVersionPath();
-            if (!string.IsNullOrEmpty(latestYomitan))
+            var loadedExtensions = await profile.GetBrowserExtensionsAsync();
+            var enabledPaths = _configService.CurrentConfig.Overlay.CustomExtensions;
+
+            // Get names of extensions we WANT to have enabled
+            var targetExtensions = new List<(string Path, string Name)>();
+            foreach (var path in enabledPaths)
             {
-                try { await profile.AddBrowserExtensionAsync(latestYomitan); } catch { }
+                if (Directory.Exists(path))
+                {
+                    var info = VN2Anki.Helpers.BrowserExtensionHelper.GetExtensionsFromPath(path).FirstOrDefault();
+                    if (info != null) targetExtensions.Add((path, info.Name));
+                }
             }
 
-            foreach (var extPath in _configService.CurrentConfig.Overlay.CustomExtensions)
+            // 1. Remove extensions that are NOT in the target list
+            foreach (var loadedExt in loadedExtensions)
             {
-                if (Directory.Exists(extPath))
+                if (!targetExtensions.Any(t => t.Name == loadedExt.Name))
                 {
-                    try { await profile.AddBrowserExtensionAsync(extPath); } catch { }
+                    try { await loadedExt.RemoveAsync(); } catch { }
+                }
+            }
+
+            // 2. Add extensions that are in the target list but NOT yet loaded
+            foreach (var target in targetExtensions)
+            {
+                if (!loadedExtensions.Any(l => l.Name == target.Name))
+                {
+                    try { await profile.AddBrowserExtensionAsync(target.Path); } catch { }
                 }
             }
         }
@@ -466,17 +486,9 @@ namespace VN2Anki
             }
         }
 
-        private void BtnYomitan_Click(object sender, RoutedEventArgs e)
+        private void BtnExtensions_Click(object sender, RoutedEventArgs e)
         {
-            string latestYomitan = VN2Anki.Helpers.BrowserExtensionHelper.GetYomitanLatestVersionPath();
-            if (!string.IsNullOrEmpty(latestYomitan))
-            {
-                _windowService.OpenExtensionSettingsWindow(latestYomitan);
-            }
-            else
-            {
-                MessageBox.Show(Locales.Strings.MsgYomitanNotFound, Locales.Strings.TitleWarning, MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
+            _windowService.OpenExtensionsManager();
         }
 
         private void BtnPosition_Click(object sender, RoutedEventArgs e)
@@ -620,6 +632,14 @@ namespace VN2Anki
         {
             DebugLogger.Log($"[7-OVERLAY] Message arrived at Overlay. Calling HandleNewText | Text: {message.Value.Text}");
             HandleNewText(message.Value.Text, message.Value.Timestamp);
+        }
+
+        public void Receive(BrowserExtensionUpdatedMessage message)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                LoadExtensions();
+            });
         }
     }
 }

@@ -123,19 +123,12 @@ namespace VN2Anki
 
         private void BtnAddExtension_Click(object sender, RoutedEventArgs e)
         {
-            var defaultPaths = VN2Anki.Helpers.BrowserExtensionHelper.GetDefaultExtensionBasePaths();
-            string startPath = defaultPaths.FirstOrDefault(Directory.Exists) ?? Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-
-            var dialog = new Microsoft.Win32.OpenFileDialog { Title = "Select Extension Folder", ValidateNames = false, CheckFileExists = false, CheckPathExists = true, FileName = "Select Folder", Filter = "Folders|\n", InitialDirectory = startPath };
-            if (dialog.ShowDialog(this) == true)
-            {
-                string extPath = System.IO.Path.GetDirectoryName(dialog.FileName);
-                if (!string.IsNullOrWhiteSpace(extPath) && System.IO.Directory.Exists(extPath))
-                {
-                    var list = ListExtensions.ItemsSource as System.Collections.ObjectModel.ObservableCollection<string>;
-                    if (!list.Contains(extPath)) list.Add(extPath);
-                }
-            }
+            _windowService.OpenExtensionsManager();
+            // After manager closes, we might want to refresh the local list if it's still showing paths
+            this.Activated += (s, ev) => {
+                var overlayConfig = _viewModel.Config.Overlay;
+                ListExtensions.ItemsSource = new System.Collections.ObjectModel.ObservableCollection<string>(overlayConfig.CustomExtensions);
+            };
         }
         private void BtnExtensionSettings_Click(object sender, RoutedEventArgs e)
         {
@@ -150,6 +143,8 @@ namespace VN2Anki
             {
                 var list = ListExtensions.ItemsSource as System.Collections.ObjectModel.ObservableCollection<string>;
                 list.Remove(selectedExt);
+                _viewModel.Config.Overlay.CustomExtensions.Remove(selectedExt);
+                _configService.Save();
             }
         }
         private void ChkOpenSettings_Checked(object sender, RoutedEventArgs e) { }

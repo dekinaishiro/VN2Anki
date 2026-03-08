@@ -23,7 +23,7 @@
         <Border Grid.Row="0" Background="#E5111111" Grid.ColumnSpan="2">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,10,0" WindowChrome.IsHitTestVisibleInChrome="True">
 
-                <Button x:Name="BtnYomitan" Content="⚙️" ToolTip="Yomitan Settings" Click="BtnYomitan_Click" 
+                <Button x:Name="BtnExtensions" Content="🧩" ToolTip="Extensions Manager" Click="BtnExtensions_Click" 
                         Foreground="White" Background="Transparent" BorderThickness="0" Margin="5,0" FontSize="14"/>
 
                 <Button x:Name="BtnPosicao" Content="⇅" ToolTip="Toggle Position" Click="BtnPosition_Click" 
