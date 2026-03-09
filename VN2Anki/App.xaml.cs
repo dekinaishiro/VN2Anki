@@ -51,6 +51,7 @@ namespace VN2Anki
             services.AddSingleton<IConfigurationService, ConfigurationService>();
 
             services.AddSingleton<AudioEngine>();
+            services.AddTransient<IAudioPlaybackService, AudioPlaybackService>();
             services.AddSingleton<VideoEngine>();
 
             services.AddSingleton<ClipboardHook>();
