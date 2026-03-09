@@ -103,7 +103,7 @@ namespace VN2Anki.Services
             return IsBufferActive;
         }
 
-        public void EndSession(VisualNovel currentVN)
+        public async Task EndSessionAsync(VisualNovel currentVN)
         {
             bool hasProgress = _tracker.Elapsed.TotalSeconds > 0 || _tracker.ValidCharacterCount > 0;
 
@@ -136,7 +136,7 @@ namespace VN2Anki.Services
                     };
                     
                     var dbService = _serviceProvider.GetRequiredService<IVnDatabaseService>();
-                    dbService.AddSessionAsync(record).GetAwaiter().GetResult();
+                    await dbService.AddSessionAsync(record);
 
                     WeakReferenceMessenger.Default.Send(new SessionSavedMessage());
                 }

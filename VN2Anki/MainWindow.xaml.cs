@@ -49,7 +49,8 @@ namespace VN2Anki
 
                 if (result == MessageBoxResult.Yes)
                 {
-                    _viewModel.EndSession();
+                    // Fire and forget since we can't await in Window_Closing natively
+                    _ = _viewModel.EndSessionAsync();
                 }
                 else if (result == MessageBoxResult.Cancel)
                 {
@@ -61,13 +62,12 @@ namespace VN2Anki
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            _viewModel.ApplyConfigToServices();
+            await _viewModel.ApplyConfigToServices();
 
-            var config = _configService.CurrentConfig.General;   
+            var config = _configService.CurrentConfig.General;
             if (!double.IsNaN(config.MainWindowTop) && !double.IsNaN(config.MainWindowLeft))
             {
-                this.Top = config.MainWindowTop;
-                this.Left = config.MainWindowLeft;
+                this.Top = config.MainWindowTop;                this.Left = config.MainWindowLeft;
             }
             else
             {
@@ -93,11 +93,11 @@ namespace VN2Anki
 
         private void DragBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) { if (e.ChangedButton == MouseButton.Left) this.DragMove(); }
 
-        private void BtnEndSession_Click(object sender, RoutedEventArgs e)
+        private async void BtnEndSession_Click(object sender, RoutedEventArgs e)
         {
             if (MessageBox.Show(Strings.MsgConfirmEndSession, Strings.MsgAttention, MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
             {
-                _viewModel.EndSession();
+                await _viewModel.EndSessionAsync();
             }
         }
 
@@ -117,11 +117,11 @@ namespace VN2Anki
 
             _settingsWindowInstance = App.Current.Services.GetRequiredService<SettingsWindow>();
             _settingsWindowInstance.Owner = this;
-            _settingsWindowInstance.Closed += (s, args) =>
+            _settingsWindowInstance.Closed += async (s, args) =>
             {
                 _settingsWindowInstance = null;
                 _configService.Load();
-                _viewModel.ApplyConfigToServices();
+                await _viewModel.ApplyConfigToServices();
             };
             _settingsWindowInstance.Show();
         }

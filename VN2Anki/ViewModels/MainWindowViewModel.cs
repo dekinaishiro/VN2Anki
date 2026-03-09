@@ -96,31 +96,38 @@ namespace VN2Anki.ViewModels
             WeakReferenceMessenger.Default.RegisterAll(this);
         }
 
-        public async void ApplyConfigToServices()
+        public async Task ApplyConfigToServices()
         {
-            var config = _configService.CurrentConfig;
-            _miningService.TargetVideoWindow = config.Media.VideoWindow;
-            if (int.TryParse(config.Session.MaxSlots, out int parsedMax) && parsedMax > 0) _miningService.MaxSlots = parsedMax;
-            if (double.TryParse(config.Session.IdleTime, out double parsedIdle) && parsedIdle > 0) _miningService.IdleTimeoutFixo = parsedIdle;
-
-            _miningService.UseDynamicTimeout = config.Session.UseDynamicTimeout;
-            _miningService.MaxImageWidth = config.Media.MaxImageWidth;
-            _ankiHandler.UpdateSettings(config.Anki.Url, config.Anki.TimeoutSeconds);
-
-            bool isSessionActive = Tracker.ValidCharacterCount > 0 || Tracker.Elapsed.TotalSeconds > 0 || IsBufferActive;
-
-            if (_isFirstLoad)
+            try
             {
-                _isFirstLoad = false;
-                Application.Current.Dispatcher.Invoke(() => UpdateVisualCurrentVN());
+                var config = _configService.CurrentConfig;
+                _miningService.TargetVideoWindow = config.Media.VideoWindow;
+                if (int.TryParse(config.Session.MaxSlots, out int parsedMax) && parsedMax > 0) _miningService.MaxSlots = parsedMax;
+                if (double.TryParse(config.Session.IdleTime, out double parsedIdle) && parsedIdle > 0) _miningService.IdleTimeoutFixo = parsedIdle;
+
+                _miningService.UseDynamicTimeout = config.Session.UseDynamicTimeout;
+                _miningService.MaxImageWidth = config.Media.MaxImageWidth;
+                _ankiHandler.UpdateSettings(config.Anki.Url, config.Anki.TimeoutSeconds);
+
+                bool isSessionActive = Tracker.ValidCharacterCount > 0 || Tracker.Elapsed.TotalSeconds > 0 || IsBufferActive;
+
+                if (_isFirstLoad)
+                {
+                    _isFirstLoad = false;
+                    Application.Current.Dispatcher.Invoke(() => UpdateVisualCurrentVN());
+                }
+                else if (!isSessionActive)
+                {
+                    await TryAutoLinkAsync(config.Media.VideoWindow);
+                }
+                else
+                {
+                    Application.Current.Dispatcher.Invoke(() => UpdateVisualCurrentVN());
+                }
             }
-            else if (!isSessionActive)
+            catch (System.Exception ex)
             {
-                await TryAutoLinkAsync(config.Media.VideoWindow);
-            }
-            else
-            {
-                Application.Current.Dispatcher.Invoke(() => UpdateVisualCurrentVN());
+                System.Diagnostics.Debug.WriteLine($"Error in ApplyConfigToServices: {ex.Message}");
             }
         }
 
@@ -182,9 +189,9 @@ namespace VN2Anki.ViewModels
             }));
         }
 
-        public void EndSession()
+        public async Task EndSessionAsync()
         {
-            _sessionManager.EndSession(CurrentVN);
+            await _sessionManager.EndSessionAsync(CurrentVN);
 
             IsBufferActive = false;
             UpdateVisualCurrentVN();
@@ -204,64 +211,71 @@ namespace VN2Anki.ViewModels
 
         public async void Receive(PlayVnMessage message)
         {
-            var vn = message.VisualNovel;
-
-            // verifies if current session is active and prompts the user to confirm if they want to end it before starting a new one
-            if (CurrentVN != null && (Tracker.ValidCharacterCount > 0 || Tracker.Elapsed.TotalSeconds > 0 || IsBufferActive))
+            try
             {
-                bool result = _windowService.ShowConfirmation(string.Format(Locales.Strings.MsgConfirmChangeSession, CurrentVN.Title, vn.Title), Locales.Strings.MsgAttention);
+                var vn = message.VisualNovel;
 
-                if (result)
+                // verifies if current session is active and prompts the user to confirm if they want to end it before starting a new one
+                if (CurrentVN != null && (Tracker.ValidCharacterCount > 0 || Tracker.Elapsed.TotalSeconds > 0 || IsBufferActive))
                 {
-                    EndSession();
+                    bool result = _windowService.ShowConfirmation(string.Format(Locales.Strings.MsgConfirmChangeSession, CurrentVN.Title, vn.Title), Locales.Strings.MsgAttention);
+
+                    if (result)
+                    {
+                        await EndSessionAsync();
+                    }
+                    else
+                    {
+                        return;
+                    }
                 }
-                else
+
+                // polling duplicate prevention: cancels any existing polling loop before starting a new one
+                _pollingCts?.Cancel();
+                _pollingCts = new CancellationTokenSource();
+                var token = _pollingCts.Token;
+
+                CurrentVN = vn;
+
+                if (IsBufferActive) ToggleBuffer();
+
+                WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = $"Iniciando {vn.Title}...", IsError = false }));
+
+                var launchResult = await _gameLauncher.LaunchAndHookAsync(vn, token);
+
+                switch (launchResult)
                 {
-                    return;
+                    case GameLaunchResult.Success:
+                        WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = Locales.Strings.StatusVideoConnected, IsError = false }));
+                        break;
+
+                    case GameLaunchResult.ExecutableNotFound:
+                        WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = Locales.Strings.MsgExeNotFound, IsError = true }));
+                        CurrentVN = null;
+                        break;
+
+                    case GameLaunchResult.LaunchFailed:
+                        WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Erro ao abrir o jogo!", IsError = true }));
+                        CurrentVN = null;
+                        break;
+
+                    case GameLaunchResult.Timeout:
+                        WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = Locales.Strings.MsgWindowTimeout, IsError = true }));
+                        CurrentVN = null;
+                        var config = _configService.CurrentConfig;
+                        config.Media.VideoWindow = string.Empty;
+                        _configService.Save();
+                        _miningService.TargetVideoWindow = string.Empty;
+                        break;
+
+                    case GameLaunchResult.Cancelled:
+                        // do nothing, silently abort
+                        break;
                 }
             }
-
-            // polling duplicate prevention: cancels any existing polling loop before starting a new one
-            _pollingCts?.Cancel();
-            _pollingCts = new CancellationTokenSource();
-            var token = _pollingCts.Token;
-
-            CurrentVN = vn;
-
-            if (IsBufferActive) ToggleBuffer();
-
-            WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = $"Iniciando {vn.Title}...", IsError = false }));
-
-            var launchResult = await _gameLauncher.LaunchAndHookAsync(vn, token);
-
-            switch (launchResult)
+            catch (System.Exception ex)
             {
-                case GameLaunchResult.Success:
-                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = Locales.Strings.StatusVideoConnected, IsError = false }));
-                    break;
-
-                case GameLaunchResult.ExecutableNotFound:
-                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = Locales.Strings.MsgExeNotFound, IsError = true }));
-                    CurrentVN = null;
-                    break;
-
-                case GameLaunchResult.LaunchFailed:
-                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Erro ao abrir o jogo!", IsError = true }));
-                    CurrentVN = null;
-                    break;
-
-                case GameLaunchResult.Timeout:
-                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = Locales.Strings.MsgWindowTimeout, IsError = true }));
-                    CurrentVN = null;
-                    var config = _configService.CurrentConfig;
-                    config.Media.VideoWindow = string.Empty;
-                    _configService.Save();
-                    _miningService.TargetVideoWindow = string.Empty;
-                    break;
-
-                case GameLaunchResult.Cancelled:
-                    // do nothing, silently abort
-                    break;
+                System.Diagnostics.Debug.WriteLine($"Error in Receive(PlayVnMessage): {ex.Message}");
             }
         }
 
