@@ -158,9 +158,7 @@ namespace VN2Anki
         {
             try
             {
-                var options = new CoreWebView2EnvironmentOptions { AreBrowserExtensionsEnabled = true };
-                string userDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VN2Anki", "WebView2Data");
-                var environment = await CoreWebView2Environment.CreateAsync(null, userDataFolder, options);
+                var environment = await VN2Anki.Helpers.BrowserExtensionHelper.GetSharedEnvironmentAsync();
                 await webView.EnsureCoreWebView2Async(environment);
             }
             catch (Exception ex)

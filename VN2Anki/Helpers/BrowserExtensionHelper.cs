@@ -39,6 +39,28 @@ namespace VN2Anki.Helpers
 
     public static class BrowserExtensionHelper
     {
+        private static Microsoft.Web.WebView2.Core.CoreWebView2Environment _sharedEnvironment;
+        private static readonly System.Threading.SemaphoreSlim _envLock = new(1, 1);
+
+        public static async Task<Microsoft.Web.WebView2.Core.CoreWebView2Environment> GetSharedEnvironmentAsync()
+        {
+            await _envLock.WaitAsync();
+            try
+            {
+                if (_sharedEnvironment == null)
+                {
+                    var options = new Microsoft.Web.WebView2.Core.CoreWebView2EnvironmentOptions { AreBrowserExtensionsEnabled = true };
+                    string userDataFolder = GetAppDataFolder();
+                    _sharedEnvironment = await Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(null, userDataFolder, options);
+                }
+                return _sharedEnvironment;
+            }
+            finally
+            {
+                _envLock.Release();
+            }
+        }
+
         public static string GetAppDataFolder()
         {
             return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VN2Anki", "WebView2Data");

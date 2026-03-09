@@ -71,14 +71,20 @@ namespace VN2Anki.Services
             var settingsWin = new Window { Title = "Extension Settings", Width = 900, Height = 700, WindowStartupLocation = WindowStartupLocation.CenterScreen };
             var settingsWebView = new Microsoft.Web.WebView2.Wpf.WebView2();
             settingsWin.Content = settingsWebView;
+
+            // Ensure WebView2 is disposed when the window closes to release file locks
+            settingsWin.Closed += (s, e) =>
+            {
+                settingsWebView.Dispose();
+            };
+
             settingsWin.Loaded += async (ss, ee) =>
             {
-                var options = new Microsoft.Web.WebView2.Core.CoreWebView2EnvironmentOptions { AreBrowserExtensionsEnabled = true };
-                string userDataFolder = VN2Anki.Helpers.BrowserExtensionHelper.GetAppDataFolder();
-                var environment = await Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(null, userDataFolder, options);
-                await settingsWebView.EnsureCoreWebView2Async(environment);
                 try
                 {
+                    var environment = await VN2Anki.Helpers.BrowserExtensionHelper.GetSharedEnvironmentAsync();
+                    await settingsWebView.EnsureCoreWebView2Async(environment);
+                    
                     string manifestPath = System.IO.Path.Combine(extensionPath, "manifest.json");
                     string optionsHtmlPage = "options.html";
                     string targetExtName = "";
