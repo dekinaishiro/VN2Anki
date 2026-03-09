@@ -19,78 +19,62 @@ namespace VN2Anki.Services
             _serviceProvider = serviceProvider;
         }
 
-        public async Task<List<VisualNovel>> GetAllVisualNovelsAsync()
+        private async Task<T> ExecuteWithDbAsync<T>(Func<AppDbContext, Task<T>> action)
         {
-            using (var scope = _serviceProvider.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                return await db.VisualNovels.ToListAsync();
-            }
+            using var scope = _serviceProvider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            return await action(db);
         }
 
-        public async Task AddVisualNovelAsync(VisualNovel vn)
+        private async Task ExecuteWithDbAsync(Func<AppDbContext, Task> action)
         {
-            using (var scope = _serviceProvider.CreateScope())
+            using var scope = _serviceProvider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await action(db);
+        }
+
+        public Task<List<VisualNovel>> GetAllVisualNovelsAsync() =>
+            ExecuteWithDbAsync(db => db.VisualNovels.ToListAsync());
+
+        public Task AddVisualNovelAsync(VisualNovel vn) =>
+            ExecuteWithDbAsync(async db =>
             {
-                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 db.VisualNovels.Add(vn);
                 await db.SaveChangesAsync();
-            }
-        }
+            });
 
-        public async Task UpdateVisualNovelAsync(VisualNovel vn)
-        {
-            using (var scope = _serviceProvider.CreateScope())
+        public Task UpdateVisualNovelAsync(VisualNovel vn) =>
+            ExecuteWithDbAsync(async db =>
             {
-                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 db.VisualNovels.Update(vn);
                 await db.SaveChangesAsync();
-            }
-        }
+            });
 
-        public async Task DeleteVisualNovelAsync(VisualNovel vn)
-        {
-            using (var scope = _serviceProvider.CreateScope())
+        public Task DeleteVisualNovelAsync(VisualNovel vn) =>
+            ExecuteWithDbAsync(async db =>
             {
-                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
                 var relatedSessions = await db.Sessions.Where(s => s.VisualNovelId == vn.Id).ToListAsync();
                 if (relatedSessions.Any()) db.Sessions.RemoveRange(relatedSessions);
 
                 db.VisualNovels.Remove(vn);
                 await db.SaveChangesAsync();
-            }
 
-            if (!string.IsNullOrEmpty(vn.CoverImagePath) && System.IO.File.Exists(vn.CoverImagePath))
-            {
-                try { System.IO.File.Delete(vn.CoverImagePath); }
-                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Cleanup Error]: {ex.Message}"); }
-            }
-        }
+                if (!string.IsNullOrEmpty(vn.CoverImagePath) && System.IO.File.Exists(vn.CoverImagePath))
+                {
+                    try { System.IO.File.Delete(vn.CoverImagePath); }
+                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Cleanup Error]: {ex.Message}"); }
+                }
+            });
 
-        public async Task<bool> ExistsByVndbIdAsync(string vndbId)
-        {
-            using (var scope = _serviceProvider.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                return await db.VisualNovels.AnyAsync(v => v.VndbId == vndbId);
-            }
-        }
+        public Task<bool> ExistsByVndbIdAsync(string vndbId) =>
+            ExecuteWithDbAsync(db => db.VisualNovels.AnyAsync(v => v.VndbId == vndbId));
 
-        public async Task<List<SessionRecord>> GetAllSessionsAsync()
-        {
-            using (var scope = _serviceProvider.CreateScope())
-            {
-                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                return await db.Sessions.Include(s => s.VisualNovel).OrderByDescending(s => s.EndTime).ToListAsync();
-            }
-        }
+        public Task<List<SessionRecord>> GetAllSessionsAsync() =>
+            ExecuteWithDbAsync(db => db.Sessions.Include(s => s.VisualNovel).OrderByDescending(s => s.EndTime).ToListAsync());
 
-        public async Task AddSessionAsync(SessionRecord session)
-        {
-            using (var scope = _serviceProvider.CreateScope())
+        public Task AddSessionAsync(SessionRecord session) =>
+            ExecuteWithDbAsync(async db =>
             {
-                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 db.Sessions.Add(session);
                 await db.SaveChangesAsync();
                 
@@ -98,14 +82,11 @@ namespace VN2Anki.Services
                 {
                     await RecalculateVnStatsAsync(db, session.VisualNovelId.Value);
                 }
-            }
-        }
+            });
 
-        public async Task DeleteSessionAsync(SessionRecord session)
-        {
-            using (var scope = _serviceProvider.CreateScope())
+        public Task DeleteSessionAsync(SessionRecord session) =>
+            ExecuteWithDbAsync(async db =>
             {
-                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 db.Sessions.Remove(session);
                 await db.SaveChangesAsync();
                 
@@ -113,8 +94,7 @@ namespace VN2Anki.Services
                 {
                     await RecalculateVnStatsAsync(db, session.VisualNovelId.Value);
                 }
-            }
-        }
+            });
 
         private async Task RecalculateVnStatsAsync(AppDbContext db, int vnId)
         {
