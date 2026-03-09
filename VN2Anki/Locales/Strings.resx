@@ -132,6 +132,12 @@
   <data name="LblTimeout" xml:space="preserve">
     <value>Timeout (s):</value>
   </data>
+  <data name="LblEnableYomitanBridge" xml:space="preserve">
+    <value>Enable Yomitan Bridge (Proxy)</value>
+  </data>
+  <data name="LblYomitanBridgePort" xml:space="preserve">
+    <value>Yomitan Bridge Port (Requires Restart):</value>
+  </data>
   <data name="LblDynamicTimeout" xml:space="preserve">
     <value>Use Dynamic Timeout (Recommended)</value>
   </data>

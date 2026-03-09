@@ -295,6 +295,24 @@ namespace VN2Anki.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Enable Yomitan Bridge (Proxy).
+        /// </summary>
+        public static string LblEnableYomitanBridge {
+            get {
+                return ResourceManager.GetString("LblEnableYomitanBridge", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Yomitan Bridge Port (Requires Restart):.
+        /// </summary>
+        public static string LblYomitanBridgePort {
+            get {
+                return ResourceManager.GetString("LblYomitanBridgePort", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Video Source:.
         /// </summary>
         public static string LblVideoSource {
