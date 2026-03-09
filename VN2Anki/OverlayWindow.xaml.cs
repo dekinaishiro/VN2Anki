@@ -12,65 +12,12 @@ using Microsoft.Web.WebView2.Core;
 using VN2Anki.Services;
 using CommunityToolkit.Mvvm.Messaging;
 using VN2Anki.Messages;
+using static VN2Anki.Services.Win32InteropService;
 
 namespace VN2Anki
 {
     public partial class OverlayWindow : Window, IRecipient<OverlayConfigUpdatedMessage>, IRecipient<SlotCapturedMessage>, IRecipient<BrowserExtensionUpdatedMessage>
     {
-        [DllImport("user32.dll")]
-        private static extern short GetAsyncKeyState(int vKey);
-
-        [DllImport("user32.dll")]
-        private static extern int GetWindowLong(IntPtr hwnd, int index);
-
-        [DllImport("user32.dll")]
-        private static extern int SetWindowLong(IntPtr hwnd, int index, int newStyle);
-
-        [DllImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool GetCursorPos(out POINT lpPoint);
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct POINT { public int X; public int Y; }
-
-        [DllImport("comctl32.dll", SetLastError = true)]
-        public static extern bool SetWindowSubclass(IntPtr hWnd, SUBCLASSPROC pfnSubclass, uint uIdSubclass, IntPtr dwRefData);
-
-        [DllImport("comctl32.dll", SetLastError = true)]
-        public static extern bool RemoveWindowSubclass(IntPtr hWnd, SUBCLASSPROC pfnSubclass, uint uIdSubclass);
-
-        [DllImport("comctl32.dll", SetLastError = true)]
-        public static extern IntPtr DefSubclassProc(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam);
-
-        public delegate IntPtr SUBCLASSPROC(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam, uint uIdSubclass, IntPtr dwRefData);
-
-        private const int WM_NCHITTEST = 0x0084;
-        private const int HTTRANSPARENT = -1;
-        private const int GWL_EXSTYLE = -20;
-        private const int WS_EX_TRANSPARENT = 0x00000020;
-
-        [DllImport("user32.dll")]
-        private static extern IntPtr WindowFromPoint(POINT Point);
-
-        [DllImport("user32.dll")]
-        private static extern bool SetForegroundWindow(IntPtr hWnd);
-
-        [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        private static extern IntPtr PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
-
-        [DllImport("user32.dll")]
-        private static extern bool ScreenToClient(IntPtr hWnd, ref POINT lpPoint);
-
-        private const uint WM_LBUTTONDOWN = 0x0201;
-        private const uint WM_LBUTTONUP = 0x0202;
-        private const uint WM_RBUTTONDOWN = 0x0204;
-        private const uint WM_RBUTTONUP = 0x0205;
-
-        private static IntPtr MakeLParam(int loWord, int hiWord)
-        {
-            return (IntPtr)((hiWord << 16) | (loWord & 0xFFFF));
-        }
-
         private readonly IConfigurationService _configService;
         private readonly ITextHook _textHook;
         private readonly VN2Anki.Services.Interfaces.IWindowService _windowService;
