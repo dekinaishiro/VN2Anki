@@ -162,42 +162,8 @@ namespace VN2Anki
                                 ? this.Top - toastHeight - 5
                                 : this.Top + this.ActualHeight + 5;
 
-                var f = new Window
-                {
-                    WindowStyle = WindowStyle.None,
-                    AllowsTransparency = true,
-                    Background = Brushes.Transparent,
-                    Topmost = true,
-                    ShowInTaskbar = false,
-                    Width = toastWidth,
-                    Height = toastHeight,
-                    Left = leftPos,
-                    Top = topPos
-                };
-
-                var border = new Border
-                {
-                    Background = message.Value.IsError ? Brushes.Crimson : Brushes.SeaGreen,
-                    BorderBrush = Brushes.White,
-                    BorderThickness = new Thickness(1),
-                    CornerRadius = new CornerRadius(8),
-                    Child = new TextBlock
-                    {
-                        Text = message.Value.Message,
-                        Foreground = Brushes.White,
-                        FontWeight = FontWeights.Bold,
-                        FontSize = 12,
-                        HorizontalAlignment = HorizontalAlignment.Center,
-                        VerticalAlignment = VerticalAlignment.Center
-                    }
-                };
-
-                f.Content = border;
-                f.Show();
-
-                var t = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1.8) };
-                t.Tick += (s, args) => { f.Close(); t.Stop(); };
-                t.Start();
+                var toast = new VN2Anki.Windows.ToastWindow(message.Value.Message, message.Value.IsError, leftPos, topPos, toastWidth, toastHeight);
+                toast.Show();
             });
         }
 
