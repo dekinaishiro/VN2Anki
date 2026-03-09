@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -20,6 +20,7 @@ namespace VN2Anki
 
         private SettingsWindow _settingsWindowInstance;
         private OverlayWindow _overlayWindowInstance;
+        private UserHubWindow _hubWindowInstance;
 
         public MainWindow(MainWindowViewModel viewModel, IConfigurationService configService, MiningService miningService)
         {
@@ -84,6 +85,7 @@ namespace VN2Anki
 
             await _viewModel.InitializeStartupAsync();
         }
+
         private void SaveWindowPosition()
         {
             _configService.CurrentConfig.General.MainWindowTop = this.Top;
@@ -106,54 +108,44 @@ namespace VN2Anki
                 async slot => await _viewModel.ExportSlotAsync(slot), 
                 slot => _miningService.DeleteSlot(slot));
 
-        private void BtnOpenSettings_Click(object sender, RoutedEventArgs e)
+        private void OpenOrActivateWindow<T>(Func<T> getInstance, Action<T> setInstance, Action onClosed = null, Action<T> onCreated = null) where T : Window
         {
-            if (_settingsWindowInstance != null)
+            var windowInstance = getInstance();
+            if (windowInstance != null)
             {
-                if (_settingsWindowInstance.WindowState == WindowState.Minimized) _settingsWindowInstance.WindowState = WindowState.Normal;
-                _settingsWindowInstance.Activate();
+                if (windowInstance.WindowState == WindowState.Minimized) windowInstance.WindowState = WindowState.Normal;
+                windowInstance.Activate();
                 return;
             }
 
-            _settingsWindowInstance = App.Current.Services.GetRequiredService<SettingsWindow>();
-            _settingsWindowInstance.Owner = this;
-            _settingsWindowInstance.Closed += async (s, args) =>
+            windowInstance = App.Current.Services.GetRequiredService<T>();
+            setInstance(windowInstance);
+            onCreated?.Invoke(windowInstance);
+            
+            windowInstance.Closed += (s, args) =>
             {
-                _settingsWindowInstance = null;
-                _configService.Load();
-                await _viewModel.ApplyConfigToServices();
+                setInstance(null);
+                onClosed?.Invoke();
             };
-            _settingsWindowInstance.Show();
+            windowInstance.Show();
         }
 
-        private void BtnOpenOverlay_Click(object sender, RoutedEventArgs e)
-        {
-            if (_overlayWindowInstance != null)
-            {
-                if (_overlayWindowInstance.WindowState == WindowState.Minimized) _overlayWindowInstance.WindowState = WindowState.Normal;
-                _overlayWindowInstance.Activate();
-                return;
-            }
+        private void BtnOpenSettings_Click(object sender, RoutedEventArgs e) =>
+            OpenOrActivateWindow(
+                () => _settingsWindowInstance,
+                win => _settingsWindowInstance = win,
+                onClosed: async () => 
+                { 
+                    _configService.Load(); 
+                    await _viewModel.ApplyConfigToServices(); 
+                },
+                onCreated: win => win.Owner = this);
 
-            _overlayWindowInstance = App.Current.Services.GetRequiredService<OverlayWindow>();
-            _overlayWindowInstance.Closed += (s, args) => { _overlayWindowInstance = null; };
-            _overlayWindowInstance.Show();
-        }
-        private UserHubWindow _hubWindowInstance;
+        private void BtnOpenOverlay_Click(object sender, RoutedEventArgs e) =>
+            OpenOrActivateWindow(() => _overlayWindowInstance, win => _overlayWindowInstance = win);
 
-        private void BtnOpenHub_Click(object sender, RoutedEventArgs e)
-        {
-            if (_hubWindowInstance != null)
-            {
-                if (_hubWindowInstance.WindowState == WindowState.Minimized) _hubWindowInstance.WindowState = WindowState.Normal;
-                _hubWindowInstance.Activate();
-                return;
-            }
-
-            _hubWindowInstance = App.Current.Services.GetRequiredService<UserHubWindow>();
-            _hubWindowInstance.Closed += (s, args) => { _hubWindowInstance = null; };
-            _hubWindowInstance.Show();
-        }
+        private void BtnOpenHub_Click(object sender, RoutedEventArgs e) =>
+            OpenOrActivateWindow(() => _hubWindowInstance, win => _hubWindowInstance = win);
 
         public void Receive(ShowFlashMessage message)
         {
