@@ -2,7 +2,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
+using VN2Anki.Extensions;
 using VN2Anki.Messages;
 using VN2Anki.Models.Entities;
 using VN2Anki.Services.Interfaces;
@@ -29,11 +31,7 @@ namespace VN2Anki.ViewModels.Hub
         public async Task LoadLibraryAsync()
         {
             var vns = await _dbService.GetAllVisualNovelsAsync();
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
-            {
-                VisualNovels.Clear();
-                foreach (var vn in vns) VisualNovels.Add(vn);
-            });
+            VisualNovels.UpdateFromUIThread(vns);
         }
 
         [RelayCommand]
@@ -41,7 +39,7 @@ namespace VN2Anki.ViewModels.Hub
         {
             if (vn == null) return;
             await _dbService.DeleteVisualNovelAsync(vn);
-            System.Windows.Application.Current.Dispatcher.Invoke(() => VisualNovels.Remove(vn));
+            VisualNovels.RemoveFromUIThread(vn);
         }
 
         [RelayCommand]
@@ -57,25 +55,15 @@ namespace VN2Anki.ViewModels.Hub
             if (vn == null) return;
             Navigation.Push<VnDetailsViewModel>(vm => vm.Initialize(vn));
         }
-        public void Receive(SessionSavedMessage message)
-        {
-            _ = LoadLibraryAsync();
-        }
+
+        public void Receive(SessionSavedMessage message) => _ = LoadLibraryAsync();
+
         public void Receive(VnDeletedMessage message)
         {
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
-            {
-                var itemToRemove = VisualNovels.FirstOrDefault(v => v.Id == message.Value.Id);
-                if (itemToRemove != null)
-                {
-                    VisualNovels.Remove(itemToRemove);
-                }
-            });
+            var itemToRemove = VisualNovels.FirstOrDefault(v => v.Id == message.Value.Id);
+            VisualNovels.RemoveFromUIThread(itemToRemove);
         }
 
-        public void Receive(VnUpdatedMessage message)
-        {
-            _ = LoadLibraryAsync();
-        }
+        public void Receive(VnUpdatedMessage message) => _ = LoadLibraryAsync();
     }
 }

@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
+using VN2Anki.Extensions;
 using VN2Anki.Messages;
 using VN2Anki.Models.Entities;
 using VN2Anki.Services.Interfaces;
@@ -26,11 +27,7 @@ namespace VN2Anki.ViewModels.Hub
         public async Task LoadHistoryAsync()
         {
             var sessions = await _dbService.GetAllSessionsAsync();
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
-            {
-                SessionHistory.Clear();
-                foreach (var s in sessions) SessionHistory.Add(s);
-            });
+            SessionHistory.UpdateFromUIThread(sessions);
         }
 
         public void Receive(SessionSavedMessage message) => _ = LoadHistoryAsync();
@@ -40,7 +37,7 @@ namespace VN2Anki.ViewModels.Hub
         {
             if (session == null) return;
             await _dbService.DeleteSessionAsync(session);
-            System.Windows.Application.Current.Dispatcher.Invoke(() => SessionHistory.Remove(session));
+            SessionHistory.RemoveFromUIThread(session);
         }
     }
 }
