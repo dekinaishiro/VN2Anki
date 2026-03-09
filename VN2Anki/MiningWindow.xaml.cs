@@ -59,6 +59,8 @@ namespace VN2Anki
             StopAudio();
 
             _instance = null;
+            _onMineAction = null;
+            _onDeleteAction = null;
             base.OnClosed(e);
         }
 

@@ -143,8 +143,10 @@ namespace VN2Anki
             string cssBgColor = WpfHexToCss(conf.BgColor);
             string cssFontColor = WpfHexToCss(conf.FontColor);
 
-            string appDir = AppDomain.CurrentDomain.BaseDirectory;
-            string htmlPath = Path.Combine(appDir, "overlay.html");
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string vn2ankiFolder = Path.Combine(appData, "VN2Anki");
+            if (!Directory.Exists(vn2ankiFolder)) Directory.CreateDirectory(vn2ankiFolder);
+            string htmlPath = Path.Combine(vn2ankiFolder, "overlay.html");
 
             string htmlBase = $@"
             <!DOCTYPE html>
@@ -207,10 +209,18 @@ namespace VN2Anki
 
         private async void InitializeWebViewAsync()
         {
-            var options = new CoreWebView2EnvironmentOptions { AreBrowserExtensionsEnabled = true };
-            string userDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VN2Anki", "WebView2Data");
-            var environment = await CoreWebView2Environment.CreateAsync(null, userDataFolder, options);
-            await webView.EnsureCoreWebView2Async(environment);
+            try
+            {
+                var options = new CoreWebView2EnvironmentOptions { AreBrowserExtensionsEnabled = true };
+                string userDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VN2Anki", "WebView2Data");
+                var environment = await CoreWebView2Environment.CreateAsync(null, userDataFolder, options);
+                await webView.EnsureCoreWebView2Async(environment);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Erro ao inicializar o WebView2: {ex.Message}\nVerifique se o WebView2 Runtime está instalado e se o aplicativo tem permissão de escrita na pasta AppData.", "Erro Crítico", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
 
             LoadExtensions();
 
@@ -261,7 +271,9 @@ namespace VN2Anki
                 catch { }
             };
 
-            webView.CoreWebView2.SetVirtualHostNameToFolderMapping("vn.local", AppDomain.CurrentDomain.BaseDirectory, CoreWebView2HostResourceAccessKind.Allow);
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string vn2ankiFolder = Path.Combine(appData, "VN2Anki");
+            webView.CoreWebView2.SetVirtualHostNameToFolderMapping("vn.local", vn2ankiFolder, CoreWebView2HostResourceAccessKind.Allow);
             webView.CoreWebView2.Navigate($"http://vn.local/overlay.html?t={DateTime.Now.Ticks}");
 
             webView.NavigationCompleted += (s, e) =>
