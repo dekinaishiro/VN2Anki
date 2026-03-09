@@ -7,14 +7,18 @@ using System.Threading.Tasks;
 using VN2Anki.Messages;
 using VN2Anki.Models;
 using VN2Anki.Services;
+using VN2Anki.Services.Interfaces;
 
 namespace VN2Anki.ViewModels
 {
     public partial class SettingsViewModel : ObservableObject
     {
         private readonly IConfigurationService _configService;
+        private readonly IBridgeService _bridgeService;
         private readonly AudioEngine _audioEngine;
         private readonly VideoEngine _videoEngine;
+        private readonly int _initialBridgePort;
+        private readonly bool _initialBridgeEnabled;
         public SessionTracker Tracker { get; }
 
         [ObservableProperty]
@@ -27,14 +31,17 @@ namespace VN2Anki.ViewModels
         private ObservableCollection<VideoEngine.VideoWindowItem> _videoWindows = new();
 
         public bool IsVideoSelectionEnabled => !Tracker.IsTracking && Tracker.ValidCharacterCount == 0 && Tracker.Elapsed.TotalSeconds == 0;
-        public SettingsViewModel(IConfigurationService configService, AudioEngine audioEngine, VideoEngine videoEngine, SessionTracker tracker)
+        public SettingsViewModel(IConfigurationService configService, IBridgeService bridgeService, AudioEngine audioEngine, VideoEngine videoEngine, SessionTracker tracker)
         {
             _configService = configService;
+            _bridgeService = bridgeService;
             _audioEngine = audioEngine;
             _videoEngine = videoEngine;
             Tracker = tracker;
 
             Config = _configService.CurrentConfig;
+            _initialBridgePort = Config.Anki.YomitanBridgePort;
+            _initialBridgeEnabled = Config.Anki.EnableYomitanBridge;
 
             Tracker.PropertyChanged += (s, e) =>
             {
@@ -70,6 +77,11 @@ namespace VN2Anki.ViewModels
         private void Save()
         {
             _configService.Save();
+            
+            if (_initialBridgePort != Config.Anki.YomitanBridgePort || _initialBridgeEnabled != Config.Anki.EnableYomitanBridge)
+            {
+                _bridgeService.Restart(Config.Anki.YomitanBridgePort);
+            }
         }
         public void Receive(SessionEndedMessage message)
         {

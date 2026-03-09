@@ -49,6 +49,7 @@ namespace VN2Anki
             });
 
             services.AddSingleton<IConfigurationService, ConfigurationService>();
+            services.AddSingleton<IBridgeService, YomitanBridgeService>();
 
             services.AddSingleton<AudioEngine>();
             services.AddTransient<IAudioPlaybackService, AudioPlaybackService>();
@@ -132,6 +133,7 @@ namespace VN2Anki
 
             // Force initialization of background services
             _ = Services.GetRequiredService<DiscordRpcService>();
+            _ = Services.GetRequiredService<IBridgeService>();
 
             // Resolve and show MainWindow via DI
             var mainWindow = Services.GetRequiredService<MainWindow>();
