@@ -113,7 +113,10 @@ namespace VN2Anki.ViewModels
 
             _processMonitor.VnProcessStarted += (s, e) =>
             {
-                _ = TryAutoLinkAsync(e.VisualNovel.ProcessName);
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    _ = TryAutoLinkAsync(e.VisualNovel.ProcessName);
+                });
             };
 
             WeakReferenceMessenger.Default.RegisterAll(this);

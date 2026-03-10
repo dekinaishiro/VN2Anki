@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
@@ -12,6 +13,8 @@ namespace VN2Anki.Services
     {
         private readonly IConfigurationService _configService;
         private readonly ILogger<ExternalToolService> _logger;
+        private readonly HashSet<int> _handledProcessIds = new HashSet<int>();
+        private readonly object _lock = new object();
 
         public ExternalToolService(IConfigurationService configService, ILogger<ExternalToolService> logger)
         {
@@ -33,6 +36,16 @@ namespace VN2Anki.Services
                 {
                     _logger.LogWarning("LaunchHookerAsync aborted: Invalid ProcessId ({ProcessId}) for VN {Title}.", processId, vn.Title);
                     return;
+                }
+
+                lock (_lock)
+                {
+                    if (_handledProcessIds.Contains(processId))
+                    {
+                        _logger.LogInformation("Hooker launch already handled for ProcessId {ProcessId}. Skipping duplicate request.", processId);
+                        return;
+                    }
+                    _handledProcessIds.Add(processId);
                 }
 
                 var config = _configService.CurrentConfig.Hook;
@@ -114,6 +127,16 @@ namespace VN2Anki.Services
 
             try
             {
+                string processName = Path.GetFileNameWithoutExtension(exePath);
+                var existingProcesses = Process.GetProcessesByName(processName);
+                
+                if (existingProcesses.Length > 0)
+                {
+                    _logger.LogInformation("LunaTranslator is already running. Skipping new instance launch.");
+                    foreach (var p in existingProcesses) p.Dispose();
+                    return;
+                }
+
                 _logger.LogInformation("Starting LunaTranslator without arguments (Auto-attach relies on Luna's internal settings).");
                 var startInfo = new ProcessStartInfo
                 {
