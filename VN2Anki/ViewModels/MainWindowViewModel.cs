@@ -91,8 +91,9 @@ namespace VN2Anki.ViewModels
         private readonly IWindowService _windowService;
         private readonly IGameLauncherService _gameLauncher;
         private readonly IVnDatabaseService _vnDatabaseService;
+        private readonly IProcessMonitoringService _processMonitor;
 
-        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiExportService ankiExportService, AnkiHandler ankiHandler, VideoEngine videoEngine, IWindowService windowService, ISessionManagerService sessionManager, IGameLauncherService gameLauncher, IVnDatabaseService vnDatabaseService)
+        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiExportService ankiExportService, AnkiHandler ankiHandler, VideoEngine videoEngine, IWindowService windowService, ISessionManagerService sessionManager, IGameLauncherService gameLauncher, IVnDatabaseService vnDatabaseService, IProcessMonitoringService processMonitor)
         {
             Tracker = tracker;
             _miningService = miningService;
@@ -104,10 +105,16 @@ namespace VN2Anki.ViewModels
             _sessionManager = sessionManager;
             _gameLauncher = gameLauncher;
             _vnDatabaseService = vnDatabaseService;
+            _processMonitor = processMonitor;
 
             _idleWindowCheckTimer = new DispatcherTimer { Interval = System.TimeSpan.FromSeconds(2) };
             _idleWindowCheckTimer.Tick += IdleWindowCheckTimer_Tick;
             _idleWindowCheckTimer.Start();
+
+            _processMonitor.VnProcessStarted += (s, e) =>
+            {
+                _ = TryAutoLinkAsync(e.VisualNovel.ProcessName);
+            };
 
             WeakReferenceMessenger.Default.RegisterAll(this);
         }
@@ -410,9 +417,24 @@ namespace VN2Anki.ViewModels
             }
             else
             {
-                if (string.IsNullOrEmpty(_configService.CurrentConfig.Media.VideoWindow))
+                var configWin = _configService.CurrentConfig.Media.VideoWindow;
+
+                if (string.IsNullOrEmpty(configWin))
                 {
                    CurrentVN = null;
+                }
+                else if (CurrentVN != null)
+                {
+                    // If we have a CurrentVN but the current config video window doesn't match its ProcessName or ExecutablePath,
+                    // it means the user manually selected a different, unlinked window. We must unlink the session visually.
+                    if (!string.Equals(CurrentVN.ProcessName, configWin, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        string exeName = !string.IsNullOrEmpty(CurrentVN.ExecutablePath) ? System.IO.Path.GetFileName(CurrentVN.ExecutablePath) : "";
+                        if (string.IsNullOrEmpty(exeName) || !string.Equals(exeName, configWin, System.StringComparison.OrdinalIgnoreCase))
+                        {
+                            CurrentVN = null;
+                        }
+                    }
                 }
             }
             Application.Current.Dispatcher.Invoke(() => UpdateVisualCurrentVN());
@@ -425,19 +447,19 @@ namespace VN2Anki.ViewModels
         }
 
         [RelayCommand]
-        private void SelectVideo()
+        private async Task SelectVideoAsync()
         {
             var settings = App.Current.Services.GetRequiredService<SettingsWindow>();
             settings.ShowDialog();
-            UpdateVisualCurrentVN();
+            await ApplyConfigToServices();
         }
 
         [RelayCommand]
-        private void SelectAudio()
+        private async Task SelectAudioAsync()
         {
             var settings = App.Current.Services.GetRequiredService<SettingsWindow>();
             settings.ShowDialog();
-            UpdateVisualCurrentVN();
+            await ApplyConfigToServices();
         }
 
         [RelayCommand]

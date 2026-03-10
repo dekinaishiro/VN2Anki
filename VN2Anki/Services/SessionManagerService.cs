@@ -210,12 +210,16 @@ namespace VN2Anki.Services
 
             VisualNovel selectedVn = null;
 
+            var silentSync = _configService.CurrentConfig.Session.SilentSync;
+
             // the UI prompts must happen in the UI thread. IDispatcherService allows safe invocation.
             _dispatcherService.Invoke(() =>
             {
                 if (matchedVns.Count == 1)
                 {
-                    if (string.IsNullOrEmpty(specificProcessName))
+                    // If SilentSync is disabled, we always ask for confirmation
+                    // unless specificProcessName was provided by a manual action (which we don't have a flag for yet, but let's assume if it comes from an automated event it should ask)
+                    if (!silentSync)
                     {
                         bool result = _windowService.ShowConfirmation(
                             string.Format(Locales.Strings.MsgConfirmVnDetected, matchedVns[0].Title),
