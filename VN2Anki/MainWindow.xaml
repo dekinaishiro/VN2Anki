@@ -87,7 +87,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="30"/>
                     <ColumnDefinition Width="30"/>
                     <ColumnDefinition Width="30"/>
                     <ColumnDefinition Width="30"/>
@@ -97,13 +97,14 @@
                 <Button x:Name="BtnToggleBuffer" Content="{Binding BufferBtnText}" Background="{Binding BufferBtnBackground}" Grid.Column="0" Margin="2" Padding="8,5" FontWeight="Bold" Foreground="White" BorderThickness="0" Command="{Binding ToggleBufferCommand}" ToolTip="Toggle Buffer"/>
                 <Button Content="END" Background="Orange" Grid.Column="1" Margin="2" Padding="8,5" FontWeight="Bold" Foreground="White" BorderThickness="0" Click="BtnEndSession_Click" ToolTip="Finish Season"/>
                 <Button x:Name="BtnMiniQuickAdd" Content="ADD" Background="#FF12A0DC" Grid.Column="2" Margin="2" Padding="10,5,10,5" FontWeight="Bold" Foreground="White" BorderThickness="0" Command="{Binding MiniQuickAddCommand}" ToolTip="Update with current sentence"/>
-                <Button x:Name="BtnMiniList" Content="LIST" Background="#FF642EC8" Grid.Column="3" Margin="2" Padding="8,5" FontWeight="Bold" Foreground="White" BorderThickness="0" Click="BtnOpenHistory_Click" ToolTip="History"/>
-
-                <Button Background="#FF929292" Grid.Column="4" Margin="2" BorderThickness="0" Foreground="White"  Click="BtnOpenHub_Click" ToolTip="User Hub">
+                <Button Background="#FF929292" Grid.Column="3" Margin="2" BorderThickness="0" Foreground="White"  Click="BtnOpenHistory_Click" ToolTip="User Hub">
+                    <iconPacks:PackIconMaterial Kind="ViewList" Width="16" Height="16" />
+                </Button>
+                <Button Background="#FF929292" Grid.Column="5" Margin="2" BorderThickness="0" Foreground="White"  Click="BtnOpenHub_Click" ToolTip="User Hub">
                     <iconPacks:PackIconMaterial Kind="AccountCircle" Width="16" Height="16" />
                 </Button>
 
-                <Button Background="#FF929292" Grid.Column="5" Margin="2" BorderThickness="0" Foreground="White" Click="BtnOpenOverlay_Click" ToolTip="Open Overlay">
+                <Button Background="#FF929292" Grid.Column="4" Margin="2" BorderThickness="0" Foreground="White" Click="BtnOpenOverlay_Click" ToolTip="Open Overlay">
                     <iconPacks:PackIconMaterial Kind="Layers" Width="16" Height="16" />
                 </Button>
                 

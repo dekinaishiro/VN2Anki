@@ -31,6 +31,8 @@ namespace VN2Anki.ViewModels
         private ObservableCollection<VideoEngine.VideoWindowItem> _videoWindows = new();
 
         public bool IsVideoSelectionEnabled => !Tracker.IsTracking && Tracker.ValidCharacterCount == 0 && Tracker.Elapsed.TotalSeconds == 0;
+        public bool IsAudioSelectionEnabled => !Tracker.IsTracking; // Lock audio device selection if session is tracking/recording
+
         public SettingsViewModel(IConfigurationService configService, IBridgeService bridgeService, AudioEngine audioEngine, VideoEngine videoEngine, SessionTracker tracker)
         {
             _configService = configService;
@@ -50,6 +52,7 @@ namespace VN2Anki.ViewModels
                     e.PropertyName == nameof(Tracker.Elapsed))
                 {
                     OnPropertyChanged(nameof(IsVideoSelectionEnabled));
+                    OnPropertyChanged(nameof(IsAudioSelectionEnabled));
                 }
             };
         }
@@ -88,6 +91,7 @@ namespace VN2Anki.ViewModels
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
                 OnPropertyChanged(nameof(IsVideoSelectionEnabled));
+                OnPropertyChanged(nameof(IsAudioSelectionEnabled));
             });
         }
 

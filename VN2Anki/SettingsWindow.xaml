@@ -126,8 +126,8 @@
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblAudioSource}" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboAudio" Grid.Row="0" Grid.Column="1" ItemsSource="{Binding AudioDevices}" DisplayMemberPath="DisplayName" SelectedValuePath="Name" SelectedValue="{Binding Config.Media.AudioDevice}"/>
-                        <Button Style="{StaticResource StandardButton}" Grid.Row="0" Grid.Column="2" Width="35" Height="35" Click="BtnRefreshAudio_Click" Padding="0">
+                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboAudio" Grid.Row="0" Grid.Column="1" ItemsSource="{Binding AudioDevices}" DisplayMemberPath="DisplayName" SelectedValuePath="Name" SelectedValue="{Binding Config.Media.AudioDevice}" IsEnabled="{Binding IsAudioSelectionEnabled}"/>
+                        <Button Style="{StaticResource StandardButton}" Grid.Row="0" Grid.Column="2" Width="35" Height="35" Click="BtnRefreshAudio_Click" Padding="0" IsEnabled="{Binding IsAudioSelectionEnabled}">
                             <TextBlock Text="🔄" FontSize="18"/>
                         </Button>
 

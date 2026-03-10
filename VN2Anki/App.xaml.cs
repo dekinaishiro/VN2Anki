@@ -67,6 +67,8 @@ namespace VN2Anki
             services.AddSingleton<MediaService>();
             services.AddSingleton<AnkiExportService>();
 
+            services.AddSingleton<IProcessMonitoringService, ProcessMonitoringService>();
+
             services.AddSingleton<MiningService>();
             services.AddSingleton<ISessionManagerService, SessionManagerService>();
             services.AddSingleton<IGameLauncherService, GameLauncherService>();
@@ -134,6 +136,9 @@ namespace VN2Anki
             // Force initialization of background services
             _ = Services.GetRequiredService<DiscordRpcService>();
             _ = Services.GetRequiredService<IBridgeService>();
+            
+            var processMonitor = Services.GetRequiredService<IProcessMonitoringService>();
+            processMonitor.StartMonitoring();
 
             // Resolve and show MainWindow via DI
             var mainWindow = Services.GetRequiredService<MainWindow>();
