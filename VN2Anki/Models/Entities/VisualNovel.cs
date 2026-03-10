@@ -13,6 +13,7 @@ namespace VN2Anki.Models.Entities
         public string? VndbId { get; set; }
         public string? CoverImagePath { get; set; }
         public string? CoverImageUrl { get; set; }
+        public string? Architecture { get; set; }
 
         // time & stats
         public int TotalTimePlayedSeconds { get; set; }

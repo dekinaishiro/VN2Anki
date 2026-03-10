@@ -118,6 +118,10 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -185,15 +189,30 @@
 
                         <CheckBox x:Name="ChkOpenSettings" Content="{x:Static loc:Strings.LblOpenSettingsOnStartup}" Foreground="White" Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2" Margin="5,15,5,5" VerticalAlignment="Center" IsChecked="{Binding Config.General.OpenSettingsOnStartup}"/>
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Text Hook Source:" Grid.Row="9" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboHookType" Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="2" SelectedValuePath="Tag" SelectedValue="{Binding Config.Hook.ActiveHookType}" SelectionChanged="ComboHookType_SelectionChanged">
+                        <Border Grid.Row="9" Grid.ColumnSpan="3" BorderBrush="#333333" BorderThickness="0,1,0,0" Margin="0,15,0,10" />
+
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Auto Launch Hooker:" Grid.Row="10" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <ComboBox Style="{StaticResource StandardComboBox}" Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="2" SelectedValuePath="Tag" SelectedValue="{Binding Config.Hook.AutoLaunchHooker}">
+                            <ComboBoxItem Content="None" Tag="None"/>
+                            <ComboBoxItem Content="Textractor" Tag="Textractor"/>
+                            <ComboBoxItem Content="LunaTranslator" Tag="LunaTranslator"/>
+                        </ComboBox>
+
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Textractor Base Path:" Grid.Row="11" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <TextBox Grid.Row="11" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5" Text="{Binding Config.Hook.TextractorBasePath}" ToolTip="Folder containing x86 and x64 subfolders"/>
+
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="LunaTranslator Path:" Grid.Row="12" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <TextBox Grid.Row="12" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5" Text="{Binding Config.Hook.LunaTranslatorPath}" ToolTip="Direct path to LunaTranslator.exe"/>
+
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Text Hook Source:" Grid.Row="13" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboHookType" Grid.Row="13" Grid.Column="1" Grid.ColumnSpan="2" SelectedValuePath="Tag" SelectedValue="{Binding Config.Hook.ActiveHookType}" SelectionChanged="ComboHookType_SelectionChanged">
                             <ComboBoxItem Content="Clipboard" Tag="0"/>
                             <ComboBoxItem Content="WebSocket (Luna)" Tag="1"/>
                             <ComboBoxItem Content="WebSocket (Textractor)" Tag="2"/>
                         </ComboBox>
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" x:Name="LblWsUrl" Text="WebSocket URL:" Grid.Row="10" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <TextBox x:Name="TxtWsUrl" Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5" Text="{Binding Config.Hook.WebSocketUrl}" ToolTip="Luna: ws://localhost:2333/api/ws/text/origin | Textractor: ws://localhost:6677"/>
+                        <TextBlock Style="{StaticResource StandardTextBlock}" x:Name="LblWsUrl" Text="WebSocket URL:" Grid.Row="14" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <TextBox x:Name="TxtWsUrl" Grid.Row="14" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5" Text="{Binding Config.Hook.WebSocketUrl}" ToolTip="Luna: ws://localhost:2333/api/ws/text/origin | Textractor: ws://localhost:6677"/>
                     </Grid>
                 </ScrollViewer>
             </TabItem>

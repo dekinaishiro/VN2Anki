@@ -68,6 +68,44 @@ namespace VN2Anki.ViewModels.Hub
             _ = InitializeAsync();
         }
 
+        private string GetExecutableArchitecture(string filePath)
+        {
+            if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath)) return "x86"; // default fallback
+
+            try
+            {
+                using (var stream = new System.IO.FileStream(filePath, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.ReadWrite))
+                using (var reader = new System.IO.BinaryReader(stream))
+                {
+                    // Check DOS header magic number "MZ"
+                    if (reader.ReadUInt16() != 0x5A4D) return "x86";
+
+                    // Go to PE header offset
+                    stream.Seek(0x3C, System.IO.SeekOrigin.Begin);
+                    int peHeaderOffset = reader.ReadInt32();
+
+                    // Go to PE header
+                    stream.Seek(peHeaderOffset, System.IO.SeekOrigin.Begin);
+
+                    // Check PE header signature "PE\0\0"
+                    if (reader.ReadUInt32() != 0x00004550) return "x86";
+
+                    // Read Machine type
+                    ushort machineType = reader.ReadUInt16();
+
+                    // 0x8664 = IMAGE_FILE_MACHINE_AMD64 (64-bit)
+                    // 0x014C = IMAGE_FILE_MACHINE_I386 (32-bit)
+                    if (machineType == 0x8664) return "x64";
+                }
+            }
+            catch (System.Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to read PE Header: {ex.Message}");
+            }
+
+            return "x86";
+        }
+
         public async Task InitializeAsync()
         {
             TargetProcessName = _configService.CurrentConfig.Media.VideoWindow;
@@ -181,6 +219,7 @@ namespace VN2Anki.ViewModels.Hub
 
             IsLoading = true;
             string coverPath = await _vndbService.DownloadCoverAsync(SelectedVndbResult.Image?.Url, SelectedVndbResult.Id);
+            string autoArch = GetExecutableArchitecture(TargetExecutablePath);
 
             var vn = new VisualNovel
             {
@@ -190,7 +229,8 @@ namespace VN2Anki.ViewModels.Hub
                 ExecutablePath = TargetExecutablePath,
                 VndbId = SelectedVndbResult.Id,
                 CoverImagePath = coverPath,
-                CoverImageUrl = SelectedVndbResult.Image?.Url
+                CoverImageUrl = SelectedVndbResult.Image?.Url,
+                Architecture = autoArch
             };
 
             await _dbService.AddVisualNovelAsync(vn);

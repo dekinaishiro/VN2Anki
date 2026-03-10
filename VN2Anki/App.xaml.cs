@@ -73,6 +73,7 @@ namespace VN2Anki
             services.AddSingleton<ISessionManagerService, SessionManagerService>();
             services.AddSingleton<IGameLauncherService, GameLauncherService>();
             services.AddSingleton<IVnDatabaseService, VnDatabaseService>();
+            services.AddSingleton<IExternalToolService, ExternalToolService>();
 
             services.AddTransient<VN2Anki.ViewModels.MainWindowViewModel>();
             services.AddTransient<ViewModels.SettingsViewModel>();

@@ -71,7 +71,8 @@ namespace VN2Anki.Services
                         {
                             Title = p.MainWindowTitle,
                             ProcessName = p.ProcessName,
-                            ExecutablePath = exePath
+                            ExecutablePath = exePath,
+                            ProcessId = p.Id
                         });
                     }
                 }
@@ -145,6 +146,7 @@ namespace VN2Anki.Services
             public string Title { get; set; }
             public string ProcessName { get; set; }
             public string ExecutablePath { get; set; }
+            public int ProcessId { get; set; }
             public string DisplayName => string.IsNullOrWhiteSpace(Title) ? ProcessName : $"{Title} ({ProcessName}.exe)";
         }
     }

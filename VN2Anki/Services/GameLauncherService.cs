@@ -14,12 +14,14 @@ namespace VN2Anki.Services
         private readonly VideoEngine _videoEngine;
         private readonly IConfigurationService _configService;
         private readonly MiningService _miningService;
+        private readonly IExternalToolService _externalToolService;
 
-        public GameLauncherService(VideoEngine videoEngine, IConfigurationService configService, MiningService miningService)
+        public GameLauncherService(VideoEngine videoEngine, IConfigurationService configService, MiningService miningService, IExternalToolService externalToolService)
         {
             _videoEngine = videoEngine;
             _configService = configService;
             _miningService = miningService;
+            _externalToolService = externalToolService;
         }
 
         public async Task<GameLaunchResult> LaunchAndHookAsync(VisualNovel vn, CancellationToken token)
@@ -63,6 +65,11 @@ namespace VN2Anki.Services
 
                         _miningService.TargetVideoWindow = targetWin.ProcessName;
                         
+                        if (targetWin.ProcessId > 0)
+                        {
+                            _ = _externalToolService.LaunchHookerAsync(vn, targetWin.ProcessId);
+                        }
+
                         return GameLaunchResult.Success;
                     }
                 }

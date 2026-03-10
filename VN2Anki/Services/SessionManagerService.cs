@@ -21,6 +21,7 @@ namespace VN2Anki.Services
         private readonly IVnDatabaseService _vnDatabaseService;
         private readonly VideoEngine _videoEngine;
         private readonly IDispatcherService _dispatcherService;
+        private readonly IExternalToolService _externalToolService;
 
         public bool IsBufferActive { get; set; }
 
@@ -34,7 +35,8 @@ namespace VN2Anki.Services
             IServiceProvider serviceProvider,
             IVnDatabaseService vnDatabaseService,
             VideoEngine videoEngine,
-            IDispatcherService dispatcherService)
+            IDispatcherService dispatcherService,
+            IExternalToolService externalToolService)
         {
             _tracker = tracker;
             _miningService = miningService;
@@ -44,6 +46,7 @@ namespace VN2Anki.Services
             _vnDatabaseService = vnDatabaseService;
             _videoEngine = videoEngine;
             _dispatcherService = dispatcherService;
+            _externalToolService = externalToolService;
         }
 
         public bool ToggleBuffer(VisualNovel currentVN)
@@ -251,6 +254,11 @@ namespace VN2Anki.Services
                 if (string.IsNullOrEmpty(specificProcessName) && targetWin != null)
                 {
                     WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = string.Format(Locales.Strings.MsgSessionLinked, selectedVn.Title), IsError = false }));
+                }
+
+                if (targetWin != null && targetWin.ProcessId > 0)
+                {
+                     _ = _externalToolService.LaunchHookerAsync(selectedVn, targetWin.ProcessId);
                 }
 
                 return selectedVn;
