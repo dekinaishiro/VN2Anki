@@ -95,13 +95,14 @@ namespace VN2Anki
                     TxtWsUrl.IsEnabled = true;
                     LblWsUrl.Opacity = 1.0;
                     
+                    // Always pull from the specific saved field when switching
                     if (tag == 1) // Luna
                     {
-                        TxtWsUrl.Text = "ws://localhost:2333/api/ws/text/origin";
+                        TxtWsUrl.Text = _viewModel.Config.Hook.LunaWebSocketUrl;
                     }
                     else if (tag == 2) // Textractor
                     {
-                        TxtWsUrl.Text = "ws://localhost:6677";
+                        TxtWsUrl.Text = _viewModel.Config.Hook.TextractorWebSocketUrl;
                     }
                 }
             }
@@ -114,6 +115,17 @@ namespace VN2Anki
             overlayConfig.FontColor = PickerFontColor.SelectedColor.ToString();
             overlayConfig.OverlayBgColor = PickerOverlayBgColor.SelectedColor.ToString();
             overlayConfig.CustomExtensions = ListExtensions.Items.Cast<string>().ToList();
+
+            // Commit the current UI URL to the specific source field
+            if (ComboHookType.SelectedItem is ComboBoxItem item)
+            {
+                int tag = int.Parse(item.Tag.ToString());
+                if (tag == 1) _viewModel.Config.Hook.LunaWebSocketUrl = TxtWsUrl.Text;
+                else if (tag == 2) _viewModel.Config.Hook.TextractorWebSocketUrl = TxtWsUrl.Text;
+
+                // Also update the active URL that the WebsocketHook service actually reads
+                _viewModel.Config.Hook.WebSocketUrl = TxtWsUrl.Text;
+            }
 
             _configService.Save();
 

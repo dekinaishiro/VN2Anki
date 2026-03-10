@@ -58,7 +58,9 @@ namespace VN2Anki.Models
     {
         // 0 = Clipboard, 1 = WebSocket (Luna), 2 = Textractor
         public int ActiveHookType { get; set; } = 0;
-        public string WebSocketUrl { get; set; } = "ws://localhost:2333"; 
+        public string WebSocketUrl { get; set; } = "ws://localhost:2333/api/ws/text/origin";
+        public string LunaWebSocketUrl { get; set; } = "ws://localhost:2333/api/ws/text/origin";
+        public string TextractorWebSocketUrl { get; set; } = "ws://localhost:6677";
 
         // Hooker Automation
         public string AutoLaunchHooker { get; set; } = "None";

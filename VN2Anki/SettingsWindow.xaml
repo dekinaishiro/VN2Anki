@@ -122,6 +122,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -161,7 +162,7 @@
                         </TextBox>
 
                         <CheckBox x:Name="ChkDynamicTimeout" Content="{x:Static loc:Strings.LblDynamicTimeout}" Foreground="White" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" VerticalAlignment="Center" IsChecked="{Binding Config.Session.UseDynamicTimeout}"/>
-                        <CheckBox x:Name="ChkSilentSync" Content="Vincular sessões automaticamente (Silent Sync)" Foreground="White" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="5,0,5,0" HorizontalAlignment="Right" VerticalAlignment="Center" IsChecked="{Binding Config.Session.SilentSync}"/>
+                        <CheckBox x:Name="ChkSilentSync" Content="Vincular sessões automaticamente (Silent Sync)" Foreground="White" Grid.Row="15" Grid.Column="1" Grid.ColumnSpan="2" Margin="5,0,5,0" HorizontalAlignment="Right" VerticalAlignment="Center" IsChecked="{Binding Config.Session.SilentSync}"/>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblLanguage}" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
                         <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboLanguage" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="ComboLanguage_SelectionChanged" SelectedValuePath="Tag" SelectedValue="{Binding Config.General.Language}">
@@ -253,10 +254,10 @@
                         <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboFieldImage" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" SelectedValue="{Binding Config.Anki.ImageField}"/>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="AnkiConnect URL:" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <TextBox x:Name="TxtAnkiUrl" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5" Text="{Binding Config.Anki.Url}"/>
+                        <TextBox x:Name="TxtAnkiUrl" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5" Text="{Binding Config.Anki.Url, UpdateSourceTrigger=PropertyChanged}"/>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblTimeout}" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <TextBox x:Name="TxtAnkiTimeout" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5" Text="{Binding Config.Anki.TimeoutSeconds}"/>
+                        <TextBox x:Name="TxtAnkiTimeout" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5" Text="{Binding Config.Anki.TimeoutSeconds, UpdateSourceTrigger=PropertyChanged}"/>
 
                         <!-- Yomitan Bridge Settings -->
                         <Border Grid.Row="6" Grid.ColumnSpan="3" BorderBrush="#333333" BorderThickness="0,1,0,0" Margin="0,15,0,10" />
@@ -264,7 +265,7 @@
                         <CheckBox x:Name="ChkEnableYomitanBridge" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="3" Content="{x:Static loc:Strings.LblEnableYomitanBridge}" IsChecked="{Binding Config.Anki.EnableYomitanBridge}" Margin="5,0,5,10" Foreground="White" />
                         
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblYomitanBridgePort}" Grid.Row="8" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <TextBox x:Name="TxtYomitanBridgePort" Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5" Text="{Binding Config.Anki.YomitanBridgePort}"/>
+                        <TextBox x:Name="TxtYomitanBridgePort" Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5" Text="{Binding Config.Anki.YomitanBridgePort, UpdateSourceTrigger=PropertyChanged}"/>
                     </Grid>
                 </ScrollViewer>
             </TabItem>
