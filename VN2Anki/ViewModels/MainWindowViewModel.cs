@@ -69,6 +69,22 @@ namespace VN2Anki.ViewModels
         [ObservableProperty]
         private Brush _manualLinkColor = Brushes.Teal;
 
+        // Semaphore properties
+        [ObservableProperty]
+        private string _videoIconKind = "MonitorOff";
+        [ObservableProperty]
+        private Brush _videoIconColor = Brushes.Crimson;
+
+        [ObservableProperty]
+        private string _audioIconKind = "VolumeOff";
+        [ObservableProperty]
+        private Brush _audioIconColor = Brushes.Crimson;
+
+        [ObservableProperty]
+        private string _linkIconKind = "LinkVariantOff";
+        [ObservableProperty]
+        private Brush _linkIconColor = Brushes.White;
+
         private readonly DispatcherTimer _idleWindowCheckTimer;
 
         private bool _isFirstLoad = true;
@@ -304,35 +320,85 @@ namespace VN2Anki.ViewModels
             ManualLinkColor = CurrentVN != null
                 ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#DC3545"))
                 : new SolidColorBrush((Color)ColorConverter.ConvertFromString("#28A745"));
+
+            var videoSource = _configService.CurrentConfig.Media.VideoWindow;
+
             if (CurrentVN != null)
             {
                 DisplayVnTitle = CurrentVN.Title;
                 VnTitleColor = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#007ACC"));
-                return;
             }
-
-            var videoSource = _configService.CurrentConfig.Media.VideoWindow;
-
-            if (string.IsNullOrEmpty(videoSource))
+            else if (string.IsNullOrEmpty(videoSource))
             {
                 DisplayVnTitle = "No Video Source";
                 VnTitleColor = Brushes.Crimson;
-                return;
-            }
-
-            var windows = _videoEngine.GetWindows();
-            var targetWin = windows.FirstOrDefault(w => w.ProcessName == videoSource);
-
-            if (targetWin != null)
-            {
-                DisplayVnTitle = !string.IsNullOrWhiteSpace(targetWin.Title) ? targetWin.Title : targetWin.ProcessName;
             }
             else
             {
-                DisplayVnTitle = "No Video Source";
+                var windows = _videoEngine.GetWindows();
+                var targetWin = windows.FirstOrDefault(w => w.ProcessName == videoSource);
+
+                if (targetWin != null)
+                {
+                    DisplayVnTitle = !string.IsNullOrWhiteSpace(targetWin.Title) ? targetWin.Title : targetWin.ProcessName;
+                }
+                else
+                {
+                    DisplayVnTitle = "No Video Source";
+                }
+
+                VnTitleColor = Brushes.Crimson;
             }
 
-            VnTitleColor = Brushes.Crimson;
+            UpdateSemaphoreState();
+        }
+
+        private void UpdateSemaphoreState()
+        {
+            var config = _configService.CurrentConfig;
+            bool hasVideo = !string.IsNullOrEmpty(config.Media.VideoWindow);
+            bool hasAudio = !string.IsNullOrEmpty(config.Media.AudioDevice);
+
+            // Video
+            if (hasVideo)
+            {
+                VideoIconKind = "Monitor";
+                VideoIconColor = Brushes.LimeGreen;
+            }
+            else
+            {
+                VideoIconKind = "MonitorOff";
+                VideoIconColor = Brushes.Crimson;
+            }
+
+            // Audio
+            if (hasAudio)
+            {
+                AudioIconKind = "VolumeHigh";
+                AudioIconColor = Brushes.LimeGreen;
+            }
+            else
+            {
+                AudioIconKind = "VolumeOff";
+                AudioIconColor = Brushes.Crimson;
+            }
+
+            // Link
+            if (!hasVideo)
+            {
+                LinkIconKind = "LinkVariantOff";
+                LinkIconColor = Brushes.White; // Grey background with white icon, unselectable effectively
+            }
+            else if (CurrentVN != null)
+            {
+                LinkIconKind = "LinkVariant";
+                LinkIconColor = Brushes.LimeGreen;
+            }
+            else
+            {
+                LinkIconKind = "LinkVariantOff";
+                LinkIconColor = Brushes.Crimson;
+            }
         }
 
         public async Task TryAutoLinkAsync(string specificProcessName = null)
@@ -359,6 +425,22 @@ namespace VN2Anki.ViewModels
         }
 
         [RelayCommand]
+        private void SelectVideo()
+        {
+            var settings = App.Current.Services.GetRequiredService<SettingsWindow>();
+            settings.ShowDialog();
+            UpdateVisualCurrentVN();
+        }
+
+        [RelayCommand]
+        private void SelectAudio()
+        {
+            var settings = App.Current.Services.GetRequiredService<SettingsWindow>();
+            settings.ShowDialog();
+            UpdateVisualCurrentVN();
+        }
+
+        [RelayCommand]
         private async Task ManualLinkActionAsync()
         {
             if (IsBufferActive || Tracker.ValidCharacterCount > 0 || Tracker.Elapsed.TotalSeconds > 0)
@@ -367,11 +449,12 @@ namespace VN2Anki.ViewModels
                 return;
             }
 
+            var config = _configService.CurrentConfig;
+
             if (CurrentVN != null)
             {
                 CurrentVN = null; // safe manual unlinking
 
-                var config = _configService.CurrentConfig;
                 config.Media.VideoWindow = string.Empty;
                 _configService.Save();
                 _miningService.TargetVideoWindow = string.Empty;
@@ -379,7 +462,12 @@ namespace VN2Anki.ViewModels
             }
             else
             {
-                var videoSource = _configService.CurrentConfig.Media.VideoWindow;
+                var videoSource = config.Media.VideoWindow;
+                if (string.IsNullOrEmpty(videoSource))
+                {
+                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Selecione Fonte de Vídeo primeiro!", IsError = true }));
+                    return;
+                }
 
                 var addWindow = App.Current.Services.GetRequiredService<AddVnWindow>();
                 var vm = addWindow.DataContext as VN2Anki.ViewModels.Hub.AddVnViewModel;
@@ -387,15 +475,9 @@ namespace VN2Anki.ViewModels
                 // context flag
                 vm.IsOpenedFromLibrary = false;
 
-                if (!string.IsNullOrEmpty(videoSource))
-                {
-                    var matchWin = vm.OpenWindows.FirstOrDefault(w => w.BaseItem.ProcessName == videoSource);
-                    if (matchWin != null) vm.SelectedWindow = matchWin;
-                }
-
                 if (addWindow.ShowDialog() == true)
                 {
-                    var processToLink = vm.SelectedWindow?.BaseItem.ProcessName;
+                    var processToLink = vm.TargetProcessName;
                     if (!string.IsNullOrEmpty(processToLink))
                     {
                         await TryAutoLinkAsync(processToLink);

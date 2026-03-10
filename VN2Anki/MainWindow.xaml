@@ -53,20 +53,24 @@
                                TextTrimming="CharacterEllipsis"/>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button Command="{Binding AutoSyncActionCommand}" 
-                                Foreground="White" Background="#007ACC" BorderThickness="0" 
-                                Cursor="Hand" Margin="0,0,8,0" Padding="5,4"
-                                ToolTip="Procurar e Vincular VN (Auto-Sync)">
-                            <iconPacks:PackIconMaterial Kind="Sync" Width="14" Height="14" FontWeight="Bold"/>
+                        <Button Command="{Binding SelectVideoCommand}" 
+                                Background="#444" BorderThickness="0" 
+                                Cursor="Hand" Margin="0,0,4,0" Padding="5"
+                                ToolTip="Selecionar fonte de Vídeo">
+                            <iconPacks:PackIconMaterial Kind="{Binding VideoIconKind}" Foreground="{Binding VideoIconColor}" Width="16" Height="16"/>
                         </Button>
-                        <Button Content="{Binding ManualLinkText}" 
-                                Command="{Binding ManualLinkActionCommand}" 
-                                Foreground="White" 
-                                Background="{Binding ManualLinkColor}" 
-                                Visibility="{Binding ManualLinkVisibility}" 
-                                BorderThickness="0" Padding="6,0"
-                                FontWeight="Bold" FontSize="18" Cursor="Hand" 
-                                ToolTip="Vincular Manualmente / Desvincular"/>
+                        <Button Command="{Binding SelectAudioCommand}" 
+                                Background="#444" BorderThickness="0" 
+                                Cursor="Hand" Margin="0,0,4,0" Padding="5"
+                                ToolTip="Selecionar fonte de Áudio">
+                            <iconPacks:PackIconMaterial Kind="{Binding AudioIconKind}" Foreground="{Binding AudioIconColor}" Width="16" Height="16"/>
+                        </Button>
+                        <Button Command="{Binding ManualLinkActionCommand}" 
+                                Background="#444" BorderThickness="0" 
+                                Cursor="Hand" Margin="0,0,4,0" Padding="5"
+                                ToolTip="Vincular Jogo (Link)">
+                            <iconPacks:PackIconMaterial Kind="{Binding LinkIconKind}" Foreground="{Binding LinkIconColor}" Width="16" Height="16"/>
+                        </Button>
                     </StackPanel>
                 </Grid>
 

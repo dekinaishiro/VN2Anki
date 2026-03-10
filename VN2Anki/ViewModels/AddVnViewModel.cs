@@ -1,12 +1,9 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Media.Imaging;
-using VN2Anki.Data;
 using VN2Anki.Models;
 using VN2Anki.Models.Entities;
 using VN2Anki.Services;
@@ -14,32 +11,24 @@ using VN2Anki.Services.Interfaces;
 
 namespace VN2Anki.ViewModels.Hub
 {
-    public class WindowDisplayItem
-    {
-        public VideoEngine.VideoWindowItem BaseItem { get; set; }
-        public bool IsRegistered { get; set; }
-        public VisualNovel MatchedVn { get; set; }
-        public string DisplayName => IsRegistered ? $"📚 {BaseItem.DisplayName}" : BaseItem.DisplayName;
-    }
-
     public partial class AddVnViewModel : ObservableObject
     {
         private readonly IVnDatabaseService _dbService;
-        private readonly VideoEngine _videoEngine;
         private readonly VndbService _vndbService;
+        private readonly IWindowService _windowService;
+        private readonly IConfigurationService _configService;
+        private readonly VideoEngine _videoEngine;
 
         public bool IsOpenedFromLibrary { get; set; }
 
         [ObservableProperty]
-        private ObservableCollection<WindowDisplayItem> _openWindows = new();
+        private string _targetProcessName;
 
         [ObservableProperty]
-        private WindowDisplayItem _selectedWindow;
+        private string _targetExecutablePath;
 
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(HasThumbnail))]
-        private BitmapImage _windowThumbnail;
-        public bool HasThumbnail => WindowThumbnail != null;
+        private string _targetDisplayName;
 
         [ObservableProperty]
         private string _searchQuery = "";
@@ -53,12 +42,11 @@ namespace VN2Anki.ViewModels.Hub
         [ObservableProperty]
         private bool _isLoading = false;
 
-        // Propriedades Dinâmicas de UI
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsVndbSearchEnabled))]
         private bool _isProcessAlreadyRegistered;
 
-        public bool IsVndbSearchEnabled => !IsProcessAlreadyRegistered;
+        public bool IsVndbSearchEnabled => !IsProcessAlreadyRegistered && !string.IsNullOrEmpty(TargetProcessName);
 
         [ObservableProperty]
         private string _actionButtonText = "Confirmar e Guardar";
@@ -69,66 +57,60 @@ namespace VN2Anki.ViewModels.Hub
         [ObservableProperty]
         private string _registeredWarningText = "";
 
-        private readonly IWindowService _windowService;
-
-        public AddVnViewModel(IVnDatabaseService dbService, VideoEngine videoEngine, VndbService vndbService, IWindowService windowService)
+        public AddVnViewModel(IVnDatabaseService dbService, VideoEngine videoEngine, VndbService vndbService, IWindowService windowService, IConfigurationService configService)
         {
             _dbService = dbService;
             _videoEngine = videoEngine;
             _vndbService = vndbService;
             _windowService = windowService;
+            _configService = configService;
 
-            _ = LoadWindowsAsync();
+            _ = InitializeAsync();
         }
 
-        public async Task LoadWindowsAsync()
+        public async Task InitializeAsync()
         {
-            var windows = _videoEngine.GetWindows();
-            var vns = await _dbService.GetAllVisualNovelsAsync();
-
-            var displayItems = new System.Collections.Generic.List<WindowDisplayItem>();
-
-            foreach (var win in windows)
+            TargetProcessName = _configService.CurrentConfig.Media.VideoWindow;
+            
+            if (string.IsNullOrEmpty(TargetProcessName))
             {
-                var match = vns.FirstOrDefault(v =>
-                    (!string.IsNullOrEmpty(v.ExecutablePath) && !string.IsNullOrEmpty(win.ExecutablePath) && v.ExecutablePath == win.ExecutablePath) ||
-                    (!string.IsNullOrEmpty(v.ProcessName) && v.ProcessName == win.ProcessName));
-
-                displayItems.Add(new WindowDisplayItem
-                {
-                    BaseItem = win,
-                    IsRegistered = match != null,
-                    MatchedVn = match
-                });
+                TargetDisplayName = Locales.Strings.StatusVideoDisconnected; 
+                ActionButtonText = Locales.Strings.BtnSaveClose;
+                return;
             }
 
-            // sort by registration status first, then alphabetically
-            var sortedItems = displayItems.OrderByDescending(x => x.IsRegistered).ThenBy(x => x.BaseItem.DisplayName);
-
-            System.Windows.Application.Current.Dispatcher.Invoke(() => 
+            // try to get more details
+            var window = _videoEngine.GetWindows().FirstOrDefault(w => w.ProcessName == TargetProcessName);
+            if (window != null)
             {
-                OpenWindows.Clear();
-                foreach (var item in sortedItems) OpenWindows.Add(item);
-            });
-        }
+                TargetDisplayName = window.DisplayName;
+                TargetExecutablePath = window.ExecutablePath;
+                SearchQuery = window.Title;
+            }
+            else
+            {
+                TargetDisplayName = TargetProcessName;
+                TargetExecutablePath = "";
+            }
 
-        partial void OnSelectedWindowChanged(WindowDisplayItem value)
-        {
-            if (value == null) return;
+            var vns = await _dbService.GetAllVisualNovelsAsync();
+            var match = vns.FirstOrDefault(v =>
+                (!string.IsNullOrEmpty(v.ExecutablePath) && !string.IsNullOrEmpty(TargetExecutablePath) && v.ExecutablePath == TargetExecutablePath) ||
+                (!string.IsNullOrEmpty(v.ProcessName) && v.ProcessName == TargetProcessName));
 
-            IsProcessAlreadyRegistered = value.IsRegistered;
+            IsProcessAlreadyRegistered = match != null;
 
             if (IsProcessAlreadyRegistered)
             {
                 RegisteredWarningVisibility = Visibility.Visible;
                 if (IsOpenedFromLibrary)
                 {
-                    RegisteredWarningText = string.Format(Locales.Strings.MsgExeAlreadyRegistered, value.MatchedVn?.Title);
+                    RegisteredWarningText = string.Format(Locales.Strings.MsgExeAlreadyRegistered, match?.Title);
                     ActionButtonText = Locales.Strings.BtnProcessAlreadyRegistered;
                 }
                 else
                 {
-                    RegisteredWarningText = $"📚 Jogo identificado: {value.MatchedVn?.Title}";
+                    RegisteredWarningText = $"📚 Jogo identificado: {match?.Title}";
                     ActionButtonText = Locales.Strings.BtnBindCurrentSession;
                 }
                 SearchQuery = string.Empty;
@@ -138,16 +120,11 @@ namespace VN2Anki.ViewModels.Hub
             {
                 RegisteredWarningVisibility = Visibility.Collapsed;
                 ActionButtonText = Locales.Strings.BtnSaveClose;
-                if (!string.IsNullOrWhiteSpace(value.BaseItem.Title))
+                if (!string.IsNullOrWhiteSpace(SearchQuery))
                 {
-                    SearchQuery = value.BaseItem.Title;
                     _ = SearchVndbAsync();
                 }
             }
-
-            // Thumbnail
-            var imgBytes = _videoEngine.CaptureWindow(value.BaseItem.ProcessName, 400);
-            WindowThumbnail = VN2Anki.Helpers.ImageHelper.BytesToBitmap(imgBytes);
         }
 
         [RelayCommand]
@@ -166,7 +143,11 @@ namespace VN2Anki.ViewModels.Hub
         [RelayCommand]
         private async Task SaveAndCloseAsync()
         {
-            if (SelectedWindow == null) return;
+            if (string.IsNullOrEmpty(TargetProcessName))
+            {
+                 _windowService.CloseWindow(this, false); 
+                 return;
+            }
 
             // already in Library
             if (IsProcessAlreadyRegistered)
@@ -205,8 +186,8 @@ namespace VN2Anki.ViewModels.Hub
             {
                 Title = SelectedVndbResult.Title,
                 OriginalTitle = SelectedVndbResult.AltTitle,
-                ProcessName = SelectedWindow.BaseItem.ProcessName,
-                ExecutablePath = SelectedWindow.BaseItem.ExecutablePath,
+                ProcessName = TargetProcessName,
+                ExecutablePath = TargetExecutablePath,
                 VndbId = SelectedVndbResult.Id,
                 CoverImagePath = coverPath,
                 CoverImageUrl = SelectedVndbResult.Image?.Url
