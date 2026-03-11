@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Threading;
+using System.Management;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using VN2Anki.Models.Entities;
@@ -15,11 +14,11 @@ namespace VN2Anki.Services
     {
         private readonly IVnDatabaseService _vnDatabaseService;
         private readonly ILogger<ProcessMonitoringService> _logger;
-        
-        private CancellationTokenSource? _cts;
-        private Task? _pollingTask;
-        private readonly TimeSpan _pollingInterval = TimeSpan.FromSeconds(5);
-        
+
+        private ManagementEventWatcher? _startWatcher;
+        private ManagementEventWatcher? _stopWatcher;
+        private bool _isMonitoring = false;
+
         // Keeps track of known active processes: PID -> ProcessName
         private Dictionary<int, string> _activeProcessIds = new Dictionary<int, string>();
         // Keeps track of VNs we have actively alerted as started: PID -> VisualNovel
@@ -36,39 +35,68 @@ namespace VN2Anki.Services
 
         public void StartMonitoring()
         {
-            if (_cts != null) return;
+            if (_isMonitoring) return;
 
-            _logger.LogInformation("Starting Process Monitoring (Polling mode)...");
-            
-            // Initial snapshot to avoid triggering 'Started' for everything already running
+            _logger.LogInformation("Starting Process Monitoring (WMI Event mode)...");
+
             RefreshActiveProcessesSnapshot();
-
-            _cts = new CancellationTokenSource();
-            _pollingTask = Task.Run(() => PollingLoopAsync(_cts.Token));
             
-            _logger.LogInformation("Process monitoring started successfully.");
+            try
+            {
+                // Watch for process starts
+                var startQuery = new WqlEventQuery("SELECT * FROM __InstanceCreationEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_Process'");
+                _startWatcher = new ManagementEventWatcher(startQuery);
+                _startWatcher.EventArrived += OnProcessStarted;
+                _startWatcher.Start();
+
+                // Watch for process stops
+                var stopQuery = new WqlEventQuery("SELECT * FROM __InstanceDeletionEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_Process'");
+                _stopWatcher = new ManagementEventWatcher(stopQuery);
+                _stopWatcher.EventArrived += OnProcessStopped;
+                _stopWatcher.Start();
+
+                _isMonitoring = true;
+                _logger.LogInformation("WMI Process monitoring started successfully.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to start WMI Process monitoring. Ensure the application has the necessary permissions.");
+            }
         }
 
         public void StopMonitoring()
         {
-            if (_cts == null) return;
+            if (!_isMonitoring) return;
 
-            _logger.LogInformation("Stopping process monitoring...");
-            
-            _cts.Cancel();
+            _logger.LogInformation("Stopping WMI process monitoring...");
+
             try
             {
-                _pollingTask?.Wait(TimeSpan.FromSeconds(2));
+                if (_startWatcher != null)
+                {
+                    _startWatcher.EventArrived -= OnProcessStarted;
+                    _startWatcher.Stop();
+                    _startWatcher.Dispose();
+                    _startWatcher = null;
+                }
+
+                if (_stopWatcher != null)
+                {
+                    _stopWatcher.EventArrived -= OnProcessStopped;
+                    _stopWatcher.Stop();
+                    _stopWatcher.Dispose();
+                    _stopWatcher = null;
+                }
             }
-            catch (AggregateException) { /* Ignored */ }
-            
-            _cts.Dispose();
-            _cts = null;
-            _pollingTask = null;
-            
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error stopping WMI watchers.");
+            }
+
+            _isMonitoring = false;
             _activeProcessIds.Clear();
             _activeVns.Clear();
-            
+
             _logger.LogInformation("Process monitoring stopped.");
         }
 
@@ -89,121 +117,91 @@ namespace VN2Anki.Services
             catch { /* Ignore */ }
         }
 
-        private async Task PollingLoopAsync(CancellationToken token)
+        private async void OnProcessStarted(object sender, EventArrivedEventArgs e)
         {
-            using var timer = new PeriodicTimer(_pollingInterval);
-            
             try
             {
-                while (await timer.WaitForNextTickAsync(token))
+                using var targetInstance = (ManagementBaseObject)e.NewEvent["TargetInstance"];
+                int processId = Convert.ToInt32(targetInstance["ProcessId"]);
+                string processName = targetInstance["Name"]?.ToString() ?? string.Empty;
+                string executablePath = targetInstance["ExecutablePath"]?.ToString() ?? string.Empty;
+
+                if (IsSystemProcess(processName)) return;
+
+                // Remove .exe extension if present for ProcessName matching consistency
+                string processNameWithoutExt = processName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) 
+                    ? processName.Substring(0, processName.Length - 4) 
+                    : processName;
+
+                _activeProcessIds[processId] = processNameWithoutExt;
+
+                var vns = await _vnDatabaseService.GetAllVisualNovelsAsync();
+                
+                VisualNovel? matchingVn = vns.FirstOrDefault(v =>
+                    string.Equals(v.ProcessName, processNameWithoutExt, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(v.ProcessName, processName, StringComparison.OrdinalIgnoreCase));
+
+                if (matchingVn == null && !string.IsNullOrEmpty(executablePath))
                 {
-                    await CheckProcessesAsync();
+                    matchingVn = vns.FirstOrDefault(v =>
+                        string.Equals(v.ExecutablePath, executablePath, StringComparison.OrdinalIgnoreCase));
                 }
-            }
-            catch (OperationCanceledException)
-            {
-                // Task was canceled, exit gracefully
+
+                if (matchingVn != null)
+                {
+                    Process? process = null;
+                    try
+                    {
+                         process = Process.GetProcessById(processId);
+                    }
+                    catch { /* Process might have exited immediately or access denied */ }
+
+                    _activeVns[processId] = matchingVn;
+                    _logger.LogInformation($"Detected VN start via WMI: {matchingVn.Title} (PID: {processId})");
+                    
+                    VnProcessStarted?.Invoke(this, new VnProcessEventArgs
+                    {
+                        VisualNovel = matchingVn,
+                        Process = process,
+                        ProcessId = processId
+                    });
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error in polling loop.");
+                 _logger.LogError(ex, "Error processing WMI process start event.");
             }
         }
 
-        private async Task CheckProcessesAsync()
+        private void OnProcessStopped(object sender, EventArrivedEventArgs e)
         {
-            try
-            {
-                var currentProcesses = Process.GetProcesses();
-                var currentProcessDict = new Dictionary<int, Process>();
-                
-                foreach (var p in currentProcesses)
-                {
-                    if (!IsSystemProcess(p.ProcessName))
-                    {
-                        currentProcessDict[p.Id] = p;
-                    }
-                }
+             try
+             {
+                 using var targetInstance = (ManagementBaseObject)e.NewEvent["TargetInstance"];
+                 int processId = Convert.ToInt32(targetInstance["ProcessId"]);
 
-                var currentPids = currentProcessDict.Keys.ToHashSet();
-                var oldPids = _activeProcessIds.Keys.ToHashSet();
+                 if (_activeProcessIds.ContainsKey(processId))
+                 {
+                     _activeProcessIds.Remove(processId);
+                 }
 
-                var startedPids = currentPids.Except(oldPids).ToList();
-                var stoppedPids = oldPids.Except(currentPids).ToList();
-
-                // Process STOPS
-                foreach (var pid in stoppedPids)
-                {
-                    string processName = _activeProcessIds[pid];
-                    _activeProcessIds.Remove(pid);
-
-                    if (_activeVns.TryGetValue(pid, out var vn))
-                    {
-                        _activeVns.Remove(pid);
-                        _logger.LogInformation($"Detected VN stop: {vn.Title} (PID: {pid})");
-                        VnProcessStopped?.Invoke(this, new VnProcessEventArgs 
-                        { 
-                            VisualNovel = vn, 
-                            Process = null, 
-                            ProcessId = pid 
-                        });
-                    }
-                }
-
-                // Process STARTS
-                if (startedPids.Any())
-                {
-                    var vns = await _vnDatabaseService.GetAllVisualNovelsAsync();
-
-                    foreach (var pid in startedPids)
-                    {
-                        if (!currentProcessDict.TryGetValue(pid, out var process)) continue;
-
-                        _activeProcessIds[pid] = process.ProcessName;
-
-                        VisualNovel? matchingVn = null;
-                        
-                        // 1. Try match by ProcessName exactly
-                        matchingVn = vns.FirstOrDefault(v => 
-                            string.Equals(v.ProcessName, process.ProcessName, StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(v.ProcessName, process.ProcessName + ".exe", StringComparison.OrdinalIgnoreCase));
-
-                        // 2. Try match by ExecutablePath (needs process module info)
-                        if (matchingVn == null)
-                        {
-                            try
-                            {
-                                string? executablePath = process.MainModule?.FileName;
-                                if (!string.IsNullOrEmpty(executablePath))
-                                {
-                                    matchingVn = vns.FirstOrDefault(v => 
-                                        string.Equals(v.ExecutablePath, executablePath, StringComparison.OrdinalIgnoreCase));
-                                }
-                            }
-                            catch
-                            {
-                                // Access denied or bitness mismatch, ignore gracefully
-                            }
-                        }
-
-                        if (matchingVn != null)
-                        {
-                            _activeVns[pid] = matchingVn;
-                            _logger.LogInformation($"Detected VN start: {matchingVn.Title} (PID: {pid})");
-                            VnProcessStarted?.Invoke(this, new VnProcessEventArgs 
-                            { 
-                                VisualNovel = matchingVn, 
-                                Process = process,
-                                ProcessId = pid
-                            });
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                 _logger.LogError(ex, "Error while checking processes.");
-            }
+                 if (_activeVns.TryGetValue(processId, out var vn))
+                 {
+                     _activeVns.Remove(processId);
+                     _logger.LogInformation($"Detected VN stop via WMI: {vn.Title} (PID: {processId})");
+                     
+                     VnProcessStopped?.Invoke(this, new VnProcessEventArgs
+                     {
+                         VisualNovel = vn,
+                         Process = null,
+                         ProcessId = processId
+                     });
+                 }
+             }
+             catch (Exception ex)
+             {
+                 _logger.LogError(ex, "Error processing WMI process stop event.");
+             }
         }
 
         public async Task<List<(VisualNovel Vn, Process Process)>> GetRunningVnsAsync()
@@ -271,7 +269,8 @@ namespace VN2Anki.Services
                 lowerName == "cmd" || lowerName == "taskhostw" || lowerName == "explorer" || 
                 lowerName == "csrss" || lowerName == "lsass" || lowerName == "winlogon" || 
                 lowerName == "services" || lowerName == "smss" || lowerName == "idle" || 
-                lowerName == "system" || lowerName == "registry" || lowerName == "fontdrvhost")
+                lowerName == "system" || lowerName == "registry" || lowerName == "fontdrvhost" ||
+                lowerName == "wmiprvse")
             {
                 return true;
             }
