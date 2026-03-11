@@ -34,14 +34,15 @@ namespace VN2Anki.Services
             ILogger<YomitanBridgeService> logger,
             AnkiHandler ankiHandler,
             MediaService mediaService,
-            MiningService miningService)
+            MiningService miningService,
+            HttpClient httpClient)
         {
             _configService = configService;
             _logger = logger;
             _ankiHandler = ankiHandler;
             _mediaService = mediaService;
             _miningService = miningService;
-            _httpClient = new HttpClient();
+            _httpClient = httpClient;
             
             Start();
         }

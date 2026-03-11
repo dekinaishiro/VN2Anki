@@ -13,19 +13,19 @@ namespace VN2Anki.Services
 {
     public class AnkiHandler
     {
-        private HttpClient _client;
+        private readonly HttpClient _client;
         private string _ankiUrl;
 
-        public AnkiHandler(string url = "http://127.0.0.1:8765", int timeoutSeconds = 10)
+        public AnkiHandler(HttpClient client)
         {
-            UpdateSettings(url, timeoutSeconds);
+            _client = client;
+            UpdateSettings("http://127.0.0.1:8765", 10);
         }
 
         public void UpdateSettings(string url, int timeoutSeconds)
         {
             _ankiUrl = string.IsNullOrWhiteSpace(url) ? "http://127.0.0.1:8765" : url;
-            var handler = new HttpClientHandler { UseProxy = false, Proxy = null };
-            _client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(timeoutSeconds > 0 ? timeoutSeconds : 10) };
+            _client.Timeout = TimeSpan.FromSeconds(timeoutSeconds > 0 ? timeoutSeconds : 10);
         }
 
         private class AnkiRequest

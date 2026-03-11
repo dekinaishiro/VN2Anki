@@ -49,7 +49,7 @@ namespace VN2Anki
             });
 
             services.AddSingleton<IConfigurationService, ConfigurationService>();
-            services.AddSingleton<IBridgeService, YomitanBridgeService>();
+            services.AddHttpClient<IBridgeService, YomitanBridgeService>();
 
             services.AddSingleton<AudioEngine>();
             services.AddTransient<IAudioPlaybackService, AudioPlaybackService>();
@@ -59,7 +59,12 @@ namespace VN2Anki
             services.AddSingleton<WebsocketHook>();
             services.AddSingleton<ITextHook, HookManager>();
 
-            services.AddSingleton<AnkiHandler>();
+            services.AddHttpClient<AnkiHandler>();
+            services.AddHttpClient<VndbService>(client =>
+            {
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("VN2Anki_DesktopApp/1.2");
+            });
+
             services.AddSingleton<SessionTracker>();
 
             services.AddSingleton<DiscordRpcService>();
@@ -87,8 +92,6 @@ namespace VN2Anki
 
             services.AddTransient<ViewModels.Hub.LibraryViewModel>();
             services.AddTransient<UserHubWindow>();
-
-            services.AddSingleton<VndbService>();
 
             services.AddTransient<ViewModels.Hub.AddVnViewModel>();
             services.AddTransient<AddVnWindow>();

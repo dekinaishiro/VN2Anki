@@ -14,12 +14,10 @@ namespace VN2Anki.Services
         private readonly HttpClient _client;
         private readonly string _coversDirectory;
 
-        public VndbService()
+        public VndbService(HttpClient client)
         {
-            _client = new HttpClient();
-            // user agent to avoid 403
-            _client.DefaultRequestHeaders.UserAgent.ParseAdd("VN2Anki_DesktopApp/1.2");
-
+            _client = client;
+            
             // creates the folder
             _coversDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VN2Anki", "Covers");
             Directory.CreateDirectory(_coversDirectory);
