@@ -37,6 +37,7 @@ namespace VN2Anki
             }
             else
             {
+                _instance.Show();
                 if (_instance.WindowState == WindowState.Minimized)
                     _instance.WindowState = WindowState.Normal;
                 _instance.Activate();
@@ -96,68 +97,115 @@ namespace VN2Anki
                 <script>
                     function renderSlots(slots) {
                         const container = document.getElementById('slots-container');
-                        container.innerHTML = '';
-                        slots.forEach(slot => {
-                            const div = document.createElement('div');
-                            div.className = 'slot' + (slot.isOpen ? ' open' : '');
+                        
+                        // First, create a map of existing slot elements to avoid full re-renders
+                        const existingSlots = {};
+                        Array.from(container.children).forEach(child => {
+                            if (child.dataset.id) {
+                                existingSlots[child.dataset.id] = child;
+                            }
+                        });
+
+                        // Keep track of IDs in the new state
+                        const currentIds = new Set();
+
+                        slots.forEach((slot, index) => {
+                            currentIds.add(slot.id);
                             
-                            const img = document.createElement('img');
-                            img.className = 'thumbnail';
-                            if (slot.thumbnailUrl) {
-                                img.src = slot.thumbnailUrl;
+                            let div = existingSlots[slot.id];
+                            let isNew = false;
+                            
+                            if (!div) {
+                                isNew = true;
+                                div = document.createElement('div');
+                                div.dataset.id = slot.id;
+                                
+                                const img = document.createElement('img');
+                                img.className = 'thumbnail';
+                                div.appendChild(img);
+
+                                const content = document.createElement('div');
+                                content.className = 'content';
+
+                                const time = document.createElement('div');
+                                time.className = 'time';
+                                content.appendChild(time);
+
+                                const textContainer = document.createElement('div');
+                                textContainer.className = 'text-container';
+                                
+                                textContainer.addEventListener('mouseenter', () => {
+                                    window.chrome.webview.postMessage(JSON.stringify({ action: 'hover', id: slot.id }));
+                                });
+
+                                const status = document.createElement('div');
+                                status.className = 'status';
+                                status.innerText = 'Recording Audio...'; 
+                                
+                                content.appendChild(textContainer);
+                                content.appendChild(status);
+                                div.appendChild(content);
+
+                                const btnPlay = document.createElement('button');
+                                btnPlay.className = 'btn btn-play';
+                                btnPlay.innerText = '▶';
+                                btnPlay.title = 'Play Audio';
+                                btnPlay.onclick = () => window.chrome.webview.postMessage(JSON.stringify({ action: 'play', id: slot.id }));
+
+                                const btnMine = document.createElement('button');
+                                btnMine.className = 'btn btn-mine';
+                                btnMine.innerText = '⛏';
+                                btnMine.title = 'Send to Anki';
+                                btnMine.onclick = () => window.chrome.webview.postMessage(JSON.stringify({ action: 'mine', id: slot.id }));
+
+                                const btnDelete = document.createElement('button');
+                                btnDelete.className = 'btn btn-delete';
+                                btnDelete.innerText = '🗑';
+                                btnDelete.title = 'Delete slot';
+                                btnDelete.onclick = () => window.chrome.webview.postMessage(JSON.stringify({ action: 'delete', id: slot.id }));
+
+                                div.appendChild(btnPlay);
+                                div.appendChild(btnMine);
+                                div.appendChild(btnDelete);
                             }
 
-                            const content = document.createElement('div');
-                            content.className = 'content';
+                            // Update properties unconditionally to handle state changes
+                            div.className = 'slot' + (slot.isOpen ? ' open' : '');
+                            
+                            const img = div.querySelector('.thumbnail');
+                            if (slot.thumbnailUrl && img.src !== slot.thumbnailUrl) {
+                                img.src = slot.thumbnailUrl;
+                            } else if (!slot.thumbnailUrl) {
+                                img.removeAttribute('src');
+                            }
 
-                            const time = document.createElement('div');
-                            time.className = 'time';
-                            time.innerText = slot.displayTime;
+                            const time = div.querySelector('.time');
+                            if (time.innerText !== slot.displayTime) time.innerText = slot.displayTime;
 
-                            const textContainer = document.createElement('div');
-                            textContainer.className = 'text-container';
-                            const text = document.createElement('div');
-                            text.className = 'text';
-                            text.innerText = slot.text;
-                            textContainer.appendChild(text);
+                            // Insert into DOM at correct position first
+                            if (isNew) {
+                                if (index >= container.children.length) {
+                                    container.appendChild(div);
+                                } else {
+                                    container.insertBefore(div, container.children[index]);
+                                }
+                                
+                                // To trigger Jiten Reader's MutationObserver, we must add the text element *after* the parent is in the document
+                                const textContainer = div.querySelector('.text-container');
+                                const text = document.createElement('span');
+                                text.className = 'text vn-text-line';
+                                text.innerText = slot.text;
+                                textContainer.appendChild(text);
+                            } else if (container.children[index] !== div) {
+                                container.insertBefore(div, container.children[index]);
+                            }
+                        });
 
-                            textContainer.addEventListener('mouseenter', () => {
-                                window.chrome.webview.postMessage(JSON.stringify({ action: 'hover', id: slot.id }));
-                            });
-
-                            const status = document.createElement('div');
-                            status.className = 'status';
-                            status.innerText = 'Recording Audio...'; 
-
-                            content.appendChild(time);
-                            content.appendChild(textContainer);
-                            content.appendChild(status);
-
-                            const btnPlay = document.createElement('button');
-                            btnPlay.className = 'btn btn-play';
-                            btnPlay.innerText = '▶';
-                            btnPlay.title = 'Play Audio';
-                            btnPlay.onclick = () => window.chrome.webview.postMessage(JSON.stringify({ action: 'play', id: slot.id }));
-
-                            const btnMine = document.createElement('button');
-                            btnMine.className = 'btn btn-mine';
-                            btnMine.innerText = '⛏';
-                            btnMine.title = 'Send to Anki';
-                            btnMine.onclick = () => window.chrome.webview.postMessage(JSON.stringify({ action: 'mine', id: slot.id }));
-
-                            const btnDelete = document.createElement('button');
-                            btnDelete.className = 'btn btn-delete';
-                            btnDelete.innerText = '🗑';
-                            btnDelete.title = 'Delete slot';
-                            btnDelete.onclick = () => window.chrome.webview.postMessage(JSON.stringify({ action: 'delete', id: slot.id }));
-
-                            div.appendChild(img);
-                            div.appendChild(content);
-                            div.appendChild(btnPlay);
-                            div.appendChild(btnMine);
-                            div.appendChild(btnDelete);
-
-                            container.appendChild(div);
+                        // Remove slots that no longer exist
+                        Array.from(container.children).forEach(child => {
+                            if (!currentIds.has(child.dataset.id)) {
+                                container.removeChild(child);
+                            }
                         });
                     }
 
@@ -332,6 +380,12 @@ namespace VN2Anki
 
             string json = JsonSerializer.Serialize(payload);
             webView.CoreWebView2.PostWebMessageAsJson(json);
+        }
+
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            e.Cancel = true;
+            this.Hide();
         }
 
         protected override void OnClosed(EventArgs e)
