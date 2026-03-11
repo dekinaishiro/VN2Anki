@@ -133,8 +133,8 @@ namespace VN2Anki
             using (var scope = Services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                //dbContext.Database.EnsureCreated();
-                dbContext.Database.Migrate();
+                dbContext.Database.EnsureCreated();
+                //dbContext.Database.Migrate();
             }
 
             // Force initialization of background services
