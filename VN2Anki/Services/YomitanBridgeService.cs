@@ -27,7 +27,7 @@ namespace VN2Anki.Services
         private Task? _listenerTask;
         private readonly HttpClient _httpClient;
 
-        public Guid? ActiveHoverSlotId { get; set; }
+        public string ActiveHoverSlotId { get; set; }
 
         public YomitanBridgeService(
             IConfigurationService configService, 
@@ -120,9 +120,9 @@ namespace VN2Anki.Services
                 if (fields == null) return originalBody;
 
                 MiningSlot targetSlot = null;
-                if (ActiveHoverSlotId.HasValue)
+                if (!string.IsNullOrEmpty(ActiveHoverSlotId))
                 {
-                    targetSlot = _miningService.HistorySlots.FirstOrDefault(s => s.Id == ActiveHoverSlotId.Value.ToString());
+                    targetSlot = _miningService.HistorySlots.FirstOrDefault(s => s.Id == ActiveHoverSlotId);
                     ActiveHoverSlotId = null;
                 }
                 
