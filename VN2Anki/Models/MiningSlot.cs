@@ -32,10 +32,35 @@ namespace VN2Anki.Models
             {
                 _screenshotBytes = value;
                 _thumbnail = null; // null the cached thumbnail so it will be regenerated with the new screenshot bytes when requested
+                
+                SaveScreenshotToDisk();
+
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(Thumbnail));
+                OnPropertyChanged(nameof(ScreenshotUrl));
             }
         }
+        
+        public string ScreenshotFilePath { get; private set; }
+        public string ScreenshotUrl => string.IsNullOrEmpty(ScreenshotFilePath) ? null : $"http://vn.local/thumbs/{Path.GetFileName(ScreenshotFilePath)}";
+
+        private void SaveScreenshotToDisk()
+        {
+            if (_screenshotBytes == null || _screenshotBytes.Length == 0) return;
+
+            try
+            {
+                string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                string thumbsDir = Path.Combine(appData, "VN2Anki", "thumbs");
+                if (!Directory.Exists(thumbsDir)) Directory.CreateDirectory(thumbsDir);
+
+                string filePath = Path.Combine(thumbsDir, $"{Id}.jpg");
+                File.WriteAllBytes(filePath, _screenshotBytes);
+                ScreenshotFilePath = filePath;
+            }
+            catch { /* Ignore IO errors */ }
+        }
+
         public string DisplayTime => Timestamp.ToString("HH:mm:ss");
 
         // this property is used to determine if the slot is still open (i.e. audio is still being recorded) or if it has been sealed with audio data, which affects how it's displayed in the UI and whether it can be mined to Anki
@@ -61,12 +86,18 @@ namespace VN2Anki.Models
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
+        
         public void Dispose()
         {
             // remove refs for gc
             AudioBytes = null;
             ScreenshotBytes = null;
             _thumbnail = null;
+
+            if (!string.IsNullOrEmpty(ScreenshotFilePath) && File.Exists(ScreenshotFilePath))
+            {
+                try { File.Delete(ScreenshotFilePath); } catch { }
+            }
 
             GC.SuppressFinalize(this);
         }

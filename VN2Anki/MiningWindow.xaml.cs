@@ -367,9 +367,7 @@ namespace VN2Anki
                 text = s.Text,
                 displayTime = s.DisplayTime,
                 isOpen = s.IsOpen,
-                thumbnailUrl = s.ScreenshotBytes != null && s.ScreenshotBytes.Length > 0 
-                    ? $"data:image/jpeg;base64,{Convert.ToBase64String(s.ScreenshotBytes)}" 
-                    : null
+                thumbnailUrl = s.ScreenshotUrl
             }).ToList();
 
             var payload = new
