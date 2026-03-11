@@ -445,7 +445,7 @@ namespace VN2Anki
 
         private void BtnExtensions_Click(object sender, RoutedEventArgs e)
         {
-            _windowService.OpenExtensionsManager();
+            _windowService.OpenExtensionsManager(this);
         }
 
         private void BtnPosition_Click(object sender, RoutedEventArgs e)

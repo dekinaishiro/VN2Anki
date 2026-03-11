@@ -135,18 +135,16 @@ namespace VN2Anki
 
         private void BtnAddExtension_Click(object sender, RoutedEventArgs e)
         {
-            _windowService.OpenExtensionsManager();
+            _windowService.OpenExtensionsManager(this);
             // After manager closes, we might want to refresh the local list if it's still showing paths
-            this.Activated += (s, ev) => {
-                var overlayConfig = _viewModel.Config.Overlay;
-                ListExtensions.ItemsSource = new System.Collections.ObjectModel.ObservableCollection<string>(overlayConfig.CustomExtensions);
-            };
+            var overlayConfig = _viewModel.Config.Overlay;
+            ListExtensions.ItemsSource = new System.Collections.ObjectModel.ObservableCollection<string>(overlayConfig.CustomExtensions);
         }
         private void BtnExtensionSettings_Click(object sender, RoutedEventArgs e)
         {
             if (ListExtensions.SelectedItem is string selectedExtPath)
             {
-                _windowService.OpenExtensionSettingsWindow(selectedExtPath);
+                _windowService.OpenExtensionSettingsWindow(selectedExtPath, this);
             }
         }
         private void BtnRemoveExtension_Click(object sender, RoutedEventArgs e)

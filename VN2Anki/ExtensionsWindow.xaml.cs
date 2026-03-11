@@ -130,7 +130,7 @@ namespace VN2Anki
         {
             if (sender is FrameworkElement fe && fe.DataContext is BrowserExtensionInfo info)
             {
-                _windowService.OpenExtensionSettingsWindow(info.Path);
+                _windowService.OpenExtensionSettingsWindow(info.Path, this);
             }
         }
 

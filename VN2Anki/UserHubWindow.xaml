@@ -4,7 +4,8 @@
         xmlns:vms="clr-namespace:VN2Anki.ViewModels.Hub"
         xmlns:views="clr-namespace:VN2Anki.Views.Hub"
         Title="VN2Anki - User Hub" Height="700" Width="1050"
-        Background="#1E1E1E" Foreground="White" WindowStartupLocation="CenterScreen">
+        Background="#1E1E1E" Foreground="White" WindowStartupLocation="CenterScreen"
+        Topmost="True">
 
     <Window.Resources>
         <DataTemplate DataType="{x:Type vms:LibraryViewModel}">

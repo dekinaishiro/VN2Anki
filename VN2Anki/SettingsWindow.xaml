@@ -4,7 +4,8 @@
         xmlns:loc="clr-namespace:VN2Anki.Locales"
         xmlns:colorpicker="clr-namespace:ColorPicker;assembly=ColorPicker"
         Title="{x:Static loc:Strings.LblSettingsWindow}" Height="625" Width="575"
-        Background="#252526" Foreground="White" WindowStartupLocation="CenterScreen" WindowStyle="ToolWindow">
+        Background="#252526" Foreground="White" WindowStartupLocation="CenterScreen" WindowStyle="ToolWindow"
+        Topmost="True">
 
     <Window.Resources>
         <ResourceDictionary>

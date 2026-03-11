@@ -60,7 +60,7 @@ namespace VN2Anki.Services
             return selectedVn;
         }
 
-        public void OpenExtensionSettingsWindow(string extensionPath)
+        public void OpenExtensionSettingsWindow(string extensionPath, object owner = null)
         {
             if (string.IsNullOrEmpty(extensionPath) || !System.IO.Directory.Exists(extensionPath))
             {
@@ -68,7 +68,20 @@ namespace VN2Anki.Services
                 return;
             }
 
-            var settingsWin = new Window { Title = "Extension Settings", Width = 900, Height = 700, WindowStartupLocation = WindowStartupLocation.CenterScreen };
+            var settingsWin = new Window 
+            { 
+                Title = "Extension Settings", 
+                Width = 900, 
+                Height = 700, 
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Topmost = true // Force above everything including Overlay
+            };
+
+            if (owner is Window ownerWin)
+            {
+                settingsWin.Owner = ownerWin;
+            }
+
             var settingsWebView = new Microsoft.Web.WebView2.Wpf.WebView2();
             settingsWin.Content = settingsWebView;
 
@@ -107,13 +120,28 @@ namespace VN2Anki.Services
                 }
                 catch (System.Exception ex) { MessageBox.Show($"Could not load extension settings:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
             };
-            settingsWin.Show();
+            
+            // Using ShowDialog to prevent multiple instances and force focus
+            settingsWin.ShowDialog();
         }
 
-        public void OpenExtensionsManager()
+        public void OpenExtensionsManager(object owner = null)
         {
             var manager = new ExtensionsWindow(_configService, this);
-            manager.Show();
+            manager.Topmost = true; // Force above everything including Overlay
+
+            if (owner is Window ownerWin)
+            {
+                manager.Owner = ownerWin;
+                manager.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            }
+            else
+            {
+                manager.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            }
+
+            // Using ShowDialog to prevent multiple instances and force focus
+            manager.ShowDialog();
         }
 
         public bool ShowConfirmation(string message, string title, bool isWarning = false)
