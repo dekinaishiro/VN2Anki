@@ -1,8 +1,6 @@
 using System;
 using System.IO;
-using System.Net;
 using System.Net.Http;
-using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -12,6 +10,12 @@ using Microsoft.Extensions.Logging;
 using VN2Anki.Services.Interfaces;
 using VN2Anki.Models;
 using System.Linq;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 
 namespace VN2Anki.Services
 {
@@ -22,12 +26,12 @@ namespace VN2Anki.Services
         private readonly AnkiHandler _ankiHandler;
         private readonly MediaService _mediaService;
         private readonly MiningService _miningService;
-        private TcpListener? _listener;
-        private CancellationTokenSource? _cts;
-        private Task? _listenerTask;
         private readonly HttpClient _httpClient;
+        
+        private WebApplication? _app;
+        private CancellationTokenSource? _cts;
 
-        public string ActiveHoverSlotId { get; set; }
+        public string ActiveHoverSlotId { get; set; } = string.Empty;
 
         public YomitanBridgeService(
             IConfigurationService configService, 
@@ -53,44 +57,109 @@ namespace VN2Anki.Services
             if (!config.Anki.EnableYomitanBridge) return;
 
             int port = config.Anki.YomitanBridgePort;
-            _logger.LogInformation($"Starting Yomitan Bridge on port {port}...");
+            _logger.LogInformation($"Starting Kestrel Yomitan Bridge on port {port}...");
 
             try
             {
-                _listener = new TcpListener(IPAddress.Loopback, port);
-                _listener.Start();
                 _cts = new CancellationTokenSource();
-                _listenerTask = Task.Run(() => ListenAsync(_cts.Token), _cts.Token);
+                
+                var builder = WebApplication.CreateBuilder();
+                
+                // Configure Kestrel to listen only on localhost for security
+                builder.WebHost.ConfigureKestrel(options =>
+                {
+                    options.ListenLocalhost(port);
+                });
+
+                // Add CORS to handle browser extension preflights automatically
+                builder.Services.AddCors(options =>
+                {
+                    options.AddDefaultPolicy(policy =>
+                    {
+                        policy.AllowAnyOrigin()
+                              .AllowAnyMethod()
+                              .AllowAnyHeader()
+                              .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
+                    });
+                });
+
+                _app = builder.Build();
+
+                // Middleware for CORS
+                _app.UseCors();
+
+                // The single endpoint that Yomitan calls (usually root / or /api)
+                _app.MapPost("/", async (HttpContext context) =>
+                {
+                    try 
+                    {
+                        using var reader = new StreamReader(context.Request.Body, Encoding.UTF8);
+                        string requestBody = await reader.ReadToEndAsync();
+                        
+                        _logger.LogDebug("Received request from Yomitan/Browser.");
+
+                        // 1. Intercept and Inject Media
+                        string interceptedBody = await InterceptAndInjectMediaAsync(requestBody);
+
+                        // 2. Proxy to AnkiConnect
+                        var ankiUrl = _configService.CurrentConfig.Anki.Url;
+                        var httpContent = new StringContent(interceptedBody, Encoding.UTF8, "application/json");
+                        
+                        var proxyResponse = await _httpClient.PostAsync(ankiUrl, httpContent, _cts.Token);
+                        
+                        // 3. Return response with Private Network headers
+                        context.Response.Headers["Access-Control-Allow-PrivateNetwork"] = "true";
+                        context.Response.ContentType = "application/json";
+                        context.Response.StatusCode = (int)proxyResponse.StatusCode;
+                        
+                        byte[] responseBody = await proxyResponse.Content.ReadAsByteArrayAsync();
+                        await context.Response.Body.WriteAsync(responseBody, 0, responseBody.Length);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error processing bridge request.");
+                        context.Response.StatusCode = 500;
+                        await context.Response.WriteAsync("Bridge Error");
+                    }
+                });
+
+                // Start the server in a background task
+                var token = _cts.Token;
+                Task.Run(async () => {
+                    try {
+                        if (_app != null) await _app.StartAsync(token);
+                    } catch (OperationCanceledException) { }
+                    catch (Exception ex) { _logger.LogError(ex, "Kestrel server error."); }
+                }, token);
+                
+                _logger.LogInformation("Yomitan Bridge (Kestrel) is now running.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to start Yomitan Bridge.");
+                _logger.LogError(ex, "Failed to start Yomitan Bridge with Kestrel.");
             }
         }
 
         private void Stop()
         {
-            if (_listener == null) return;
+            if (_app == null) return;
             _cts?.Cancel();
-            try { _listener.Stop(); } catch { }
-            _listener = null;
-            _listenerTask?.Wait(1000);
-            _listenerTask = null;
+            
+            try 
+            {
+                _app.StopAsync().Wait(1000); 
+            } 
+            catch { }
+
+            _app = null;
+            _cts?.Dispose();
+            _cts = null;
         }
 
-        public void Restart(int newPort) { Stop(); Start(); }
-
-        private async Task ListenAsync(CancellationToken token)
-        {
-            while (!token.IsCancellationRequested && _listener != null)
-            {
-                try
-                {
-                    var client = await _listener.AcceptTcpClientAsync(token);
-                    _ = ProcessClientAsync(client, token);
-                }
-                catch { break; }
-            }
+        public void Restart(int newPort) 
+        { 
+            Stop(); 
+            Start(); 
         }
 
         private async Task<string> InterceptAndInjectMediaAsync(string originalBody)
@@ -120,11 +189,11 @@ namespace VN2Anki.Services
 
                 if (fields == null) return originalBody;
 
-                MiningSlot targetSlot = null;
+                MiningSlot? targetSlot = null;
                 if (!string.IsNullOrEmpty(ActiveHoverSlotId))
                 {
                     targetSlot = _miningService.HistorySlots.FirstOrDefault(s => s.Id == ActiveHoverSlotId);
-                    ActiveHoverSlotId = null;
+                    ActiveHoverSlotId = string.Empty;
                 }
                 
                 if (targetSlot == null && _miningService.HistorySlots.Count > 0)
@@ -153,82 +222,17 @@ namespace VN2Anki.Services
 
                 return jsonNode.ToJsonString();
             }
-            catch { return originalBody; }
-        }
-
-        private async Task ProcessClientAsync(TcpClient client, CancellationToken token)
-        {
-            try
-            {
-                using (client)
-                using (var stream = client.GetStream())
-                {
-                    // 1. Read Request Headers (byte by byte to avoid over-reading)
-                    var headerBuilder = new StringBuilder();
-                    int lastByte = -1;
-                    while (true)
-                    {
-                        int b = stream.ReadByte();
-                        if (b == -1) return;
-                        headerBuilder.Append((char)b);
-                        if (lastByte == '\n' && b == '\r') {
-                            int next = stream.ReadByte();
-                            if (next == '\n') break; // Found \r\n\r\n
-                            headerBuilder.Append((char)next);
-                            b = next;
-                        }
-                        lastByte = b;
-                    }
-
-                    string headers = headerBuilder.ToString();
-                    string firstLine = headers.Split('\n')[0];
-                    string method = firstLine.Split(' ')[0];
-
-                    int contentLength = 0;
-                    foreach (var line in headers.Split('\n'))
-                    {
-                        if (line.StartsWith("Content-Length:", StringComparison.OrdinalIgnoreCase))
-                            int.TryParse(line.Substring(15).Trim(), out contentLength);
-                    }
-
-                    // 2. Handle CORS Options
-                    if (method == "OPTIONS")
-                    {
-                        byte[] resp = Encoding.UTF8.GetBytes("HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods: POST, GET, OPTIONS\r\nAccess-Control-Allow-Headers: Content-Type\r\nAccess-Control-Allow-Private-Network: true\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
-                        await stream.WriteAsync(resp, 0, resp.Length);
-                        return;
-                    }
-
-                    // 3. Read Body strictly by bytes
-                    byte[] bodyBytes = new byte[contentLength];
-                    int totalRead = 0;
-                    while (totalRead < contentLength)
-                    {
-                        int read = await stream.ReadAsync(bodyBytes, totalRead, contentLength - totalRead, token);
-                        if (read == 0) break;
-                        totalRead += read;
-                    }
-
-                    string requestBody = Encoding.UTF8.GetString(bodyBytes);
-                    string interceptedBody = await InterceptAndInjectMediaAsync(requestBody);
-
-                    // 4. Proxy to Anki
-                    var httpContent = new StringContent(interceptedBody, Encoding.UTF8, "application/json");
-                    var proxyResponse = await _httpClient.PostAsync(_configService.CurrentConfig.Anki.Url, httpContent, token);
-                    byte[] responseBody = await proxyResponse.Content.ReadAsByteArrayAsync();
-
-                    // 5. Send Response back
-                    string responseHeaders = $"HTTP/1.1 {(int)proxyResponse.StatusCode} OK\r\nContent-Type: application/json\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Private-Network: true\r\nContent-Length: {responseBody.Length}\r\nConnection: close\r\n\r\n";
-                    byte[] headerBytes = Encoding.UTF8.GetBytes(responseHeaders);
-
-                    await stream.WriteAsync(headerBytes, 0, headerBytes.Length);
-                    await stream.WriteAsync(responseBody, 0, responseBody.Length);
-                    await stream.FlushAsync();
-                }
+            catch (Exception ex)
+            { 
+                _logger.LogWarning(ex, "Media injection failed, continuing with original body.");
+                return originalBody; 
             }
-            catch (Exception ex) { _logger.LogError(ex, "Bridge Error"); }
         }
 
-        public void Dispose() { Stop(); _httpClient.Dispose(); }
+        public void Dispose() 
+        { 
+            Stop(); 
+            GC.SuppressFinalize(this);
+        }
     }
 }
