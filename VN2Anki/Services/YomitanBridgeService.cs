@@ -137,8 +137,7 @@ namespace VN2Anki.Services
                 {
                     try {
                         byte[] audio = targetSlot.AudioBytes;
-                        if (config.Media.AudioBitrate > 0) audio = _mediaService.ConvertWavToMp3(audio, config.Media.AudioBitrate);
-                        string filename = $"miner_{uniqueId}.{(config.Media.AudioBitrate > 0 ? "mp3" : "wav")}";
+                        string filename = $"miner_{uniqueId}.mp3";
                         if (await _ankiHandler.StoreMediaAsync(filename, audio)) fields[targetAudioField] = $"[sound:{filename}]";
                     } catch { }
                 }

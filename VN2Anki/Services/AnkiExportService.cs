@@ -26,11 +26,8 @@ namespace VN2Anki.Services
         {
             if (string.IsNullOrEmpty(ankiConfig.Deck)) return (false, "Please select a Deck.");
 
-            SendStatus("Preparing media...");
-
             string uniqueId = Guid.NewGuid().ToString("N").Substring(0, 8);
-            string audioExt = mediaConfig.AudioBitrate > 0 ? "mp3" : "wav";
-            string audioFilename = $"miner_{uniqueId}.{audioExt}";
+            string audioFilename = $"miner_{uniqueId}.mp3";
             string imageFilename = $"miner_{uniqueId}.jpg";
 
             bool hasAudio = slot.AudioBytes != null && slot.AudioBytes.Length > 0;
@@ -38,17 +35,8 @@ namespace VN2Anki.Services
 
             if (hasAudio)
             {
-                byte[] finalAudioBytes = slot.AudioBytes;
-
-                if (mediaConfig.AudioBitrate > 0)
-                {
-                    SendStatus($"Converting audio to MP3 {mediaConfig.AudioBitrate}kbps...");
-                    finalAudioBytes = await Task.Run(() => _mediaService.ConvertWavToMp3(slot.AudioBytes, mediaConfig.AudioBitrate));
-                }
-
-                await _anki.StoreMediaAsync(audioFilename, finalAudioBytes);
+                await _anki.StoreMediaAsync(audioFilename, slot.AudioBytes);
             }
-
             if (hasImage)
             {
                 await _anki.StoreMediaAsync(imageFilename, slot.ScreenshotBytes);

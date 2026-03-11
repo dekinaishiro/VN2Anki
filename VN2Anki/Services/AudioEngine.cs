@@ -32,7 +32,7 @@ namespace VN2Anki.Services
 
         public int DurationSeconds { get; }
 
-        public AudioEngine(int durationSeconds = 120)
+        public AudioEngine(int durationSeconds = 60)
         {
             DurationSeconds = durationSeconds;
         }

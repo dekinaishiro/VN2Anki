@@ -142,7 +142,18 @@ namespace VN2Anki.Services
             if (endAgo < 0) endAgo = 0;
             if (startAgo <= endAgo) startAgo = endAgo + sessionConfig.AudioFallbackSeconds;
 
-            slot.AudioBytes = _mediaService.GetAudioSegment(startAgo, endAgo);
+            byte[] wavBytes = _mediaService.GetAudioSegment(startAgo, endAgo);
+            int bitrate = _configService.CurrentConfig.Media.AudioBitrate;
+            
+            if (bitrate > 0)
+            {
+                slot.AudioBytes = _mediaService.ConvertWavToMp3(wavBytes, bitrate);
+            }
+            else
+            {
+                // Fallback if somehow bitrate is 0, use 128 kbps
+                slot.AudioBytes = _mediaService.ConvertWavToMp3(wavBytes, 128);
+            }
         }
 
         private int SealAllOpenSlots(DateTime endTime)

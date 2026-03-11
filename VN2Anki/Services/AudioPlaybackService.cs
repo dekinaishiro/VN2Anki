@@ -8,19 +8,19 @@ namespace VN2Anki.Services
     public class AudioPlaybackService : IAudioPlaybackService, IDisposable
     {
         private WaveOutEvent _waveOut;
-        private WaveFileReader _waveReader;
+        private Mp3FileReader _waveReader;
         private MemoryStream _audioStream;
 
         public void PlayAudio(byte[] audioBytes)
         {
-            StopAudio();
-
             if (audioBytes == null || audioBytes.Length == 0) return;
+
+            StopAudio();
 
             try
             {
                 _audioStream = new MemoryStream(audioBytes);
-                _waveReader = new WaveFileReader(_audioStream);
+                _waveReader = new Mp3FileReader(_audioStream);
                 _waveOut = new WaveOutEvent();
 
                 _waveOut.Init(_waveReader);
@@ -31,8 +31,7 @@ namespace VN2Anki.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Erro ao reproduzir áudio: {ex.Message}");
-                StopAudio();
+                System.Diagnostics.Debug.WriteLine($"Playback Error: {ex.Message}");
             }
         }
 
