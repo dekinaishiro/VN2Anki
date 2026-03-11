@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using System;
 using System.IO;
+using System.Net.Http;
 using System.Threading;
 using System.Windows;
 using VN2Anki.Data;
@@ -49,7 +50,22 @@ namespace VN2Anki
             });
 
             services.AddSingleton<IConfigurationService, ConfigurationService>();
-            services.AddHttpClient<IBridgeService, YomitanBridgeService>();
+            
+            // Register YomitanBridgeService as a Singleton
+            services.AddHttpClient(); // Add generic IHttpClientFactory
+            services.AddSingleton<YomitanBridgeService>(sp => 
+            {
+                var factory = sp.GetRequiredService<IHttpClientFactory>();
+                return new YomitanBridgeService(
+                    sp.GetRequiredService<IConfigurationService>(),
+                    sp.GetRequiredService<ILogger<YomitanBridgeService>>(),
+                    sp.GetRequiredService<AnkiHandler>(),
+                    sp.GetRequiredService<MediaService>(),
+                    sp.GetRequiredService<MiningService>(),
+                    factory.CreateClient("YomitanBridge")
+                );
+            });
+            services.AddSingleton<IBridgeService>(sp => sp.GetRequiredService<YomitanBridgeService>());
 
             services.AddSingleton<AudioEngine>();
             services.AddTransient<IAudioPlaybackService, AudioPlaybackService>();
@@ -59,10 +75,18 @@ namespace VN2Anki
             services.AddSingleton<WebsocketHook>();
             services.AddSingleton<ITextHook, HookManager>();
 
-            services.AddHttpClient<AnkiHandler>();
-            services.AddHttpClient<VndbService>(client =>
+            services.AddSingleton<AnkiHandler>(sp =>
             {
+                var factory = sp.GetRequiredService<IHttpClientFactory>();
+                return new AnkiHandler(factory.CreateClient("AnkiHandler"));
+            });
+
+            services.AddSingleton<VndbService>(sp =>
+            {
+                var factory = sp.GetRequiredService<IHttpClientFactory>();
+                var client = factory.CreateClient("VndbService");
                 client.DefaultRequestHeaders.UserAgent.ParseAdd("VN2Anki_DesktopApp/1.2");
+                return new VndbService(client);
             });
 
             services.AddSingleton<SessionTracker>();
