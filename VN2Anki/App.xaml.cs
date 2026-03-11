@@ -148,6 +148,29 @@ namespace VN2Anki
             base.OnStartup(e);
             this.ShutdownMode = ShutdownMode.OnMainWindowClose;
 
+            // Background Cleanup Task for temporary media
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                try
+                {
+                    string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                    string thumbsDir = Path.Combine(appData, "VN2Anki", "thumbs");
+                    
+                    if (Directory.Exists(thumbsDir))
+                    {
+                        var files = Directory.GetFiles(thumbsDir, "*.jpg");
+                        foreach (var file in files)
+                        {
+                            try { File.Delete(file); } catch { /* Ignore if file is locked */ }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Failed to clean up temporary thumbs directory.");
+                }
+            });
+
             // Resolve Configuration Service
             var configService = Services.GetRequiredService<IConfigurationService>();
             string langCode = configService.CurrentConfig.General.Language;
