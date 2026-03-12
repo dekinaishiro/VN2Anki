@@ -231,7 +231,27 @@ namespace VN2Anki.Services
         {
             if (action == "addNote" || action == "addNotes" || action == "guiAddCards")
             {
-                _ = _sessionLogger.LogEventAsync("MINE", new { source = "yomitan", action = action });
+                string addedCardInfo = "Unknown";
+                try
+                {
+                    if (parameters != null)
+                    {
+                        var note = parameters["note"];
+                        if (note != null)
+                        {
+                            var noteFields = note["fields"] as JsonObject;
+                            if (noteFields != null && noteFields.Count > 0)
+                            {
+                                // Get the first field value as a summary
+                                var firstField = noteFields.First();
+                                addedCardInfo = $"{firstField.Key}: {firstField.Value?.ToString()}";
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                _ = _sessionLogger.LogEventAsync("MINE", new { source = "yomitan", action = action, card = addedCardInfo });
             }
 
             if (_miningService.HistorySlots.Count == 0) return;
