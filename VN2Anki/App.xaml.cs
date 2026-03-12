@@ -62,7 +62,8 @@ namespace VN2Anki
                     sp.GetRequiredService<AnkiHandler>(),
                     sp.GetRequiredService<MediaService>(),
                     sp.GetRequiredService<MiningService>(),
-                    factory.CreateClient("YomitanBridge")
+                    factory.CreateClient("YomitanBridge"),
+                    sp.GetRequiredService<ISessionLoggerService>()
                 );
             });
             services.AddSingleton<IBridgeService>(sp => sp.GetRequiredService<YomitanBridgeService>());
@@ -103,6 +104,7 @@ namespace VN2Anki
             services.AddSingleton<IGameLauncherService, GameLauncherService>();
             services.AddSingleton<IVnDatabaseService, VnDatabaseService>();
             services.AddSingleton<IExternalToolService, ExternalToolService>();
+            services.AddSingleton<ISessionLoggerService, SessionLoggerService>();
 
             services.AddTransient<VN2Anki.ViewModels.MainWindowViewModel>();
             services.AddTransient<ViewModels.SettingsViewModel>();
@@ -111,6 +113,7 @@ namespace VN2Anki
             services.AddTransient<SettingsWindow>();
 
             services.AddTransient<OverlayWindow>();
+            services.AddTransient<VN2Anki.Windows.SessionLogDebugWindow>();
 
             services.AddDbContext<AppDbContext>();
 
@@ -187,6 +190,7 @@ namespace VN2Anki
             // Force initialization of background services
             _ = Services.GetRequiredService<DiscordRpcService>();
             _ = Services.GetRequiredService<IBridgeService>();
+            _ = Services.GetRequiredService<ISessionLoggerService>();
             
             var processMonitor = Services.GetRequiredService<IProcessMonitoringService>();
             processMonitor.StartMonitoring();

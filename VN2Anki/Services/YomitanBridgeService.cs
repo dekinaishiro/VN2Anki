@@ -27,6 +27,7 @@ namespace VN2Anki.Services
         private readonly MediaService _mediaService;
         private readonly MiningService _miningService;
         private readonly HttpClient _httpClient;
+        private readonly ISessionLoggerService _sessionLogger;
         
         private WebApplication? _app;
         private CancellationTokenSource? _cts;
@@ -39,7 +40,8 @@ namespace VN2Anki.Services
             AnkiHandler ankiHandler,
             MediaService mediaService,
             MiningService miningService,
-            HttpClient httpClient)
+            HttpClient httpClient,
+            ISessionLoggerService sessionLogger)
         {
             _configService = configService;
             _logger = logger;
@@ -47,6 +49,7 @@ namespace VN2Anki.Services
             _mediaService = mediaService;
             _miningService = miningService;
             _httpClient = httpClient;
+            _sessionLogger = sessionLogger;
             
             Start();
         }
@@ -178,6 +181,16 @@ namespace VN2Anki.Services
                 if (jsonNode == null) return originalBody;
 
                 string? action = jsonNode["action"]?.ToString();
+                
+                if (action == "findNotes")
+                {
+                    var query = jsonNode["params"]?["query"]?.ToString();
+                    if (!string.IsNullOrEmpty(query))
+                    {
+                        _ = _sessionLogger.LogEventAsync("LOOKUP", new { query });
+                    }
+                }
+
                 if (action != "addNote" && action != "guiAddCards") return originalBody;
 
                 var parameters = jsonNode["params"];

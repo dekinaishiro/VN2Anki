@@ -22,6 +22,7 @@ namespace VN2Anki.Services
         private readonly VideoEngine _videoEngine;
         private readonly IDispatcherService _dispatcherService;
         private readonly IExternalToolService _externalToolService;
+        private readonly ISessionLoggerService _sessionLogger;
 
         public bool IsBufferActive { get; set; }
 
@@ -36,7 +37,8 @@ namespace VN2Anki.Services
             IVnDatabaseService vnDatabaseService,
             VideoEngine videoEngine,
             IDispatcherService dispatcherService,
-            IExternalToolService externalToolService)
+            IExternalToolService externalToolService,
+            ISessionLoggerService sessionLogger)
         {
             _tracker = tracker;
             _miningService = miningService;
@@ -47,6 +49,7 @@ namespace VN2Anki.Services
             _videoEngine = videoEngine;
             _dispatcherService = dispatcherService;
             _externalToolService = externalToolService;
+            _sessionLogger = sessionLogger;
         }
 
         public bool ToggleBuffer(VisualNovel currentVN)
@@ -90,6 +93,7 @@ namespace VN2Anki.Services
                     if (!result) return false;
                 }
 
+                _ = _sessionLogger.StartNewSessionAsync();
                 _miningService.StartBuffer(deviceId);
                 IsBufferActive = true;
 
@@ -109,6 +113,7 @@ namespace VN2Anki.Services
         public async Task EndSessionAsync(VisualNovel currentVN)
         {
             bool hasProgress = _tracker.Elapsed.TotalSeconds > 0 || _tracker.ValidCharacterCount > 0;
+            bool saved = false;
 
             if (hasProgress)
             {
@@ -135,15 +140,19 @@ namespace VN2Anki.Services
                         EndTime = System.DateTime.Now,
                         DurationSeconds = (int)_tracker.Elapsed.TotalSeconds,
                         CharactersRead = _tracker.ValidCharacterCount,
-                        CardsMined = 0
+                        CardsMined = 0,
+                        RawFilePath = _sessionLogger.CurrentLogPath
                     };
                     
                     var dbService = _serviceProvider.GetRequiredService<IVnDatabaseService>();
                     await dbService.AddSessionAsync(record);
 
+                    saved = true;
                     WeakReferenceMessenger.Default.Send(new SessionSavedMessage());
                 }
             }
+
+            await _sessionLogger.EndSessionAsync(discard: !saved);
 
             if (IsBufferActive)
             {

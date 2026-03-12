@@ -34,6 +34,16 @@ namespace VN2Anki
 
             this.Loaded += Window_Loaded;
             this.Closing += Window_Closing;
+            this.KeyDown += MainWindow_KeyDown;
+        }
+
+        private void MainWindow_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.F12)
+            {
+                var debugWin = App.Current.Services.GetRequiredService<VN2Anki.Windows.SessionLogDebugWindow>();
+                debugWin.Show();
+            }
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)

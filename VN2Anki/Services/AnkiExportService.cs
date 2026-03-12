@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Messaging;
 using VN2Anki.Messages;
 using VN2Anki.Models;
+using VN2Anki.Services.Interfaces;
 
 namespace VN2Anki.Services
 {
@@ -10,11 +11,13 @@ namespace VN2Anki.Services
     {
         private readonly AnkiHandler _anki;
         private readonly MediaService _mediaService;
+        private readonly ISessionLoggerService _sessionLogger;
 
-        public AnkiExportService(AnkiHandler anki, MediaService mediaService)
+        public AnkiExportService(AnkiHandler anki, MediaService mediaService, ISessionLoggerService sessionLogger)
         {
             _anki = anki;
             _mediaService = mediaService;
+            _sessionLogger = sessionLogger;
         }
 
         private void SendStatus(string message)
@@ -43,6 +46,11 @@ namespace VN2Anki.Services
             }
 
             var result = await _anki.UpdateLastCardAsync(ankiConfig.Deck, ankiConfig.AudioField, ankiConfig.ImageField, hasAudio ? audioFilename : null, hasImage ? imageFilename : null);
+
+            if (result.success)
+            {
+                _ = _sessionLogger.LogEventAsync("MINE", new { slotId = slot.Id, hasAudio, hasImage });
+            }
 
             // force GC collection after heavy media processing
             //_ = Task.Run(async () =>

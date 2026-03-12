@@ -1,0 +1,17 @@
+<Window x:Class="VN2Anki.Windows.SessionLogDebugWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Session Log Debug" Height="450" Width="800"
+        Background="#1E1E1E" Foreground="White" WindowStartupLocation="CenterScreen">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
+            <TextBlock Text="Real-time Session Events" FontWeight="Bold" Margin="5" VerticalAlignment="Center"/>
+            <Button x:Name="BtnClear" Content="Clear Console" Margin="5" Padding="5,0" Click="BtnClear_Click"/>
+        </StackPanel>
+        <ListBox x:Name="LogListBox" Grid.Row="1" Margin="5" Background="#252526" Foreground="#D4D4D4" FontFamily="Consolas" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+    </Grid>
+</Window>
