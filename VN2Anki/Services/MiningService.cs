@@ -12,6 +12,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Channels;
 using VN2Anki.Locales;
+using Microsoft.Extensions.DependencyInjection;
+using System.Windows;
 
 namespace VN2Anki.Services
 {
@@ -216,20 +218,28 @@ namespace VN2Anki.Services
                         _idleTimer.Stop();
                         SealAllOpenSlots(DateTime.Now);
 
+                        // Garantir que a imagem esteja pronta antes de criar o slot
+                        byte[] screenshot = await screenshotTask;
+
                         string safeText = message.Text.Length > 1000 ? message.Text.Substring(0, 1000) + " [...]" : message.Text;
 
                         var newSlot = new MiningSlot
                         {
                             Text = safeText,
-                            Timestamp = message.Timestamp
+                            Timestamp = message.Timestamp,
+                            ScreenshotBytes = screenshot
                         };
+
+                        // Limpar qualquer hover antigo para que a overlay foque no novo slot automaticamente
+                        var bridge = App.Current.Services.GetService<IBridgeService>();
+                        if (bridge != null) bridge.ActiveHoverSlotId = string.Empty;
 
                         HistorySlots.Insert(0, newSlot);
 
                         int spokenCharCount = CountJapaneseCharacters(safeText);
                         Tracker.AddCharacters(spokenCharCount);
 
-                        while (HistorySlots.Count > MaxSlots)
+                        if (HistorySlots.Count > MaxSlots)
                         {
                             var oldSlot = HistorySlots[HistorySlots.Count - 1];
                             oldSlot.Dispose();

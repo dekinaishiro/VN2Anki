@@ -274,9 +274,13 @@ namespace VN2Anki.Services
             if (fields == null) return;
 
             MiningSlot? targetSlot = null;
+
+            // Se houver um slot sendo "focado" (hover) na MiningWindow, usamos ele.
+            // Caso contrário, usamos sempre o mais recente (índice 0).
             if (!string.IsNullOrEmpty(ActiveHoverSlotId))
             {
                 targetSlot = _miningService.HistorySlots.FirstOrDefault(s => s.Id == ActiveHoverSlotId);
+                // Limpamos o ID após o uso para que a próxima mina (ex: na overlay) volte ao padrão do último slot
                 ActiveHoverSlotId = string.Empty;
             }
 
@@ -284,6 +288,12 @@ namespace VN2Anki.Services
                 targetSlot = _miningService.HistorySlots[0];
 
             if (targetSlot == null) return;
+
+            // GARANTIA: Se o slot ainda estiver aberto (sem áudio selado), selamos agora.
+            if (targetSlot.IsOpen)
+            {
+                _miningService.SealSlotAudio(targetSlot, DateTime.Now);
+            }
 
             string uniqueId = Guid.NewGuid().ToString("N").Substring(0, 8);
 
