@@ -57,8 +57,6 @@ namespace VN2Anki.Services
         private void Start()
         {
             var config = _configService.CurrentConfig;
-            if (!config.Anki.EnableYomitanBridge) return;
-
             int port = config.Anki.YomitanBridgePort;
             _logger.LogInformation($"Starting Kestrel Yomitan Bridge on port {port}...");
 

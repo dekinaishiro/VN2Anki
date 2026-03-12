@@ -169,52 +169,6 @@ namespace VN2Anki.ViewModels
             MiniStatsVisibility = MiniStatsVisibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
         }
 
-        [RelayCommand]
-        private async Task MiniQuickAddAsync()
-        {
-            if (_miningService.HistorySlots.Count == 0)
-            {
-                WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = Strings.MsgEmpty, IsError = true }));
-                return;
-            }
-
-            var config = _configService.CurrentConfig;
-            if (string.IsNullOrEmpty(config.Anki.Deck))
-            {
-                WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Please configure the Deck first!", IsError = true }));
-                return;
-            }
-
-            var slot = _miningService.HistorySlots[0];
-            var result = await _ankiExportService.ExportSlotAsync(slot, config.Anki, config.Media);
-
-            WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload
-            {
-                Message = result.success ? "Card Updated" : "Error Updating",
-                IsError = !result.success
-            }));
-        }
-
-        public async Task ExportSlotAsync(Models.MiningSlot slot)
-        {
-            if (slot == null) return;
-
-            var config = _configService.CurrentConfig;
-            if (string.IsNullOrEmpty(config.Anki.Deck))
-            {
-                WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Please configure the Deck first!", IsError = true }));
-                return;
-            }
-
-            var result = await _ankiExportService.ExportSlotAsync(slot, config.Anki, config.Media);
-
-            WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload
-            {
-                Message = result.success ? "Card Updated" : "Error Updating",
-                IsError = !result.success
-            }));
-        }
-
         public async Task EndSessionAsync()
         {
             await _sessionManager.EndSessionAsync(CurrentVN);

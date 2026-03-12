@@ -81,7 +81,7 @@ namespace VN2Anki.ViewModels
         {
             _configService.Save();
             
-            if (_initialBridgePort != Config.Anki.YomitanBridgePort || _initialBridgeEnabled != Config.Anki.EnableYomitanBridge)
+            if (_initialBridgePort != Config.Anki.YomitanBridgePort)
             {
                 _bridgeService.Restart(Config.Anki.YomitanBridgePort);
             }

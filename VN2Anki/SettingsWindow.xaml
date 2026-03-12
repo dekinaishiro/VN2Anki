@@ -254,8 +254,6 @@
                         <!-- Yomitan Bridge Settings -->
                         <Border Grid.Row="6" Grid.ColumnSpan="3" BorderBrush="#333333" BorderThickness="0,1,0,0" Margin="0,15,0,10" />
 
-                        <CheckBox x:Name="ChkEnableYomitanBridge" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="3" Content="{x:Static loc:Strings.LblEnableYomitanBridge}" IsChecked="{Binding Config.Anki.EnableYomitanBridge}" Margin="5,0,5,10" Foreground="White" />
-                        
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblYomitanBridgePort}" Grid.Row="8" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
                         <TextBox x:Name="TxtYomitanBridgePort" Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5" Text="{Binding Config.Anki.YomitanBridgePort, UpdateSourceTrigger=PropertyChanged}"/>
                     </Grid>
