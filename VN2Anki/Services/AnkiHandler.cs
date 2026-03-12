@@ -15,6 +15,7 @@ namespace VN2Anki.Services
     {
         private readonly HttpClient _client;
         private string _ankiUrl;
+        private int _timeoutSeconds = 10;
 
         public AnkiHandler(HttpClient client)
         {
@@ -25,7 +26,7 @@ namespace VN2Anki.Services
         public void UpdateSettings(string url, int timeoutSeconds)
         {
             _ankiUrl = string.IsNullOrWhiteSpace(url) ? "http://127.0.0.1:8765" : url;
-            _client.Timeout = TimeSpan.FromSeconds(timeoutSeconds > 0 ? timeoutSeconds : 10);
+            //_client.Timeout = TimeSpan.FromSeconds(timeoutSeconds > 0 ? timeoutSeconds : 10);
         }
 
         private class AnkiRequest
@@ -48,8 +49,10 @@ namespace VN2Anki.Services
                 var requestObj = new AnkiRequest { Action = action, Params = parameters ?? new object() };
                 string jsonString = JsonSerializer.Serialize(requestObj);
 
+                // Usa o CancellationToken para gerenciar o timeout sem modificar o HttpClient travado
+                using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_timeoutSeconds)))
                 using (var content = new StringContent(jsonString, Encoding.UTF8, "application/json"))
-                using (var response = await _client.PostAsync(_ankiUrl, content))
+                using (var response = await _client.PostAsync(_ankiUrl, content, cts.Token))
                 {
                     response.EnsureSuccessStatusCode();
 
