@@ -23,7 +23,6 @@ namespace VN2Anki.ViewModels
     {
         private readonly MiningService _miningService;
         private readonly IConfigurationService _configService;
-        private readonly AnkiExportService _ankiExportService;
         private readonly AnkiHandler _ankiHandler;
         private CancellationTokenSource _pollingCts;
         private readonly DiscordRpcService _discordRpc;
@@ -93,12 +92,11 @@ namespace VN2Anki.ViewModels
         private readonly IVnDatabaseService _vnDatabaseService;
         private readonly IProcessMonitoringService _processMonitor;
 
-        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiExportService ankiExportService, AnkiHandler ankiHandler, VideoEngine videoEngine, IWindowService windowService, ISessionManagerService sessionManager, IGameLauncherService gameLauncher, IVnDatabaseService vnDatabaseService, IProcessMonitoringService processMonitor)
+        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiHandler ankiHandler, VideoEngine videoEngine, IWindowService windowService, ISessionManagerService sessionManager, IGameLauncherService gameLauncher, IVnDatabaseService vnDatabaseService, IProcessMonitoringService processMonitor)
         {
             Tracker = tracker;
             _miningService = miningService;
             _configService = configService;
-            _ankiExportService = ankiExportService;
             _ankiHandler = ankiHandler;
             _videoEngine = videoEngine;
             _windowService = windowService;

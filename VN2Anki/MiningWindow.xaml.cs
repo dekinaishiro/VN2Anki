@@ -17,7 +17,6 @@ namespace VN2Anki
     public partial class MiningWindow : Window
     {
         private static MiningWindow _instance;
-        private static Action<MiningSlot> _onMineAction;
         private static Action<MiningSlot> _onDeleteAction;
 
         private readonly IAudioPlaybackService _audioPlaybackService;
@@ -25,9 +24,8 @@ namespace VN2Anki
         private readonly IConfigurationService _configService;
         private readonly ObservableCollection<MiningSlot> _history;
 
-        public static void ShowWindow(ObservableCollection<MiningSlot> history, Action<MiningSlot> onMineAction, Action<MiningSlot> onDeleteAction)
+        public static void ShowWindow(ObservableCollection<MiningSlot> history, Action<MiningSlot> onDeleteAction)
         {
-            _onMineAction = onMineAction;
             _onDeleteAction = onDeleteAction;
 
             if (_instance == null)
@@ -87,7 +85,6 @@ namespace VN2Anki
                     .slot.open .status { display: block; }
                     .btn { padding: 8px 12px; color: white; font-weight: bold; border: none; cursor: pointer; margin-right: 5px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
                     .btn-play { background: #28A745; }
-                    .btn-mine { background: #007ACC; }
                     .btn-delete { background: #DC3545; margin-right: 0; }
                     .text-container { position: relative; display: inline-block; cursor: text; }
                 </style>
@@ -152,12 +149,6 @@ namespace VN2Anki
                                 btnPlay.title = 'Play Audio';
                                 btnPlay.onclick = () => window.chrome.webview.postMessage(JSON.stringify({ action: 'play', id: slot.id }));
 
-                                const btnMine = document.createElement('button');
-                                btnMine.className = 'btn btn-mine';
-                                btnMine.innerText = '⛏';
-                                btnMine.title = 'Send to Anki';
-                                btnMine.onclick = () => window.chrome.webview.postMessage(JSON.stringify({ action: 'mine', id: slot.id }));
-
                                 const btnDelete = document.createElement('button');
                                 btnDelete.className = 'btn btn-delete';
                                 btnDelete.innerText = '🗑';
@@ -165,7 +156,6 @@ namespace VN2Anki
                                 btnDelete.onclick = () => window.chrome.webview.postMessage(JSON.stringify({ action: 'delete', id: slot.id }));
 
                                 div.appendChild(btnPlay);
-                                div.appendChild(btnMine);
                                 div.appendChild(btnDelete);
                             }
 
@@ -315,9 +305,6 @@ namespace VN2Anki
                                     if (slot != null && slot.AudioBytes != null)
                                         _audioPlaybackService.PlayAudio(slot.AudioBytes);
                                     break;
-                                case "mine":
-                                    if (slot != null) _onMineAction?.Invoke(slot);
-                                    break;
                                 case "delete":
                                     if (slot != null) _onDeleteAction?.Invoke(slot);
                                     break;
@@ -397,7 +384,6 @@ namespace VN2Anki
             _audioPlaybackService?.StopAudio();
 
             _instance = null;
-            _onMineAction = null;
             _onDeleteAction = null;
             
             webView?.Dispose();

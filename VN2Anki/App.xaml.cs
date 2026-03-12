@@ -95,7 +95,6 @@ namespace VN2Anki
             services.AddSingleton<DiscordRpcService>();
 
             services.AddSingleton<MediaService>();
-            services.AddSingleton<AnkiExportService>();
 
             services.AddSingleton<IProcessMonitoringService, ProcessMonitoringService>();
 

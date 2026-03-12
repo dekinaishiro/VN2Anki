@@ -36,7 +36,6 @@ namespace VN2Anki.Models
         public string ImageField { get; set; }
         public string Url { get; set; } = "http://127.0.0.1:8765";
         public int TimeoutSeconds { get; set; } = 15;
-        public bool EnableYomitanBridge { get; set; } = false;
         public int YomitanBridgePort { get; set; } = 8764;
     }
 

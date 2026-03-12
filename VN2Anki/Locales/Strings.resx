@@ -159,15 +159,6 @@
   <data name="HeaderControls" xml:space="preserve">
     <value>Controls</value>
   </data>
-  <data name="BtnRecord" xml:space="preserve">
-    <value>RECORD</value>
-  </data>
-  <data name="BtnStartBuffer" xml:space="preserve">
-    <value>START BUFFER</value>
-  </data>
-  <data name="BtnStopBuffer" xml:space="preserve">
-    <value>STOP BUFFER</value>
-  </data>
   <data name="BtnHistory" xml:space="preserve">
     <value>HISTORY</value>
   </data>
@@ -189,23 +180,8 @@
   <data name="StatusStopped" xml:space="preserve">
     <value>Buffer Stopped.</value>
   </data>
-  <data name="StatusPreparing" xml:space="preserve">
-    <value>Preparing media...</value>
-  </data>
-  <data name="MsgSuccess" xml:space="preserve">
-    <value>Media added successfully!</value>
-  </data>
-  <data name="MsgCardUpdated" xml:space="preserve">
-    <value>Card Updated!</value>
-  </data>
-  <data name="MsgError" xml:space="preserve">
-    <value>ERROR!</value>
-  </data>
   <data name="MsgAttention" xml:space="preserve">
     <value>Attention</value>
-  </data>
-  <data name="MsgEmpty" xml:space="preserve">
-    <value>Empty!</value>
   </data>
   <data name="LblOpenSettingsOnStartup" xml:space="preserve">
     <value>Open Settings on Startup</value>

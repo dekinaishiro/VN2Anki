@@ -103,15 +103,11 @@ namespace VN2Anki.Services
 
                     if (result.MessageType == WebSocketMessageType.Text)
                     {
-                        // Pega o texto EXATAMENTE como saiu do Luna, antes de qualquer formatação sua
                         string rawMessage = Encoding.UTF8.GetString(ms.ToArray());
                         DebugLogger.Log($"[1-WEBSOCKET] RAW packet decoded: {rawMessage}");
 
-                        // O SEGREDO ESTÁ AQUI: Qualquer erro de formatação/JSON que você tenha 
-                        // será pego aqui, impedindo que o loop morra e perca os próximos 3 segundos.
                         try
                         {
-                            // COLOQUE A SUA LÓGICA DE EXTRAÇÃO/JSON E TRIM AQUI
                             string message = rawMessage.Trim(); // Substitua pela sua lógica
 
                             if (string.IsNullOrWhiteSpace(message)) continue;

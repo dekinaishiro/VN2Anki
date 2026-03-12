@@ -18,7 +18,6 @@ namespace VN2Anki.ViewModels
         private readonly AudioEngine _audioEngine;
         private readonly VideoEngine _videoEngine;
         private readonly int _initialBridgePort;
-        private readonly bool _initialBridgeEnabled;
         public SessionTracker Tracker { get; }
 
         [ObservableProperty]
@@ -43,7 +42,6 @@ namespace VN2Anki.ViewModels
 
             Config = _configService.CurrentConfig;
             _initialBridgePort = Config.Anki.YomitanBridgePort;
-            _initialBridgeEnabled = Config.Anki.EnableYomitanBridge;
 
             Tracker.PropertyChanged += (s, e) =>
             {
