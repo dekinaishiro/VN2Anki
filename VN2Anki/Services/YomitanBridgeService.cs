@@ -115,12 +115,6 @@ namespace VN2Anki.Services
 
                         byte[] responseBody = await proxyResponse.Content.ReadAsByteArrayAsync();
                         await context.Response.Body.WriteAsync(responseBody, 0, responseBody.Length);
-
-                        if (proxyResponse.IsSuccessStatusCode)
-                        {
-                            // we no longer parse the response to log MINE.
-                            // this ensures we don't depend on Anki's error format.
-                        }
                     }
                     catch (Exception ex)
                     {
@@ -177,7 +171,6 @@ namespace VN2Anki.Services
                 if (jsonNode == null) return originalBody;
 
                 string? action = jsonNode["action"]?.ToString();
-                bool lookupLogged = false;
 
                 if (action == "multi")
                 {
@@ -189,30 +182,12 @@ namespace VN2Anki.Services
                             var subAction = actionItem?["action"]?.ToString();
                             var subParams = actionItem?["params"];
                             
-                            if (subAction == "findNotes" && !lookupLogged)
-                            {
-                                var query = subParams?["query"]?.ToString();
-                                if (!string.IsNullOrEmpty(query))
-                                {
-                                    _ = _sessionLogger.LogEventAsync("LOOKUP", new { query });
-                                    lookupLogged = true;
-                                }
-                            }
                             await ProcessActionAsync(subAction, subParams);
                         }
                     }
                 }
                 else
                 {
-                    if (action == "findNotes" && !lookupLogged)
-                    {
-                        var query = jsonNode["params"]?["query"]?.ToString();
-                        if (!string.IsNullOrEmpty(query))
-                        {
-                            _ = _sessionLogger.LogEventAsync("LOOKUP", new { query });
-                            lookupLogged = true;
-                        }
-                    }
                     await ProcessActionAsync(action, jsonNode["params"]);
                 }
 
@@ -227,89 +202,136 @@ namespace VN2Anki.Services
 
         private async Task ProcessActionAsync(string? action, JsonNode? parameters)
         {
-            if (action == "addNote" || action == "addNotes" || action == "guiAddCards")
-            {
-                string addedCardInfo = "Unknown";
-                try
-                {
-                    if (parameters != null)
-                    {
-                        var note = parameters["note"];
-                        if (note != null)
-                        {
-                            var noteFields = note["fields"] as JsonObject;
-                            if (noteFields != null && noteFields.Count > 0)
-                            {
-                                // Get the first field value as a summary
-                                var firstField = noteFields.First();
-                                addedCardInfo = $"{firstField.Key}: {firstField.Value?.ToString()}";
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex) { _logger.LogDebug(ex, "Error getting first field for card summary."); }
+            if (parameters == null || (action != "addNote" && action != "guiAddCards" && action != "addNotes"))
+                return;
 
-                _ = _sessionLogger.LogEventAsync("MINE", new { source = "yomitan", action = action, card = addedCardInfo });
-            }
+            LogMiningEvent(action, parameters);
+            if (action == "addNotes") return;
+
+            var config = _configService.CurrentConfig;
+            if (string.IsNullOrWhiteSpace(config.Anki.AudioField) && string.IsNullOrWhiteSpace(config.Anki.ImageField))
+                return;
 
             if (_miningService.HistorySlots.Count == 0) return;
 
-            var config = _configService.CurrentConfig;
-            string targetAudioField = config.Anki.AudioField;
-            string targetImageField = config.Anki.ImageField;
-
-            if (string.IsNullOrWhiteSpace(targetAudioField) && string.IsNullOrWhiteSpace(targetImageField))
-                return;
-
-            if (action != "addNote" && action != "guiAddCards") return;
-
-            if (parameters == null) return;
-
-            JsonObject? fields = null;
-            if (action == "addNote") fields = parameters["note"]?["fields"] as JsonObject;
-            else if (action == "guiAddCards") fields = parameters["note"]?["fields"] as JsonObject;
-
-            if (fields == null) return;
-
-            MiningSlot? targetSlot = null;
-
-            // Se houver um slot sendo "focado" (hover) na MiningWindow, usamos ele.
-            // Caso contrário, usamos sempre o mais recente (índice 0).
-            if (!string.IsNullOrEmpty(ActiveHoverSlotId))
-            {
-                targetSlot = _miningService.HistorySlots.FirstOrDefault(s => s.Id == ActiveHoverSlotId);
-                // Limpamos o ID após o uso para que a próxima mina (ex: na overlay) volte ao padrão do último slot
-                ActiveHoverSlotId = string.Empty;
-            }
-
-            if (targetSlot == null && _miningService.HistorySlots.Count > 0)
-                targetSlot = _miningService.HistorySlots[0];
-
+            // verify origin of the lookup (overlay vs history)
+            MiningSlot? targetSlot = ResolveTargetSlot();
             if (targetSlot == null) return;
 
-            // GARANTIA: Se o slot ainda estiver aberto (sem áudio selado), selamos agora.
-            if (targetSlot.IsOpen)
+            // extract fields object from the request parameters to know where to inject media
+            var fields = ExtractFields(action, parameters);
+            if (fields == null) return;
+
+            // ensures that slots are sealed
+            if (targetSlot.IsOpen) _miningService.SealSlotAudio(targetSlot, DateTime.Now);
+
+            // injects media in anki
+            await InjectMediaAsync(targetSlot, fields, config);
+        }
+
+        private void LogMiningEvent(string action, JsonNode parameters)
+        {
+            string cardInfo = "Unknown";
+            try
             {
-                _miningService.SealSlotAudio(targetSlot, DateTime.Now);
+                var fields = ExtractFields(action, parameters);
+                if (fields != null && fields.Count > 0)
+                {
+                    var firstField = fields.First();
+                    cardInfo = $"{firstField.Key}: {firstField.Value?.ToString()}";
+                }
+            }
+            catch { /* Ignorar erro de log */ }
+
+            _ = _sessionLogger.LogEventAsync("MINE", new { source = "yomitan", action, card = cardInfo });
+        }
+
+        private JsonObject? ExtractFields(string action, JsonNode parameters)
+        {
+            // O Yomitan envia o campo 'note' para addNote e guiAddCards
+            return parameters["note"]?["fields"] as JsonObject;
+        }
+
+        private MiningSlot? ResolveTargetSlot()
+        {
+            var config = _configService.CurrentConfig;
+            var history = _miningService.HistorySlots;
+            
+            if (history.Count == 0) return null;
+
+            // 1. Get window in focus and its process PID
+            IntPtr foregroundWindow = Win32InteropService.GetForegroundWindow();
+            Win32InteropService.GetWindowThreadProcessId(foregroundWindow, out uint foregroundPid);
+            uint currentAppPid = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
+
+            // 2. Identify Game Process
+            bool isGameInFocus = false;
+            if (!string.IsNullOrEmpty(config.Media.VideoWindow))
+            {
+                var gameProcesses = System.Diagnostics.Process.GetProcessesByName(config.Media.VideoWindow);
+                isGameInFocus = gameProcesses.Any(p => (uint)p.Id == foregroundPid);
+                foreach (var p in gameProcesses) p.Dispose();
             }
 
-            string uniqueId = Guid.NewGuid().ToString("N").Substring(0, 8);
-
-            if (targetSlot.AudioBytes != null && !string.IsNullOrWhiteSpace(targetAudioField))
+            // 3. Decision Logic:
+            
+            // IF Game is in focus -> CERTAINLY OVERLAY context.
+            if (isGameInFocus)
             {
-                try {
-                    byte[] audio = targetSlot.AudioBytes;
+                _logger.LogDebug("Context identified: OVERLAY (Game window active). Using most recent capture.");
+                return history[0];
+            }
+
+            // IF App itself is in focus -> Either HISTORY list or manual OVERLAY interaction.
+            if (foregroundPid == currentAppPid)
+            {
+                if (!string.IsNullOrEmpty(ActiveHoverSlotId))
+                {
+                    var slot = history.FirstOrDefault(s => s.Id == ActiveHoverSlotId);
+                    if (slot != null)
+                    {
+                        _logger.LogDebug($"Context identified: HISTORY (App window active, Slot {ActiveHoverSlotId} hovered).");
+                        ActiveHoverSlotId = string.Empty; // Consume the hover state
+                        return slot;
+                    }
+                }
+                
+                _logger.LogDebug("Context identified: APP (App window active, no hover). Defaulting to most recent.");
+                return history[0];
+            }
+
+            // fall back = uses most recent
+            _logger.LogDebug("Context identified: EXTERNAL. Defaulting to most recent.");
+            ActiveHoverSlotId = string.Empty; 
+            return history[0];
+        }
+
+        private async Task InjectMediaAsync(MiningSlot slot, JsonObject fields, AppConfig config)
+        {
+            string uniqueId = Guid.NewGuid().ToString("N")[..8];
+
+            // Audio injection
+            if (slot.AudioBytes != null && !string.IsNullOrWhiteSpace(config.Anki.AudioField))
+            {
+                try
+                {
                     string filename = $"miner_{uniqueId}.mp3";
-                    if (await _ankiHandler.StoreMediaAsync(filename, audio)) fields[targetAudioField] = $"[sound:{filename}]";
-                } catch (Exception ex) { _logger.LogError(ex, "Failed to store audio in Anki."); }
+                    if (await _ankiHandler.StoreMediaAsync(filename, slot.AudioBytes))
+                        fields[config.Anki.AudioField] = $"[sound:{filename}]";
+                }
+                catch (Exception ex) { _logger.LogError(ex, "Failed to inject audio."); }
             }
 
-            if (targetSlot.ScreenshotBytes != null && !string.IsNullOrWhiteSpace(targetImageField))
+            // Image injection
+            if (slot.ScreenshotBytes != null && !string.IsNullOrWhiteSpace(config.Anki.ImageField))
             {
-                try {
+                try
+                {
                     string filename = $"miner_{uniqueId}.jpg";
-                    if (await _ankiHandler.StoreMediaAsync(filename, targetSlot.ScreenshotBytes)) fields[targetImageField] = $"<img src=\"{filename}\">";
-                } catch (Exception ex) { _logger.LogError(ex, "Failed to store screenshot in Anki."); }
+                    if (await _ankiHandler.StoreMediaAsync(filename, slot.ScreenshotBytes))
+                        fields[config.Anki.ImageField] = $"<img src=\"{filename}\">";
+                }
+                catch (Exception ex) { _logger.LogError(ex, "Failed to inject screenshot."); }
             }
         }
 
