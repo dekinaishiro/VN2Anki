@@ -163,7 +163,7 @@ namespace VN2Anki
                         var files = Directory.GetFiles(thumbsDir, "*.jpg");
                         foreach (var file in files)
                         {
-                            try { File.Delete(file); } catch { /* Ignore if file is locked */ }
+                            try { File.Delete(file); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Failed to delete thumbnail {file}: {ex.Message}"); }
                         }
                     }
                 }

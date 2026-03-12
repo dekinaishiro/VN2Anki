@@ -58,7 +58,7 @@ namespace VN2Anki.Models
                 File.WriteAllBytes(filePath, _screenshotBytes);
                 ScreenshotFilePath = filePath;
             }
-            catch { /* Ignore IO errors */ }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Error saving thumbnail: {ex.Message}"); }
         }
 
         public string DisplayTime => Timestamp.ToString("HH:mm:ss");
@@ -96,7 +96,7 @@ namespace VN2Anki.Models
 
             if (!string.IsNullOrEmpty(ScreenshotFilePath) && File.Exists(ScreenshotFilePath))
             {
-                try { File.Delete(ScreenshotFilePath); } catch { }
+                try { File.Delete(ScreenshotFilePath); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Error deleting screenshot: {ex.Message}"); }
             }
 
             GC.SuppressFinalize(this);

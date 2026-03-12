@@ -114,10 +114,8 @@ namespace VN2Anki
         }
 
         private void BtnOpenHistory_Click(object sender, RoutedEventArgs e)
-            => MiningWindow.ShowWindow(_miningService.HistorySlots, 
-                null, 
+            => MiningWindow.ShowWindow(_miningService.HistorySlots,
                 slot => _miningService.DeleteSlot(slot));
-
         private void OpenOrActivateWindow<T>(Func<T> getInstance, Action<T> setInstance, Action onClosed = null, Action<T> onCreated = null) where T : Window
         {
             var windowInstance = getInstance();

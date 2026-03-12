@@ -121,9 +121,9 @@ namespace VN2Anki.Services
                 // loop to keep pipe alive and read any incoming messages
                 _ = Task.Run(ReadLoopAsync);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // ignore if discord not running
+                System.Diagnostics.Debug.WriteLine($"Discord RPC connection failed: {ex.Message}");
             }
         }
 
@@ -188,7 +188,10 @@ namespace VN2Anki.Services
                 await _pipe.WriteAsync(buffer, 0, buffer.Length, _cts.Token);
                 await _pipe.FlushAsync(_cts.Token);
             }
-            catch { /* ignore if discord has been closed */ }    
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Discord RPC send failed: {ex.Message}");
+            }
         }
 
         private async Task ReadLoopAsync()
@@ -201,7 +204,10 @@ namespace VN2Anki.Services
                     await _pipe.ReadAsync(buffer, 0, buffer.Length, _cts.Token);
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Discord RPC read loop error: {ex.Message}");
+            }
         }
 
         public void Dispose()

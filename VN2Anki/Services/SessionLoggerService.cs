@@ -111,7 +111,7 @@ namespace VN2Anki.Services
 
                     if (discard && File.Exists(_currentLogPath))
                     {
-                        try { File.Delete(_currentLogPath); } catch { }
+                        try { File.Delete(_currentLogPath); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Failed to delete session log: {ex.Message}"); }
                     }
                 }
             }

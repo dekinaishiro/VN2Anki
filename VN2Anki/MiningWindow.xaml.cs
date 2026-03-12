@@ -266,7 +266,7 @@ namespace VN2Anki
             {
                 if (!targetExtensions.Any(t => t.Name == loadedExt.Name))
                 {
-                    try { await loadedExt.RemoveAsync(); } catch { }
+                    try { await loadedExt.RemoveAsync(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Failed to remove browser extension {loadedExt.Name}: {ex.Message}"); }
                 }
             }
 
@@ -274,7 +274,7 @@ namespace VN2Anki
             {
                 if (!loadedExtensions.Any(l => l.Name == target.Name))
                 {
-                    try { await profile.AddBrowserExtensionAsync(target.Path); } catch { }
+                    try { await profile.AddBrowserExtensionAsync(target.Path); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Failed to add browser extension from {target.Path}: {ex.Message}"); }
                 }
             }
         }
@@ -313,7 +313,10 @@ namespace VN2Anki
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error processing message from MiningWindow WebView: {ex.Message}");
+            }
         }
 
         private void History_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)

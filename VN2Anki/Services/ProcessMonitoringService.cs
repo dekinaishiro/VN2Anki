@@ -114,7 +114,7 @@ namespace VN2Anki.Services
                     }
                 }
             }
-            catch { /* Ignore */ }
+            catch (Exception ex) { _logger.LogWarning(ex, "Failed to refresh active processes snapshot."); }
         }
 
         private async void OnProcessStarted(object sender, EventArrivedEventArgs e)
@@ -154,7 +154,7 @@ namespace VN2Anki.Services
                     {
                          process = Process.GetProcessById(processId);
                     }
-                    catch { /* Process might have exited immediately or access denied */ }
+                    catch (Exception ex) { _logger.LogDebug(ex, "Could not get process object for PID {ProcessId}.", processId); }
 
                     _activeVns[processId] = matchingVn;
                     _logger.LogInformation($"Detected VN start via WMI: {matchingVn.Title} (PID: {processId})");
@@ -237,7 +237,7 @@ namespace VN2Anki.Services
                                     vn = vns.FirstOrDefault(v => string.Equals(v.ExecutablePath, path, StringComparison.OrdinalIgnoreCase));
                                 }
                             }
-                            catch { /* Ignore access denied */ }
+                            catch (Exception ex) { _logger.LogDebug(ex, "Access denied getting MainModule for process {ProcessName}.", process.ProcessName); }
                         }
 
                         if (vn != null)
@@ -245,9 +245,9 @@ namespace VN2Anki.Services
                             runningVns.Add((vn, process));
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // Process access denied or exited
+                        _logger.LogDebug(ex, "Error processing a running process for VN detection.");
                     }
                 }
             }

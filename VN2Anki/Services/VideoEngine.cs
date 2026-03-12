@@ -37,7 +37,7 @@ namespace VN2Anki.Services
 
         private string GetProcessFilename(Process p)
         {
-            try { return p.MainModule?.FileName; } catch { /* ignores and tries fallback */ }
+            try { return p.MainModule?.FileName; } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"MainModule fallback for {p.ProcessName}: {ex.Message}"); }
 
             int capacity = 2000;
             StringBuilder sb = new StringBuilder(capacity);

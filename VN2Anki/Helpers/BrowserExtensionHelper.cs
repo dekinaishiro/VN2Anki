@@ -110,7 +110,7 @@ namespace VN2Anki.Helpers
                         }
                     }
                 }
-                catch { }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Error enumerating extensions: {ex.Message}"); }
             }
 
             return extensions;
@@ -156,8 +156,9 @@ namespace VN2Anki.Helpers
                     IconPath = iconPath
                 };
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"Error parsing extension manifest: {ex.Message}");
                 return null;
             }
         }
@@ -182,7 +183,7 @@ namespace VN2Anki.Helpers
                                 return versionDirs.OrderByDescending(d => d).First();
                             }
                         }
-                        catch { }
+                        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Error getting latest version path: {ex.Message}"); }
                     }
                 }
             }

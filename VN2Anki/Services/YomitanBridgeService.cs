@@ -135,7 +135,7 @@ namespace VN2Anki.Services
                 Task.Run(async () => {
                     try {
                         if (_app != null) await _app.StartAsync(token);
-                    } catch (OperationCanceledException) { }
+                    } catch (OperationCanceledException ex) { _logger.LogDebug(ex, "Kestrel server start was cancelled."); }
                     catch (Exception ex) { _logger.LogError(ex, "Kestrel server error."); }
                 }, token);
 
@@ -156,7 +156,7 @@ namespace VN2Anki.Services
             {
                 _app.StopAsync().Wait(1000); 
             }
-            catch { }
+            catch (Exception ex) { _logger.LogDebug(ex, "Error while stopping Kestrel server."); }
 
             _app = null;
             _cts?.Dispose();
@@ -247,7 +247,7 @@ namespace VN2Anki.Services
                         }
                     }
                 }
-                catch { }
+                catch (Exception ex) { _logger.LogDebug(ex, "Error getting first field for card summary."); }
 
                 _ = _sessionLogger.LogEventAsync("MINE", new { source = "yomitan", action = action, card = addedCardInfo });
             }
@@ -301,7 +301,7 @@ namespace VN2Anki.Services
                     byte[] audio = targetSlot.AudioBytes;
                     string filename = $"miner_{uniqueId}.mp3";
                     if (await _ankiHandler.StoreMediaAsync(filename, audio)) fields[targetAudioField] = $"[sound:{filename}]";
-                } catch { }
+                } catch (Exception ex) { _logger.LogError(ex, "Failed to store audio in Anki."); }
             }
 
             if (targetSlot.ScreenshotBytes != null && !string.IsNullOrWhiteSpace(targetImageField))
@@ -309,7 +309,7 @@ namespace VN2Anki.Services
                 try {
                     string filename = $"miner_{uniqueId}.jpg";
                     if (await _ankiHandler.StoreMediaAsync(filename, targetSlot.ScreenshotBytes)) fields[targetImageField] = $"<img src=\"{filename}\">";
-                } catch { }
+                } catch (Exception ex) { _logger.LogError(ex, "Failed to store screenshot in Anki."); }
             }
         }
 

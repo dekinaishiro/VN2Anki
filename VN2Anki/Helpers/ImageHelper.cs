@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Windows.Media.Imaging;
 
@@ -27,7 +28,11 @@ namespace VN2Anki.Helpers
                 image.Freeze();
                 return image;
             }
-            catch { return null; }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error converting bytes to Bitmap: {ex.Message}");
+                return null;
+            }
         }
     }
 }

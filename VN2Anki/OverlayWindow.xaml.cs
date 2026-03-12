@@ -213,7 +213,7 @@ namespace VN2Anki
                         }
                     }
                 }
-                catch { }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Error handling click event in WebView: {ex.Message}"); }
             };
 
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -256,7 +256,7 @@ namespace VN2Anki
             {
                 if (!targetExtensions.Any(t => t.Name == loadedExt.Name))
                 {
-                    try { await loadedExt.RemoveAsync(); } catch { }
+                    try { await loadedExt.RemoveAsync(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Failed to remove browser extension {loadedExt.Name}: {ex.Message}"); }
                 }
             }
 
@@ -265,7 +265,7 @@ namespace VN2Anki
             {
                 if (!loadedExtensions.Any(l => l.Name == target.Name))
                 {
-                    try { await profile.AddBrowserExtensionAsync(target.Path); } catch { }
+                    try { await profile.AddBrowserExtensionAsync(target.Path); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Failed to add browser extension from {target.Path}: {ex.Message}"); }
                 }
             }
         }
@@ -366,9 +366,9 @@ namespace VN2Anki
                             ApplyWindowExStyle(); 
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                       
+                        System.Diagnostics.Debug.WriteLine($"Error calculating mouse position in OverlayWindow: {ex.Message}");
                     }
                 }
             };
@@ -417,7 +417,11 @@ namespace VN2Anki
             string hexColor = _configService.CurrentConfig.Overlay.OverlayBgColor;
             System.Windows.Media.Color customColor;
             try { customColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hexColor); }
-            catch { customColor = System.Windows.Media.Colors.Black; }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error converting OverlayBgColor in UpdateBackground: {ex.Message}");
+                customColor = System.Windows.Media.Colors.Black;
+            }
 
             this.Background = _isTransparent ? new SolidColorBrush(System.Windows.Media.Color.FromArgb(1, 0, 0, 0)) : new SolidColorBrush(customColor);
         }
