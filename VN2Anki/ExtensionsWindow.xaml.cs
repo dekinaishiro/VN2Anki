@@ -75,9 +75,37 @@ namespace VN2Anki
             var exts = BrowserExtensionHelper.GetExtensionsFromPath(path);
             var enabledExts = _configService.CurrentConfig.Overlay.CustomExtensions;
 
+            bool configNeedsSave = false;
+
             foreach (var ext in exts)
             {
-                ext.IsEnabled = enabledExts.Contains(ext.Path);
+                string parentDir = Directory.GetParent(ext.Path)?.FullName;
+
+                // Procura se existe alguma extensão salva que divide a mesma pasta "Pai" (mesmo ID)
+                var oldSavedPath = enabledExts.FirstOrDefault(p =>
+                    Directory.GetParent(p)?.FullName.Equals(parentDir, StringComparison.OrdinalIgnoreCase) == true);
+
+                if (oldSavedPath != null)
+                {
+                    ext.IsEnabled = true;
+
+                    // Atualiza o caminho velho pelo novo na configuração automaticamente!
+                    if (!oldSavedPath.Equals(ext.Path, StringComparison.OrdinalIgnoreCase))
+                    {
+                        enabledExts.Remove(oldSavedPath);
+                        enabledExts.Add(ext.Path);
+                        configNeedsSave = true;
+                    }
+                }
+                else
+                {
+                    ext.IsEnabled = enabledExts.Contains(ext.Path);
+                }
+            }
+
+            if (configNeedsSave)
+            {
+                _configService.Save();
             }
 
             _extensions = new ObservableCollection<BrowserExtensionInfo>(exts);
