@@ -75,13 +75,16 @@ namespace VN2Anki.Services
                 _waveFormat = _captureDevice.WaveFormat;
                 int newBufferLength = _waveFormat.AverageBytesPerSecond * DurationSeconds;
 
-                if (_circularBuffer == null || _circularBuffer.Length != newBufferLength)
+                lock (_bufferLock)
                 {
-                    _circularBuffer = new byte[newBufferLength];
-                }
+                    if (_circularBuffer == null || _circularBuffer.Length != newBufferLength)
+                    {
+                        _circularBuffer = new byte[newBufferLength];
+                    }
 
-                _bufferLength = newBufferLength;
-                _writePosition = 0;
+                    _bufferLength = newBufferLength;
+                    _writePosition = 0;
+                }
 
                 _captureDevice.DataAvailable += OnDataAvailable;
 

@@ -26,6 +26,7 @@ namespace VN2Anki.Services
         public void UpdateSettings(string url, int timeoutSeconds)
         {
             _ankiUrl = string.IsNullOrWhiteSpace(url) ? "http://127.0.0.1:8765" : url;
+            _timeoutSeconds = timeoutSeconds;
         }
 
         private class AnkiRequest

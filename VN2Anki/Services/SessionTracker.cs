@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Windows.Threading;
+using System.Timers;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Timer = System.Timers.Timer;
 
 namespace VN2Anki.Services
 {
     public partial class SessionTracker : ObservableObject
     {
-        private readonly DispatcherTimer _timer;
+        private readonly Timer _timer;
         private readonly Stopwatch _stopwatch;
 
         [ObservableProperty]
@@ -27,8 +28,8 @@ namespace VN2Anki.Services
         {
             _stopwatch = new Stopwatch();
 
-            _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-            _timer.Tick += (s, e) => Elapsed = _stopwatch.Elapsed;
+           _timer = new Timer(1000);
+            _timer.Elapsed += (s, e) => Elapsed = _stopwatch.Elapsed;
         }
 
         public double SpeedCharsPerMinute =>

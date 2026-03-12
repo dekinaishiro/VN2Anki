@@ -253,12 +253,29 @@ namespace VN2Anki
             var enabledPaths = _configService.CurrentConfig.Overlay.CustomExtensions;
 
             var targetExtensions = new System.Collections.Generic.List<(string Path, string Name)>();
-            foreach (var path in enabledPaths)
+            foreach (var originalPath in enabledPaths)
             {
-                if (Directory.Exists(path))
+                string pathToLoad = originalPath;
+
+                // Auto-Heal: Tenta encontrar a versão mais recente na pasta "pai" (ID da extensão)
+                try
                 {
-                    var info = VN2Anki.Helpers.BrowserExtensionHelper.GetExtensionsFromPath(path).FirstOrDefault();
-                    if (info != null) targetExtensions.Add((path, info.Name));
+                    string parentDir = Directory.GetParent(originalPath)?.FullName;
+                    if (parentDir != null && Directory.Exists(parentDir))
+                    {
+                        var versionDirs = Directory.GetDirectories(parentDir);
+                        if (versionDirs.Length > 0)
+                        {
+                            pathToLoad = versionDirs.OrderByDescending(d => d).First();
+                        }
+                    }
+                }
+                catch { /* Fallback silencioso para o caminho original se der erro */ }
+
+                if (Directory.Exists(pathToLoad))
+                {
+                    var info = VN2Anki.Helpers.BrowserExtensionHelper.GetExtensionsFromPath(pathToLoad).FirstOrDefault();
+                    if (info != null) targetExtensions.Add((pathToLoad, info.Name));
                 }
             }
 

@@ -8,12 +8,13 @@ using System.Windows.Threading;
 using VN2Anki.Messages;
 using VN2Anki.Models;
 using VN2Anki.Services.Interfaces;
-using System.Threading;
+using System.Timers;
 using System.Threading.Tasks;
 using System.Threading.Channels;
 using VN2Anki.Locales;
 using Microsoft.Extensions.DependencyInjection;
 using System.Windows;
+using Timer = System.Timers.Timer;
 
 namespace VN2Anki.Services
 {
@@ -24,8 +25,8 @@ namespace VN2Anki.Services
         public AudioEngine Audio { get; }
 
         private readonly MediaService _mediaService;
-        private readonly DispatcherTimer _idleTimer;
-        private readonly DispatcherTimer _videoCheckTimer;
+        private readonly Timer _idleTimer;
+        private readonly Timer _videoCheckTimer;
         // injetar dispatcher service para evitar dependência direta do WPF
         private readonly IDispatcherService _dispatcherService;
         private readonly IConfigurationService _configService;
@@ -52,11 +53,11 @@ namespace VN2Anki.Services
 
             HistorySlots = new ObservableCollection<MiningSlot>();
 
-            _idleTimer = new DispatcherTimer();
-            _idleTimer.Tick += IdleTimer_Tick;
+            _idleTimer = new Timer();
+            _idleTimer.Elapsed += IdleTimer_Tick;
 
-            _videoCheckTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
-            _videoCheckTimer.Tick += VideoCheckTimer_Tick;
+            _videoCheckTimer = new Timer(2000);
+            _videoCheckTimer.Elapsed += VideoCheckTimer_Tick;
 
             _textChannel = Channel.CreateUnbounded<TextCopiedMessage>();
             _ = ProcessTextChannelAsync(); // Dispara o consumidor em background
@@ -96,7 +97,7 @@ namespace VN2Anki.Services
             if (!inserted) DebugLogger.Log($"[ERROR-MINING-SVC] Failed to write to Channel!");
         }
 
-        private void IdleTimer_Tick(object sender, EventArgs e)
+        private void IdleTimer_Tick(object? sender, ElapsedEventArgs e)
         {
             _idleTimer.Stop();
 
@@ -106,7 +107,7 @@ namespace VN2Anki.Services
                 SendStatus("Slot sealed due to inactivity.");
             }
         }
-        private void VideoCheckTimer_Tick(object sender, EventArgs e)
+        private void VideoCheckTimer_Tick(object? sender, ElapsedEventArgs e)
         {
             if (string.IsNullOrEmpty(TargetVideoWindow)) return;
 
@@ -260,7 +261,7 @@ namespace VN2Anki.Services
                             finalSeconds = IdleTimeoutFixo;
                         }
 
-                        _idleTimer.Interval = TimeSpan.FromSeconds(finalSeconds);
+                        _idleTimer.Interval = finalSeconds * 1000;
                         _idleTimer.Start();
 
                         // Envia a frase para a OverlayWindow AGORA
