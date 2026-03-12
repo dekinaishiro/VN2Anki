@@ -127,7 +127,8 @@ namespace VN2Anki
                 _viewModel.Config.Hook.WebSocketUrl = TxtWsUrl.Text;
             }
 
-            _configService.Save();
+            // Call the viewmodel's Save method so Bridge and other services restart correctly
+            _viewModel.SaveCommand.Execute(null);
 
             WeakReferenceMessenger.Default.Send(new OverlayConfigUpdatedMessage());
             this.Close();

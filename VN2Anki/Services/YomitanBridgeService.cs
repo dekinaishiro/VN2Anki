@@ -117,6 +117,24 @@ namespace VN2Anki.Services
                         
                         byte[] responseBody = await proxyResponse.Content.ReadAsByteArrayAsync();
                         await context.Response.Body.WriteAsync(responseBody, 0, responseBody.Length);
+
+                        if (proxyResponse.IsSuccessStatusCode)
+                        {
+                            try
+                            {
+                                var reqJson = JsonNode.Parse(interceptedBody);
+                                string? reqAction = reqJson?["action"]?.ToString();
+                                if (reqAction == "addNote" || reqAction == "guiAddCards")
+                                {
+                                    var respJson = JsonNode.Parse(responseBody);
+                                    if (respJson?["error"]?.ToString() == null)
+                                    {
+                                        _ = _sessionLogger.LogEventAsync("MINE", new { source = "yomitan", action = reqAction });
+                                    }
+                                }
+                            }
+                            catch { }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -169,14 +187,6 @@ namespace VN2Anki.Services
         {
             try
             {
-                if (_miningService.HistorySlots.Count == 0) return originalBody;
-                var config = _configService.CurrentConfig;
-                string targetAudioField = config.Anki.AudioField;
-                string targetImageField = config.Anki.ImageField;
-
-                if (string.IsNullOrWhiteSpace(targetAudioField) && string.IsNullOrWhiteSpace(targetImageField))
-                    return originalBody;
-
                 var jsonNode = JsonNode.Parse(originalBody);
                 if (jsonNode == null) return originalBody;
 
@@ -190,6 +200,15 @@ namespace VN2Anki.Services
                         _ = _sessionLogger.LogEventAsync("LOOKUP", new { query });
                     }
                 }
+
+                if (_miningService.HistorySlots.Count == 0) return originalBody;
+                
+                var config = _configService.CurrentConfig;
+                string targetAudioField = config.Anki.AudioField;
+                string targetImageField = config.Anki.ImageField;
+
+                if (string.IsNullOrWhiteSpace(targetAudioField) && string.IsNullOrWhiteSpace(targetImageField))
+                    return originalBody;
 
                 if (action != "addNote" && action != "guiAddCards") return originalBody;
 
