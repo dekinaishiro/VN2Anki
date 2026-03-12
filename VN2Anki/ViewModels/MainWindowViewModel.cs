@@ -122,36 +122,50 @@ namespace VN2Anki.ViewModels
 
         public async Task ApplyConfigToServices()
         {
+            var config = _configService.CurrentConfig;
+
+            // 1. Atribuições seguras de propriedades (não falham)
+            _miningService.TargetVideoWindow = config.Media.VideoWindow;
+            _miningService.UseDynamicTimeout = config.Session.UseDynamicTimeout;
+            _miningService.MaxImageWidth = config.Media.MaxImageWidth;
+
+            if (int.TryParse(config.Session.MaxSlots, out int parsedMax) && parsedMax > 0)
+                _miningService.MaxSlots = parsedMax;
+
+            if (double.TryParse(config.Session.IdleTime, out double parsedIdle) && parsedIdle > 0)
+                _miningService.IdleTimeoutFixo = parsedIdle;
+
             try
             {
-                var config = _configService.CurrentConfig;
-                _miningService.TargetVideoWindow = config.Media.VideoWindow;
-                if (int.TryParse(config.Session.MaxSlots, out int parsedMax) && parsedMax > 0) _miningService.MaxSlots = parsedMax;
-                if (double.TryParse(config.Session.IdleTime, out double parsedIdle) && parsedIdle > 0) _miningService.IdleTimeoutFixo = parsedIdle;
-
-                _miningService.UseDynamicTimeout = config.Session.UseDynamicTimeout;
-                _miningService.MaxImageWidth = config.Media.MaxImageWidth;
                 _ankiHandler.UpdateSettings(config.Anki.Url, config.Anki.TimeoutSeconds);
-
-                bool isSessionActive = Tracker.ValidCharacterCount > 0 || Tracker.Elapsed.TotalSeconds > 0 || IsBufferActive;
-
-                if (_isFirstLoad)
-                {
-                    _isFirstLoad = false;
-                    Application.Current.Dispatcher.Invoke(() => UpdateVisualCurrentVN());
-                }
-                else if (!isSessionActive)
-                {
-                    await TryAutoLinkAsync(config.Media.VideoWindow);
-                }
-                else
-                {
-                    Application.Current.Dispatcher.Invoke(() => UpdateVisualCurrentVN());
-                }
             }
             catch (System.Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error in ApplyConfigToServices: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"AnkiHandler.UpdateSettings failed: {ex.Message}");
+            }
+
+            bool isSessionActive = Tracker.ValidCharacterCount > 0 || Tracker.Elapsed.TotalSeconds > 0 || IsBufferActive;
+
+            if (_isFirstLoad)
+            {
+                _isFirstLoad = false;
+                Application.Current.Dispatcher.Invoke(() => UpdateVisualCurrentVN());
+            }
+            else if (!isSessionActive)
+            {
+                try
+                {
+                    await TryAutoLinkAsync(config.Media.VideoWindow);
+                }
+                catch (System.Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"TryAutoLinkAsync failed: {ex.Message}");
+                    Application.Current.Dispatcher.Invoke(() => UpdateVisualCurrentVN());
+                }
+            }
+            else
+            {
+                Application.Current.Dispatcher.Invoke(() => UpdateVisualCurrentVN());
             }
         }
 
@@ -276,7 +290,6 @@ namespace VN2Anki.ViewModels
         {
             bool isZeroed = Tracker.ValidCharacterCount == 0 && Tracker.Elapsed.TotalSeconds == 0 && !IsBufferActive;
 
-            //ManualLinkVisibility = isZeroed ? Visibility.Visible : Visibility.Collapsed;
             ManualLinkVisibility = Visibility.Visible;
             ManualLinkText = CurrentVN != null ? "-" : "+";
             ManualLinkColor = CurrentVN != null

@@ -26,7 +26,6 @@ namespace VN2Anki.Services
         public void UpdateSettings(string url, int timeoutSeconds)
         {
             _ankiUrl = string.IsNullOrWhiteSpace(url) ? "http://127.0.0.1:8765" : url;
-            //_client.Timeout = TimeSpan.FromSeconds(timeoutSeconds > 0 ? timeoutSeconds : 10);
         }
 
         private class AnkiRequest
@@ -93,30 +92,6 @@ namespace VN2Anki.Services
             if (dataBytes == null || dataBytes.Length == 0) return false;
             string base64Data = Convert.ToBase64String(dataBytes);
             return await InvokeAsync<string>("storeMediaFile", new { filename, data = base64Data }) == filename;
-        }
-
-        public async Task<(bool success, string message)> UpdateLastCardAsync(string deckName, string audioField, string imageField, string audioFilename, string imageFilename)
-        {
-            // replaces simple call
-            var (noteIds, error) = await InvokeWithDetailsAsync<List<long>>("findNotes", new { query = $"\"deck:{deckName}\" added:1" });
-
-            // propagates error if findNotes fails, otherwise continues with the update
-            if (!string.IsNullOrEmpty(error)) return (false, error);
-
-            if (noteIds == null || noteIds.Count == 0) return (false, "No card added recently in this dekck.");
-
-            long lastNoteId = noteIds[noteIds.Count - 1];
-            var fieldsToUpdate = new Dictionary<string, string>();
-
-            if (!string.IsNullOrEmpty(audioField) && !string.IsNullOrEmpty(audioFilename)) fieldsToUpdate[audioField] = $"[sound:{audioFilename}]";
-            if (!string.IsNullOrEmpty(imageField) && !string.IsNullOrEmpty(imageFilename)) fieldsToUpdate[imageField] = $"<img src=\"{imageFilename}\">";
-            if (fieldsToUpdate.Count == 0) return (false, "No fields to update.");
-
-            var (_, updateError) = await InvokeWithDetailsAsync<object>("updateNoteFields", new { note = new { id = lastNoteId, fields = fieldsToUpdate } });
-
-            if (!string.IsNullOrEmpty(updateError)) return (false, updateError);
-
-            return (true, Locales.Strings.CardUpdated);
         }
     }
 }
