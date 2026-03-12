@@ -35,7 +35,7 @@ namespace VN2Anki.Services
         public string ActiveHoverSlotId { get; set; } = string.Empty;
 
         public YomitanBridgeService(
-            IConfigurationService configService, 
+            IConfigurationService configService,
             ILogger<YomitanBridgeService> logger,
             AnkiHandler ankiHandler,
             MediaService mediaService,
@@ -50,7 +50,7 @@ namespace VN2Anki.Services
             _miningService = miningService;
             _httpClient = httpClient;
             _sessionLogger = sessionLogger;
-            
+
             Start();
         }
 
@@ -65,9 +65,9 @@ namespace VN2Anki.Services
             try
             {
                 _cts = new CancellationTokenSource();
-                
+
                 var builder = WebApplication.CreateBuilder();
-                
+
                 // Configure Kestrel to listen only on localhost for security
                 builder.WebHost.ConfigureKestrel(options =>
                 {
@@ -94,11 +94,11 @@ namespace VN2Anki.Services
                 // The single endpoint that Yomitan calls (usually root / or /api)
                 _app.MapPost("/", async (HttpContext context) =>
                 {
-                    try 
+                    try
                     {
                         using var reader = new StreamReader(context.Request.Body, Encoding.UTF8);
                         string requestBody = await reader.ReadToEndAsync();
-                        
+
                         _logger.LogDebug("Received request from Yomitan/Browser.");
 
                         // 1. Intercept and Inject Media
@@ -107,33 +107,21 @@ namespace VN2Anki.Services
                         // 2. Proxy to AnkiConnect
                         var ankiUrl = _configService.CurrentConfig.Anki.Url;
                         var httpContent = new StringContent(interceptedBody, Encoding.UTF8, "application/json");
-                        
+
                         var proxyResponse = await _httpClient.PostAsync(ankiUrl, httpContent, _cts.Token);
-                        
+
                         // 3. Return response with Private Network headers
                         context.Response.Headers["Access-Control-Allow-PrivateNetwork"] = "true";
                         context.Response.ContentType = "application/json";
                         context.Response.StatusCode = (int)proxyResponse.StatusCode;
-                        
+
                         byte[] responseBody = await proxyResponse.Content.ReadAsByteArrayAsync();
                         await context.Response.Body.WriteAsync(responseBody, 0, responseBody.Length);
 
                         if (proxyResponse.IsSuccessStatusCode)
                         {
-                            try
-                            {
-                                var reqJson = JsonNode.Parse(interceptedBody);
-                                string? reqAction = reqJson?["action"]?.ToString();
-                                if (reqAction == "addNote" || reqAction == "guiAddCards")
-                                {
-                                    var respJson = JsonNode.Parse(responseBody);
-                                    if (respJson?["error"]?.ToString() == null)
-                                    {
-                                        _ = _sessionLogger.LogEventAsync("MINE", new { source = "yomitan", action = reqAction });
-                                    }
-                                }
-                            }
-                            catch { }
+                            // we no longer parse the response to log MINE.
+                            // this ensures we don't depend on Anki's error format.
                         }
                     }
                     catch (Exception ex)
@@ -152,7 +140,7 @@ namespace VN2Anki.Services
                     } catch (OperationCanceledException) { }
                     catch (Exception ex) { _logger.LogError(ex, "Kestrel server error."); }
                 }, token);
-                
+
                 _logger.LogInformation("Yomitan Bridge (Kestrel) is now running.");
             }
             catch (Exception ex)
@@ -165,11 +153,11 @@ namespace VN2Anki.Services
         {
             if (_app == null) return;
             _cts?.Cancel();
-            
-            try 
+
+            try
             {
                 _app.StopAsync().Wait(1000); 
-            } 
+            }
             catch { }
 
             _app = null;
@@ -177,10 +165,10 @@ namespace VN2Anki.Services
             _cts = null;
         }
 
-        public void Restart(int newPort) 
-        { 
-            Stop(); 
-            Start(); 
+        public void Restart(int newPort)
+        {
+            Stop();
+            Start();
         }
 
         private async Task<string> InterceptAndInjectMediaAsync(string originalBody)
@@ -191,79 +179,115 @@ namespace VN2Anki.Services
                 if (jsonNode == null) return originalBody;
 
                 string? action = jsonNode["action"]?.ToString();
-                
-                if (action == "findNotes")
+                bool lookupLogged = false;
+
+                if (action == "multi")
                 {
-                    var query = jsonNode["params"]?["query"]?.ToString();
-                    if (!string.IsNullOrEmpty(query))
+                    var actions = jsonNode["params"]?["actions"] as JsonArray;
+                    if (actions != null)
                     {
-                        _ = _sessionLogger.LogEventAsync("LOOKUP", new { query });
+                        foreach (var actionItem in actions)
+                        {
+                            var subAction = actionItem?["action"]?.ToString();
+                            var subParams = actionItem?["params"];
+                            
+                            if (subAction == "findNotes" && !lookupLogged)
+                            {
+                                var query = subParams?["query"]?.ToString();
+                                if (!string.IsNullOrEmpty(query))
+                                {
+                                    _ = _sessionLogger.LogEventAsync("LOOKUP", new { query });
+                                    lookupLogged = true;
+                                }
+                            }
+                            await ProcessActionAsync(subAction, subParams);
+                        }
                     }
                 }
-
-                if (_miningService.HistorySlots.Count == 0) return originalBody;
-                
-                var config = _configService.CurrentConfig;
-                string targetAudioField = config.Anki.AudioField;
-                string targetImageField = config.Anki.ImageField;
-
-                if (string.IsNullOrWhiteSpace(targetAudioField) && string.IsNullOrWhiteSpace(targetImageField))
-                    return originalBody;
-
-                if (action != "addNote" && action != "guiAddCards") return originalBody;
-
-                var parameters = jsonNode["params"];
-                if (parameters == null) return originalBody;
-
-                JsonObject? fields = null;
-                if (action == "addNote") fields = parameters["note"]?["fields"] as JsonObject;
-                else if (action == "guiAddCards") fields = parameters["note"]?["fields"] as JsonObject;
-
-                if (fields == null) return originalBody;
-
-                MiningSlot? targetSlot = null;
-                if (!string.IsNullOrEmpty(ActiveHoverSlotId))
+                else
                 {
-                    targetSlot = _miningService.HistorySlots.FirstOrDefault(s => s.Id == ActiveHoverSlotId);
-                    ActiveHoverSlotId = string.Empty;
-                }
-                
-                if (targetSlot == null && _miningService.HistorySlots.Count > 0)
-                    targetSlot = _miningService.HistorySlots[0];
-
-                if (targetSlot == null) return originalBody;
-
-                string uniqueId = Guid.NewGuid().ToString("N").Substring(0, 8);
-                
-                if (targetSlot.AudioBytes != null && !string.IsNullOrWhiteSpace(targetAudioField))
-                {
-                    try {
-                        byte[] audio = targetSlot.AudioBytes;
-                        string filename = $"miner_{uniqueId}.mp3";
-                        if (await _ankiHandler.StoreMediaAsync(filename, audio)) fields[targetAudioField] = $"[sound:{filename}]";
-                    } catch { }
-                }
-
-                if (targetSlot.ScreenshotBytes != null && !string.IsNullOrWhiteSpace(targetImageField))
-                {
-                    try {
-                        string filename = $"miner_{uniqueId}.jpg";
-                        if (await _ankiHandler.StoreMediaAsync(filename, targetSlot.ScreenshotBytes)) fields[targetImageField] = $"<img src=\"{filename}\">";
-                    } catch { }
+                    if (action == "findNotes" && !lookupLogged)
+                    {
+                        var query = jsonNode["params"]?["query"]?.ToString();
+                        if (!string.IsNullOrEmpty(query))
+                        {
+                            _ = _sessionLogger.LogEventAsync("LOOKUP", new { query });
+                            lookupLogged = true;
+                        }
+                    }
+                    await ProcessActionAsync(action, jsonNode["params"]);
                 }
 
                 return jsonNode.ToJsonString();
             }
             catch (Exception ex)
-            { 
+            {
                 _logger.LogWarning(ex, "Media injection failed, continuing with original body.");
-                return originalBody; 
+                return originalBody;
             }
         }
 
-        public void Dispose() 
-        { 
-            Stop(); 
+        private async Task ProcessActionAsync(string? action, JsonNode? parameters)
+        {
+            if (action == "addNote" || action == "addNotes" || action == "guiAddCards")
+            {
+                _ = _sessionLogger.LogEventAsync("MINE", new { source = "yomitan", action = action });
+            }
+
+            if (_miningService.HistorySlots.Count == 0) return;
+
+            var config = _configService.CurrentConfig;
+            string targetAudioField = config.Anki.AudioField;
+            string targetImageField = config.Anki.ImageField;
+
+            if (string.IsNullOrWhiteSpace(targetAudioField) && string.IsNullOrWhiteSpace(targetImageField))
+                return;
+
+            if (action != "addNote" && action != "guiAddCards") return;
+
+            if (parameters == null) return;
+
+            JsonObject? fields = null;
+            if (action == "addNote") fields = parameters["note"]?["fields"] as JsonObject;
+            else if (action == "guiAddCards") fields = parameters["note"]?["fields"] as JsonObject;
+
+            if (fields == null) return;
+
+            MiningSlot? targetSlot = null;
+            if (!string.IsNullOrEmpty(ActiveHoverSlotId))
+            {
+                targetSlot = _miningService.HistorySlots.FirstOrDefault(s => s.Id == ActiveHoverSlotId);
+                ActiveHoverSlotId = string.Empty;
+            }
+
+            if (targetSlot == null && _miningService.HistorySlots.Count > 0)
+                targetSlot = _miningService.HistorySlots[0];
+
+            if (targetSlot == null) return;
+
+            string uniqueId = Guid.NewGuid().ToString("N").Substring(0, 8);
+
+            if (targetSlot.AudioBytes != null && !string.IsNullOrWhiteSpace(targetAudioField))
+            {
+                try {
+                    byte[] audio = targetSlot.AudioBytes;
+                    string filename = $"miner_{uniqueId}.mp3";
+                    if (await _ankiHandler.StoreMediaAsync(filename, audio)) fields[targetAudioField] = $"[sound:{filename}]";
+                } catch { }
+            }
+
+            if (targetSlot.ScreenshotBytes != null && !string.IsNullOrWhiteSpace(targetImageField))
+            {
+                try {
+                    string filename = $"miner_{uniqueId}.jpg";
+                    if (await _ankiHandler.StoreMediaAsync(filename, targetSlot.ScreenshotBytes)) fields[targetImageField] = $"<img src=\"{filename}\">";
+                } catch { }
+            }
+        }
+
+        public void Dispose()
+        {
+            Stop();
             GC.SuppressFinalize(this);
         }
     }
