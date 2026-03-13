@@ -29,9 +29,9 @@ namespace VN2Anki.Services
             }
         }
 
-        public VisualNovel ShowMultipleVnPrompt(List<VisualNovel> vns)
+        public VisualNovel? ShowMultipleVnPrompt(List<VisualNovel> vns)
         {
-            VisualNovel selectedVn = null;
+            VisualNovel? selectedVn = null;
 
             var win = new Window
             {
@@ -60,7 +60,7 @@ namespace VN2Anki.Services
             return selectedVn;
         }
 
-        public void OpenExtensionSettingsWindow(string extensionPath, object owner = null)
+        public void OpenExtensionSettingsWindow(string extensionPath, object? owner = null)
         {
             if (string.IsNullOrEmpty(extensionPath) || !System.IO.Directory.Exists(extensionPath))
             {

@@ -12,12 +12,12 @@ namespace VN2Anki.Services
 {
     public class DiscordRpcService : IDisposable, IRecipient<BufferStartedMessage>, IRecipient<BufferStoppedMessage>, IRecipient<SessionEndedMessage>, IRecipient<CurrentVnChangedMessage>, IRecipient<CurrentVnUnlinkedMessage>
     {
-        private NamedPipeClientStream _pipe;
-        private CancellationTokenSource _cts;
+        private NamedPipeClientStream? _pipe;
+        private CancellationTokenSource? _cts;
         private const string AppId = "1478238502486540288";
 
         private readonly SessionTracker _tracker;
-        private VisualNovel _currentVn;
+        private VisualNovel? _currentVn;
         private bool _isBufferActive;
 
         public DiscordRpcService(SessionTracker tracker)

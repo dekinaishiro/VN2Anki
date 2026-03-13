@@ -52,7 +52,7 @@ namespace VN2Anki.Services
             _sessionLogger = sessionLogger;
         }
 
-        public bool ToggleBuffer(VisualNovel currentVN)
+        public bool ToggleBuffer(VisualNovel? currentVN)
         {
             if (!IsBufferActive)
             {
@@ -110,7 +110,7 @@ namespace VN2Anki.Services
             return IsBufferActive;
         }
 
-        public async Task EndSessionAsync(VisualNovel currentVN)
+        public async Task EndSessionAsync(VisualNovel? currentVN)
         {
             bool hasProgress = _tracker.Elapsed.TotalSeconds > 0 || _tracker.ValidCharacterCount > 0;
             bool saved = false;

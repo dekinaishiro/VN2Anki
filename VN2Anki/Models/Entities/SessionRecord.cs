@@ -7,7 +7,7 @@ namespace VN2Anki.Models.Entities
     {
         public int Id { get; set; }
         public int? VisualNovelId { get; set; }
-        public VisualNovel VisualNovel { get; set; }
+        public VisualNovel VisualNovel { get; set; } = null!;
 
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }

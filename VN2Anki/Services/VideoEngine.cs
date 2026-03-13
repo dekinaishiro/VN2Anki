@@ -35,7 +35,7 @@ namespace VN2Anki.Services
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         private static extern bool QueryFullProcessImageName(IntPtr hProcess, uint dwFlags, StringBuilder lpExeName, ref uint lpdwSize);
 
-        private string GetProcessFilename(Process p)
+        private string? GetProcessFilename(Process p)
         {
             try { return p.MainModule?.FileName; } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"MainModule fallback for {p.ProcessName}: {ex.Message}"); }
 
@@ -82,7 +82,7 @@ namespace VN2Anki.Services
             return windows;
         }
 
-        public byte[] CaptureWindow(string processName, int maxWidth = 0)
+        public byte[]? CaptureWindow(string processName, int maxWidth = 0)
         {
             if (string.IsNullOrEmpty(processName)) return null;
 
@@ -143,9 +143,9 @@ namespace VN2Anki.Services
 
         public class VideoWindowItem
         {
-            public string Title { get; set; }
-            public string ProcessName { get; set; }
-            public string ExecutablePath { get; set; }
+            public string Title { get; set; } = string.Empty;
+            public string ProcessName { get; set; } = string.Empty;
+            public string? ExecutablePath { get; set; }
             public int ProcessId { get; set; }
             public string DisplayName => string.IsNullOrWhiteSpace(Title) ? ProcessName : $"{Title} ({ProcessName}.exe)";
         }

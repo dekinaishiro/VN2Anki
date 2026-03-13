@@ -6,7 +6,7 @@ namespace VN2Anki.Helpers
 {
     public static class ImageHelper
     {
-        public static BitmapImage BytesToBitmap(byte[] bytes, int decodeWidth = 0)
+        public static BitmapImage? BytesToBitmap(byte[]? bytes, int decodeWidth = 0)
         {
             if (bytes == null || bytes.Length == 0) return null;
             try

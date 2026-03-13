@@ -5,16 +5,17 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace VN2Anki.Helpers
 {
     public class BrowserExtensionInfo : INotifyPropertyChanged
     {
-        public string Id { get; set; }
-        public string Name { get; set; }
-        public string Version { get; set; }
-        public string Path { get; set; }
-        public string IconPath { get; set; }
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Version { get; set; } = string.Empty;
+        public string Path { get; set; } = string.Empty;
+        public string? IconPath { get; set; }
 
         private bool _isEnabled;
         public bool IsEnabled
@@ -30,8 +31,8 @@ namespace VN2Anki.Helpers
             }
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
@@ -39,7 +40,7 @@ namespace VN2Anki.Helpers
 
     public static class BrowserExtensionHelper
     {
-        private static Microsoft.Web.WebView2.Core.CoreWebView2Environment _sharedEnvironment;
+        private static Microsoft.Web.WebView2.Core.CoreWebView2Environment? _sharedEnvironment;
         private static readonly System.Threading.SemaphoreSlim _envLock = new(1, 1);
 
         public static async Task<Microsoft.Web.WebView2.Core.CoreWebView2Environment> GetSharedEnvironmentAsync()
@@ -116,7 +117,7 @@ namespace VN2Anki.Helpers
             return extensions;
         }
 
-        private static BrowserExtensionInfo ParseManifest(string extensionPath)
+        private static BrowserExtensionInfo? ParseManifest(string extensionPath)
         {
             try
             {
@@ -127,24 +128,24 @@ namespace VN2Anki.Helpers
                 using var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
 
-                string name = root.TryGetProperty("name", out var n) ? n.GetString() : Path.GetFileName(extensionPath);
-                if (name.StartsWith("__MSG_")) name = Path.GetFileName(Path.GetDirectoryName(extensionPath)); 
+                string name = root.TryGetProperty("name", out var n) && n.GetString() != null ? n.GetString()! : Path.GetFileName(extensionPath);
+                if (name.StartsWith("__MSG_")) name = Path.GetFileName(Path.GetDirectoryName(extensionPath)) ?? name; 
 
-                string version = root.TryGetProperty("version", out var v) ? v.GetString() : "0.0";
+                string version = root.TryGetProperty("version", out var v) && v.GetString() != null ? v.GetString()! : "0.0";
                 
-                string iconPath = null;
+                string? iconPath = null;
                 if (root.TryGetProperty("icons", out var icons))
                 {
                     var iconSizes = icons.EnumerateObject().Select(p => p.Name).ToList();
-                    string bestSize = iconSizes.OrderByDescending(s => {
+                    string? bestSize = iconSizes.OrderByDescending(s => {
                         int.TryParse(s, out int size);
                         return size;
                     }).FirstOrDefault();
 
                     if (bestSize != null)
                     {
-                        string iconRelPath = icons.GetProperty(bestSize).GetString();
-                        iconPath = Path.Combine(extensionPath, iconRelPath);
+                        string? iconRelPath = icons.GetProperty(bestSize).GetString();
+                        if (iconRelPath != null) iconPath = Path.Combine(extensionPath, iconRelPath);
                     }
                 }
 
@@ -163,7 +164,7 @@ namespace VN2Anki.Helpers
             }
         }
 
-        public static string GetYomitanLatestVersionPath()
+        public static string? GetYomitanLatestVersionPath()
         {
             string yomitanId = "likgccmbimhjbgkjambclfkhldnlhbnn";
             var browserPaths = GetBrowserPaths();

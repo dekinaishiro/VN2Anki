@@ -10,19 +10,19 @@ namespace VN2Anki.Services
 {
     public class AudioDeviceItem
     {
-        public string Id { get; set; }
-        public string Name { get; set; }
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
         public DataFlow Flow { get; set; }
         public string DisplayName => Flow == DataFlow.Render ? $"🔊 {Name}" : $"🎤 {Name} (Input)";
     }
 
     public class AudioEngine
     {
-        private WasapiCapture _captureDevice;
-        private byte[] _circularBuffer;
+        private WasapiCapture? _captureDevice;
+        private byte[]? _circularBuffer;
         private int _writePosition = 0;
         private int _bufferLength;
-        private WaveFormat _waveFormat;
+        private WaveFormat? _waveFormat;
         private readonly object _bufferLock = new object();
         private bool _isRecording = false;
 
@@ -119,9 +119,9 @@ namespace VN2Anki.Services
             _isRecording = false;
         }
 
-        private void OnDataAvailable(object sender, WaveInEventArgs e)
+        private void OnDataAvailable(object? sender, WaveInEventArgs e)
         {
-            if (e.BytesRecorded == 0) return;
+            if (e.BytesRecorded == 0 || _circularBuffer == null) return;
             lock (_bufferLock)
             {
                 int bytesToCopy = e.BytesRecorded;
@@ -139,9 +139,9 @@ namespace VN2Anki.Services
             }
         }
 
-        public byte[] ExportSegment(double startSecondsAgo, double endSecondsAgo = 0)
+        public byte[]? ExportSegment(double startSecondsAgo, double endSecondsAgo = 0)
         {
-            if (!_isRecording || _circularBuffer == null) return null;
+            if (!_isRecording || _circularBuffer == null || _waveFormat == null) return null;
             lock (_bufferLock)
             {
                 int bytesPerSec = _waveFormat.AverageBytesPerSecond;

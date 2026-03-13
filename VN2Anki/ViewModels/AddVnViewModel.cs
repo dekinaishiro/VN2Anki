@@ -22,13 +22,13 @@ namespace VN2Anki.ViewModels.Hub
         public bool IsOpenedFromLibrary { get; set; }
 
         [ObservableProperty]
-        private string _targetProcessName;
+        private string _targetProcessName = string.Empty;
 
         [ObservableProperty]
-        private string _targetExecutablePath;
+        private string _targetExecutablePath = string.Empty;
 
         [ObservableProperty]
-        private string _targetDisplayName;
+        private string _targetDisplayName = string.Empty;
 
         [ObservableProperty]
         private string _searchQuery = "";
@@ -37,7 +37,7 @@ namespace VN2Anki.ViewModels.Hub
         private ObservableCollection<VndbResult> _searchResults = new();
 
         [ObservableProperty]
-        private VndbResult _selectedVndbResult;
+        private VndbResult? _selectedVndbResult;
 
         [ObservableProperty]
         private bool _isLoading = false;

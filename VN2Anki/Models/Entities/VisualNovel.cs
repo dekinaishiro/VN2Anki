@@ -7,7 +7,7 @@ namespace VN2Anki.Models.Entities
     public class VisualNovel
     {
         public int Id { get; set; }
-        public string Title { get; set; }
+        public string Title { get; set; } = string.Empty;
         public string? ProcessName { get; set; }
         public string? ExecutablePath { get; set; }
         public string? VndbId { get; set; }

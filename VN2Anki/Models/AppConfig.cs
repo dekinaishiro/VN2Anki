@@ -22,18 +22,18 @@ namespace VN2Anki.Models
 
     public class MediaConfig
     {
-        public string AudioDevice { get; set; }
-        public string VideoWindow { get; set; }
+        public string? AudioDevice { get; set; }
+        public string? VideoWindow { get; set; }
         public int MaxImageWidth { get; set; } = 1280;
         public int AudioBitrate { get; set; } = 128;
     }
 
     public class AnkiConfig
     {
-        public string Deck { get; set; }
-        public string Model { get; set; }
-        public string AudioField { get; set; }
-        public string ImageField { get; set; }
+        public string Deck { get; set; } = string.Empty;
+        public string Model { get; set; } = string.Empty;
+        public string AudioField { get; set; } = string.Empty;
+        public string ImageField { get; set; } = string.Empty;
         public string Url { get; set; } = "http://127.0.0.1:8765";
         public int TimeoutSeconds { get; set; } = 15;
         public int YomitanBridgePort { get; set; } = 8764;

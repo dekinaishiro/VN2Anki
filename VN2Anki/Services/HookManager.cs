@@ -10,8 +10,6 @@ namespace VN2Anki.Services
         private readonly WebsocketHook _websocketHook;
         private readonly IConfigurationService _configService;
 
-        private bool _isRunning;
-
         public HookManager(ClipboardHook clipboardHook, WebsocketHook websocketHook, IConfigurationService configService)
         {
             _clipboardHook = clipboardHook;
@@ -23,7 +21,6 @@ namespace VN2Anki.Services
         public void Start()
         {
             Stop();
-            _isRunning = true;
 
             int hookType = _configService.CurrentConfig.Hook.ActiveHookType;
 
@@ -39,7 +36,6 @@ namespace VN2Anki.Services
 
         public void Stop()
         {
-            _isRunning = false;
             _clipboardHook.Stop();
             _websocketHook.Stop();
         }

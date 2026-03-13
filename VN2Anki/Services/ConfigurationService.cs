@@ -19,7 +19,7 @@ namespace VN2Anki.Services
         private readonly string _appDataFolder;
         private readonly string _configFilePath;
 
-        public AppConfig CurrentConfig { get; private set; }
+        public AppConfig CurrentConfig { get; private set; } = new AppConfig();
 
         public ConfigurationService(ILogger<ConfigurationService> logger)
         {

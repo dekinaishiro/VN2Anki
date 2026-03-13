@@ -12,21 +12,21 @@ namespace VN2Anki.Models
     public class VndbResult
     {
         [JsonPropertyName("id")]
-        public string Id { get; set; }
+        public string? Id { get; set; }
 
         [JsonPropertyName("title")]
-        public string Title { get; set; }
+        public string? Title { get; set; }
 
         [JsonPropertyName("alttitle")]
-        public string AltTitle { get; set; }
+        public string? AltTitle { get; set; }
 
         [JsonPropertyName("image")]
-        public VndbImage Image { get; set; }
+        public VndbImage? Image { get; set; }
     }
 
     public class VndbImage
     {
         [JsonPropertyName("url")]
-        public string Url { get; set; }
+        public string? Url { get; set; }
     }
 }

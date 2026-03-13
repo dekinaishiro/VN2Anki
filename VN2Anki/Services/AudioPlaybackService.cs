@@ -7,9 +7,9 @@ namespace VN2Anki.Services
 {
     public class AudioPlaybackService : IAudioPlaybackService, IDisposable
     {
-        private WaveOutEvent _waveOut;
-        private Mp3FileReader _waveReader;
-        private MemoryStream _audioStream;
+        private WaveOutEvent? _waveOut;
+        private Mp3FileReader? _waveReader;
+        private MemoryStream? _audioStream;
 
         public void PlayAudio(byte[] audioBytes)
         {

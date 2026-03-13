@@ -18,9 +18,9 @@ namespace VN2Anki
         private readonly MainWindowViewModel _viewModel;
         private readonly MiningService _miningService;
 
-        private SettingsWindow _settingsWindowInstance;
-        private OverlayWindow _overlayWindowInstance;
-        private UserHubWindow _hubWindowInstance;
+        private SettingsWindow? _settingsWindowInstance;
+        private OverlayWindow? _overlayWindowInstance;
+        private UserHubWindow? _hubWindowInstance;
 
         public MainWindow(MainWindowViewModel viewModel, IConfigurationService configService, MiningService miningService)
         {
@@ -46,7 +46,7 @@ namespace VN2Anki
             }
         }
 
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
             SaveWindowPosition();
 
@@ -116,7 +116,7 @@ namespace VN2Anki
         private void BtnOpenHistory_Click(object sender, RoutedEventArgs e)
             => MiningWindow.ShowWindow(_miningService.HistorySlots,
                 slot => _miningService.DeleteSlot(slot));
-        private void OpenOrActivateWindow<T>(Func<T> getInstance, Action<T> setInstance, Action onClosed = null, Action<T> onCreated = null) where T : Window
+        private void OpenOrActivateWindow<T>(Func<T?> getInstance, Action<T?> setInstance, Action? onClosed = null, Action<T>? onCreated = null) where T : Window
         {
             var windowInstance = getInstance();
             if (windowInstance != null)

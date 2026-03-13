@@ -9,11 +9,11 @@ namespace VN2Anki.Models
     public class MiningSlot : INotifyPropertyChanged, IDisposable
     {
         public string Id { get; } = Guid.NewGuid().ToString("N").Substring(0, 8);
-        public string Text { get; set; }
+        public string Text { get; set; } = string.Empty;
         public DateTime Timestamp { get; set; }
 
-        private byte[] _audioBytes;
-        public byte[] AudioBytes
+        private byte[]? _audioBytes;
+        public byte[]? AudioBytes
         {
             get => _audioBytes;
             set
@@ -24,8 +24,8 @@ namespace VN2Anki.Models
             }
         }
 
-        private byte[] _screenshotBytes;
-        public byte[] ScreenshotBytes
+        private byte[]? _screenshotBytes;
+        public byte[]? ScreenshotBytes
         {
             get => _screenshotBytes;
             set
@@ -41,8 +41,8 @@ namespace VN2Anki.Models
             }
         }
         
-        public string ScreenshotFilePath { get; private set; }
-        public string ScreenshotUrl => string.IsNullOrEmpty(ScreenshotFilePath) ? null : $"http://vn.local/thumbs/{Path.GetFileName(ScreenshotFilePath)}";
+        public string? ScreenshotFilePath { get; private set; }
+        public string? ScreenshotUrl => string.IsNullOrEmpty(ScreenshotFilePath) ? null : $"http://vn.local/thumbs/{Path.GetFileName(ScreenshotFilePath)}";
 
         private void SaveScreenshotToDisk()
         {
@@ -66,9 +66,9 @@ namespace VN2Anki.Models
         // this property is used to determine if the slot is still open (i.e. audio is still being recorded) or if it has been sealed with audio data, which affects how it's displayed in the UI and whether it can be mined to Anki
         public bool IsOpen => AudioBytes == null;
 
-        private BitmapImage _thumbnail;
+        private BitmapImage? _thumbnail;
 
-        public BitmapImage Thumbnail
+        public BitmapImage? Thumbnail
         {
             get
             {
@@ -81,8 +81,8 @@ namespace VN2Anki.Models
             }
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string name = null)
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string? name = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }

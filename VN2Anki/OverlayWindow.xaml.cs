@@ -23,7 +23,7 @@ namespace VN2Anki
         private readonly VN2Anki.Services.Interfaces.IWindowService _windowService;
 
         private IntPtr _webViewRenderHostHandle = IntPtr.Zero;
-        private DispatcherTimer _holdTimer;
+        private DispatcherTimer? _holdTimer;
         private SUBCLASSPROC _webViewSubclassProc;
 
         private bool _isTextAtTop = false;
@@ -638,7 +638,7 @@ namespace VN2Anki
         private double _lastNormalWidth = double.NaN;
         private double _lastNormalHeight = double.NaN;
 
-        private void OverlayWindow_LocationOrSizeChanged(object sender, EventArgs e)
+        private void OverlayWindow_LocationOrSizeChanged(object? sender, EventArgs e)
         {
             // Bloqueia leituras enquanto o WPF ainda está a construir a janela
             if (!_isLoaded) return;
@@ -665,7 +665,7 @@ namespace VN2Anki
             }
         }
 
-        private void OverlayWindow_Closed(object sender, EventArgs e)
+        private void OverlayWindow_Closed(object? sender, EventArgs e)
         {
             var conf = _configService.CurrentConfig.Overlay;
             conf.IsTextAtTop = _isTextAtTop;

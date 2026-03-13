@@ -17,7 +17,7 @@ namespace VN2Anki.ViewModels.Hub
         public INavigationService Navigation { get; }
 
         [ObservableProperty]
-        private VisualNovel _vn;
+        private VisualNovel _vn = null!;
 
         [ObservableProperty]
         private ObservableCollection<SessionRecord> _recentSessions = new();
@@ -30,8 +30,8 @@ namespace VN2Anki.ViewModels.Hub
 
         // === ESTADOS DO MODAL DE EDIÇÃO ===
         [ObservableProperty] private bool _isEditModalOpen;
-        [ObservableProperty] private string _editExecutablePath;
-        [ObservableProperty] private string _editVndbId;
+        [ObservableProperty] private string _editExecutablePath = string.Empty;
+        [ObservableProperty] private string _editVndbId = string.Empty;
 
         public VnDetailsViewModel(IVnDatabaseService dbService, INavigationService navigation, IWindowService windowService)
         {

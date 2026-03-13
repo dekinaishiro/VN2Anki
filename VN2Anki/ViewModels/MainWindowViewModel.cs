@@ -25,7 +25,7 @@ namespace VN2Anki.ViewModels
         private readonly MiningService _miningService;
         private readonly IConfigurationService _configService;
         private readonly AnkiHandler _ankiHandler;
-        private CancellationTokenSource _pollingCts;
+        private CancellationTokenSource? _pollingCts;
         private readonly ISessionManagerService _sessionManager;
 
         public bool HasUnsavedProgress => _sessionManager.HasUnsavedProgress;
@@ -49,7 +49,7 @@ namespace VN2Anki.ViewModels
         private readonly VideoEngine _videoEngine;
 
         [ObservableProperty]
-        private VN2Anki.Models.Entities.VisualNovel _currentVN;
+        private VN2Anki.Models.Entities.VisualNovel? _currentVN;
 
         [ObservableProperty]
         private Visibility _manualLinkVisibility = Visibility.Collapsed;
@@ -277,8 +277,8 @@ namespace VN2Anki.ViewModels
         }
 
         // main window vsource/vn title
-        private VisualNovel _previousVn;
-        partial void OnCurrentVNChanged(VN2Anki.Models.Entities.VisualNovel value)
+        private VisualNovel? _previousVn;
+        partial void OnCurrentVNChanged(VN2Anki.Models.Entities.VisualNovel? value)
         {
             // 1. Salva o estado atual no jogo anterior para não perder resizes antes de trocar
             if (_previousVn != null)
@@ -412,7 +412,7 @@ namespace VN2Anki.ViewModels
             }
         }
 
-        public async Task TryAutoLinkAsync(string specificProcessName = null)
+        public async Task TryAutoLinkAsync(string? specificProcessName = null)
         {
             var selectedVn = await _sessionManager.AutoSyncRunningVnAsync(specificProcessName);
             if (selectedVn != null)

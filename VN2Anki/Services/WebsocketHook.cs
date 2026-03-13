@@ -114,7 +114,7 @@ namespace VN2Anki.Services
 
                             DebugLogger.Log($"[2-WEBSOCKET] Dispatching TextCopiedMessage via Messenger | Text: {message}");
 
-                            Task.Run(() =>
+                            _ = Task.Run(() =>
                             {
                                 WeakReferenceMessenger.Default.Send(new Messages.TextCopiedMessage(message, DateTime.Now));
                             });
