@@ -78,15 +78,21 @@ namespace VN2Anki
                 var conf = _configService.CurrentConfig.Overlay;
                 string dir = _isTextAtTop ? "flex-start" : "flex-end";
 
-                // Aplica a margem dinamicamente baseada na posição (Top ou Bottom)
-                string marginStyle = _isTextAtTop
+                // Aplica a margem vertical baseada na posição (Topo ou Fundo)
+                string margin = _isTextAtTop
                     ? $"margin-top: {conf.VerticalMargin}px; margin-bottom: 0px;"
                     : $"margin-bottom: {conf.VerticalMargin}px; margin-top: 0px;";
+
+                // Aplica o deslocamento horizontal (Displacement)
+                string transform = $"transform: translateX({conf.HorizontalDisplacement}px);";
 
                 webView.CoreWebView2.ExecuteScriptAsync($@"
             document.body.style.justifyContent = '{dir}';
             var tb = document.getElementById('text-box');
-            if (tb) tb.style.cssText += '{marginStyle}';
+            if (tb) {{
+                // Sobrescreve apenas a margem e o transform dinamicamente
+                tb.style.cssText = '{margin} {transform}';
+            }}
         ");
             }
         }
@@ -105,7 +111,9 @@ namespace VN2Anki
             string htmlBase = $@"
             <!DOCTYPE html>
             <html>
-            <head>
+            <!DOCTYPE html>
+<html>
+<head>
     <meta charset='utf-8'>
     <style>
         html, body {{
@@ -113,24 +121,10 @@ namespace VN2Anki
             background-color: rgba(0, 0, 0, 0.0) !important;
             overflow: hidden;
             display: flex; flex-direction: column; 
-            /* O justify-content do body (flex-end ou flex-start) define se a caixa fica em cima ou embaixo na janela */
-            justify-content: flex-end; 
+            justify-content: flex-end;
         }}
         #text-box {{
-            color: {cssFontColor}; 
-            background-color: {cssBgColor};
-            font-size: {conf.FontSize}px; 
-            padding: 15px;
-            font-family: 'Segoe UI', sans-serif;
-            border-radius: 8px; margin: 15px;
-            text-align: center;
-            
-            
-            display: flex;
-            flex-direction: column;
-            width: calc(100vw - 30px);
-            box-sizing: border-box;
-            overflow-y: hidden;
+            transition: background 0.2s ease, color 0.2s ease;
         }}
     </style>
 </head>
@@ -449,16 +443,7 @@ namespace VN2Anki
 
         private void UpdateBackground()
         {
-            string hexColor = _configService.CurrentConfig.Overlay.OverlayBgColor;
-            System.Windows.Media.Color customColor;
-            try { customColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hexColor); }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error converting OverlayBgColor in UpdateBackground: {ex.Message}");
-                customColor = System.Windows.Media.Colors.Black;
-            }
-
-            this.Background = _isTransparent ? new SolidColorBrush(System.Windows.Media.Color.FromArgb(1, 0, 0, 0)) : new SolidColorBrush(customColor);
+            this.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(1, 0, 0, 0));
         }
 
         private void ApplyTransparencyState()
@@ -593,17 +578,20 @@ namespace VN2Anki
             var conf = _configService.CurrentConfig.Overlay;
             string cssBgColor = WpfHexToCss(conf.BgColor);
             string cssFontColor = WpfHexToCss(conf.FontColor);
+            string cssOutlineColor = WpfHexToCss(conf.OutlineColor);
 
+            // Lógica do Modo Text Box vs Modo Solto
             string boxStyles = "";
             if (conf.UseTextBoxMode)
             {
+                string align = string.IsNullOrEmpty(conf.TextVerticalAlignment) ? "center" : conf.TextVerticalAlignment;
                 boxStyles = $@"
             min-height: {conf.TextBoxMinHeight}px;
             width: {conf.TextBoxWidthPercentage}vw;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            justify-content: {align};
+            align-items: center; /* Centraliza horizontalmente o texto dentro da caixa */
             box-sizing: border-box;
             margin-left: auto;
             margin-right: auto;
@@ -620,6 +608,35 @@ namespace VN2Anki
         ";
             }
 
+            // Lógica da Borda (Outline / Stroke) 100% Externa
+            string textOutline = "";
+            if (conf.OutlineThickness > 0)
+            {
+                int t = conf.OutlineThickness;
+                string c = cssOutlineColor;
+
+                // Cria uma matriz de text-shadow (círculo perfeito ao redor da letra)
+                var shadowParts = new System.Collections.Generic.List<string>();
+                for (int x = -t; x <= t; x++)
+                {
+                    for (int y = -t; y <= t; y++)
+                    {
+                        if (x == 0 && y == 0) continue;
+                        shadowParts.Add($"{x}px {y}px 0px {c}");
+                    }
+                }
+                // Adiciona um blur suave no final para arredondar as pontas dos kanjis
+                shadowParts.Add($"0px 0px {t}px {c}");
+
+                textOutline = "text-shadow: " + string.Join(", ", shadowParts) + " !important;\n";
+                textOutline += "                -webkit-text-stroke: 0 !important;"; // Garante que o stroke nativo não atrapalhe
+            }
+            else
+            {
+                textOutline = "text-shadow: none !important; -webkit-text-stroke: 0 !important;";
+            }
+
+            // Injeção do CSS
             string script = $@"
         var style = document.getElementById('dynamic-config-style');
         if (!style) {{
@@ -633,16 +650,26 @@ namespace VN2Anki
             }}
             #text-box {{
                 color: {cssFontColor} !important; 
+                font-family: '{conf.FontFamily}', sans-serif !important;
                 font-size: {conf.FontSize}px !important;
                 background-color: {cssBgColor} !important;
-                text-shadow: none !important;
+                border-radius: 8px;
+                padding: 15px;
+                text-align: center;
+                {textOutline}
                 {boxStyles}
+            }}
+
+            /* Regra para o botão do 'olhinho' (Transparência) funcionar só na caixa de texto */
+            body.transp-on:not(.transp-off) #text-box {{
+                background-color: transparent !important;
+                box-shadow: none !important;
             }}
         `;
     ";
             webView.CoreWebView2.ExecuteScriptAsync(script);
 
-            // Forçar atualização da margem vertical logo a seguir
+            // Força a atualização da margem logo a seguir
             ApplyPositionState();
         }
 

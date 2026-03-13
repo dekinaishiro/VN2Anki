@@ -70,28 +70,37 @@ namespace VN2Anki.Models
     public class OverlayConfig
     {
         public bool IsEnabled { get; set; } = false;
-        public string BgColor { get; set; } = "#E5111111";
+        public string BgColor { get; set; } = "#E5111111"; // Cor de fundo da CAIXA de texto
         public string FontColor { get; set; } = "#FFFFFF";
-        public string OverlayBgColor { get; set; } = "#E5111111";
+
+        // --- Novas Propriedades de Estilo ---
+        public string FontFamily { get; set; } = "Meiryo";
+        public string OutlineColor { get; set; } = "#000000";
+        public int OutlineThickness { get; set; } = 2;
+
         public int FontSize { get; set; } = 32;
         public string PassThroughModifier { get; set; } = "Ctrl";
         public List<string> CustomExtensions { get; set; } = new List<string>();
         public ExtensionSettings Extensions { get; set; } = new ExtensionSettings();
-        // states
+
+        // --- Estados ---
         public bool IsTextAtTop { get; set; } = false;
-        public bool IsTransparent { get; set; } = true;
+        public bool IsTransparent { get; set; } = false; // Agora controla a opacidade da caixa, não da janela
         public bool IsPassThrough { get; set; } = false;
-        // size and position
+
+        // --- Tamanho e Posição da Janela (Nativo) ---
         public double Width { get; set; } = 800;
         public double Height { get; set; } = 250;
         public double Top { get; set; } = double.NaN;
         public double Left { get; set; } = double.NaN;
 
-        // Em Models/AppConfig.cs, dentro da classe OverlayConfig:
+        // --- Novas Propriedades do Modo Box ---
         public bool UseTextBoxMode { get; set; } = true;
         public double TextBoxMinHeight { get; set; } = 150;
         public double TextBoxWidthPercentage { get; set; } = 100;
         public double VerticalMargin { get; set; } = 15;
+        public double HorizontalDisplacement { get; set; } = 0;
+        public string TextVerticalAlignment { get; set; } = "center"; // "flex-start", "center", "flex-end"
     }
 
     public class ExtensionSettings

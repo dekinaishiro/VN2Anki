@@ -275,6 +275,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -284,19 +285,23 @@
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="Text Box BG:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
                         <colorpicker:PortableColorPicker x:Name="PickerBgColor" Style="{StaticResource DefaultColorPickerStyle}" Grid.Row="0" Grid.Column="1" Margin="5" HorizontalAlignment="Left" Width="60" Height="30" />
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Text Font Color:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"/>
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Font Color:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"/>
                         <colorpicker:PortableColorPicker x:Name="PickerFontColor" Style="{StaticResource DefaultColorPickerStyle}" Grid.Row="1" Grid.Column="1" Margin="5" HorizontalAlignment="Left" Width="60" Height="30" />
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Overlay Window BG:" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"/>
-                        <colorpicker:PortableColorPicker x:Name="PickerOverlayBgColor" Style="{StaticResource DefaultColorPickerStyle}" Grid.Row="2" Grid.Column="1" Margin="5" HorizontalAlignment="Left" Width="60" Height="30" />
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Text Outline Color:" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="5">
+                            <colorpicker:PortableColorPicker x:Name="PickerOutlineColor" Style="{StaticResource DefaultColorPickerStyle}" HorizontalAlignment="Left" Width="60" Height="30" Margin="0,0,10,0"/>
+                            <TextBlock Text="Thickness:" VerticalAlignment="Center" Foreground="#EAEAEA" Margin="0,0,5,0"/>
+                            <TextBox Text="{Binding Config.Overlay.OutlineThickness, UpdateSourceTrigger=PropertyChanged}" Width="40" Padding="5" TextAlignment="Center"/>
+                        </StackPanel>
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Font Size:" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center"/>
-                        <TextBox x:Name="TxtFontSize" Grid.Row="3" Grid.Column="1" Margin="5" Padding="5" Text="{Binding Config.Overlay.FontSize, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Font Family:" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="3" Grid.Column="1" Margin="5" Padding="5" Text="{Binding Config.Overlay.FontFamily, UpdateSourceTrigger=PropertyChanged}" ToolTip="Ex: Meiryo, MS Gothic, Yu Gothic, Segoe UI"/>
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Vertical Margin (px):" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center"/>
-                        <TextBox Grid.Row="4" Grid.Column="1" Margin="5" Padding="5" Text="{Binding Config.Overlay.VerticalMargin, UpdateSourceTrigger=PropertyChanged}" ToolTip="Distância do texto em relação ao Topo/Fundo"/>
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Font Size:" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="4" Grid.Column="1" Margin="5" Padding="5" Text="{Binding Config.Overlay.FontSize, UpdateSourceTrigger=PropertyChanged}"/>
 
-                        <CheckBox Content="Use Text Box Mode (Masking)" Grid.Row="5" Grid.Column="1" Margin="5,10,5,5" IsChecked="{Binding Config.Overlay.UseTextBoxMode}" Foreground="White" ToolTip="Se ativado, cria uma caixa rígida para tapar o texto original."/>
+                        <CheckBox Content="Use Text Box Mode (Masking)" Grid.Row="5" Grid.Column="1" Margin="5,15,5,5" IsChecked="{Binding Config.Overlay.UseTextBoxMode}" Foreground="White" FontWeight="SemiBold"/>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="Box Min-Height (px):" Grid.Row="6" Grid.Column="0" VerticalAlignment="Center"/>
                         <TextBox Grid.Row="6" Grid.Column="1" Margin="5" Padding="5" Text="{Binding Config.Overlay.TextBoxMinHeight, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Config.Overlay.UseTextBoxMode}"/>
@@ -304,14 +309,22 @@
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="Box Width (%):" Grid.Row="7" Grid.Column="0" VerticalAlignment="Center"/>
                         <TextBox Grid.Row="7" Grid.Column="1" Margin="5" Padding="5" Text="{Binding Config.Overlay.TextBoxWidthPercentage, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Config.Overlay.UseTextBoxMode}"/>
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Pass-Through Key:" Grid.Row="8" Grid.Column="0" VerticalAlignment="Center"/>
-                        <ComboBox Style="{StaticResource StandardComboBox}" Grid.Row="8" Grid.Column="1" Margin="5" Padding="5" SelectedValuePath="Tag" SelectedValue="{Binding Config.Overlay.PassThroughModifier}">
-                            <ComboBoxItem Content="Ctrl" Tag="Ctrl"/>
-                            <ComboBoxItem Content="Alt" Tag="Alt"/>
-                            <ComboBoxItem Content="Shift" Tag="Shift"/>
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Displacement &amp; Margins:" Grid.Row="8" Grid.Column="0" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Row="8" Grid.Column="1" Orientation="Horizontal" Margin="5">
+                            <TextBlock Text="X (Horiz):" VerticalAlignment="Center" Foreground="#EAEAEA" Margin="0,0,5,0"/>
+                            <TextBox Text="{Binding Config.Overlay.HorizontalDisplacement, UpdateSourceTrigger=PropertyChanged}" Width="50" Padding="5" TextAlignment="Center" Margin="0,0,10,0" ToolTip="Positivo = Direita, Negativo = Esquerda"/>
+                            <TextBlock Text="Y (Vert):" VerticalAlignment="Center" Foreground="#EAEAEA" Margin="0,0,5,0"/>
+                            <TextBox Text="{Binding Config.Overlay.VerticalMargin, UpdateSourceTrigger=PropertyChanged}" Width="50" Padding="5" TextAlignment="Center" ToolTip="Margem em relação ao Topo ou Fundo"/>
+                        </StackPanel>
+
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Text Vertical Align:" Grid.Row="9" Grid.Column="0" VerticalAlignment="Center"/>
+                        <ComboBox Style="{StaticResource StandardComboBox}" Grid.Row="9" Grid.Column="1" Margin="5" Padding="5" SelectedValuePath="Tag" SelectedValue="{Binding Config.Overlay.TextVerticalAlignment}">
+                            <ComboBoxItem Content="Top" Tag="flex-start"/>
+                            <ComboBoxItem Content="Center" Tag="center"/>
+                            <ComboBoxItem Content="Bottom" Tag="flex-end"/>
                         </ComboBox>
 
-                        <Border Grid.Row="9" Grid.ColumnSpan="2" BorderBrush="#333333" BorderThickness="0,1,0,0" Margin="0,15,0,10" />
+                        <Border Grid.Row="10" Grid.ColumnSpan="2" BorderBrush="#333333" BorderThickness="0,1,0,0" Margin="0,15,0,15" />
 
                     </Grid>
                 </ScrollViewer>

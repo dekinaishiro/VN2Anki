@@ -39,15 +39,14 @@ namespace VN2Anki
             await LoadAnkiDataAsync();
 
             var overlayConfig = _viewModel.Config.Overlay;
-            try { PickerBgColor.SelectedColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(overlayConfig.BgColor); } 
+            try { PickerBgColor.SelectedColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(overlayConfig.BgColor); }
             catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Error converting BgColor: {ex.Message}"); }
-            
-            try { PickerFontColor.SelectedColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(overlayConfig.FontColor); } 
-            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Error converting FontColor: {ex.Message}"); }
-            
-            try { PickerOverlayBgColor.SelectedColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(overlayConfig.OverlayBgColor); } 
-            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Error converting OverlayBgColor: {ex.Message}"); }
 
+            try { PickerFontColor.SelectedColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(overlayConfig.FontColor); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Error converting FontColor: {ex.Message}"); }
+
+            try { PickerOutlineColor.SelectedColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(overlayConfig.OutlineColor); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Error converting OutlineColor: {ex.Message}"); }
             //ListExtensions.ItemsSource = new System.Collections.ObjectModel.ObservableCollection<string>(overlayConfig.CustomExtensions);
         }
 
@@ -118,8 +117,7 @@ namespace VN2Anki
             var overlayConfig = _viewModel.Config.Overlay;
             overlayConfig.BgColor = PickerBgColor.SelectedColor.ToString();
             overlayConfig.FontColor = PickerFontColor.SelectedColor.ToString();
-            overlayConfig.OverlayBgColor = PickerOverlayBgColor.SelectedColor.ToString();
-            //overlayConfig.CustomExtensions = ListExtensions.Items.Cast<string>().ToList();
+            overlayConfig.OutlineColor = PickerOutlineColor.SelectedColor.ToString();
 
             // Commit the current UI URL to the specific source field
             if (ComboHookType.SelectedItem is ComboBoxItem item)
