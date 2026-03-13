@@ -113,6 +113,11 @@ namespace VN2Anki.ViewModels
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
+                    if (CurrentVN != null && CurrentVN.Id != e.VisualNovel.Id)
+                    {
+                        return; // Ignore background VNs starting if we already have one selected
+                    }
+
                     _ = TryAutoLinkAsync(e.VisualNovel.ProcessName);
                 });
             };

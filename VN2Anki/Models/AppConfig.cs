@@ -87,6 +87,7 @@ namespace VN2Anki.Models
         public bool IsTextAtTop { get; set; } = false;
         public bool IsTransparent { get; set; } = false; // Agora controla a opacidade da caixa, não da janela
         public bool IsPassThrough { get; set; } = false;
+        public bool IsMaximized { get; set; } = false;
 
         // --- Tamanho e Posição da Janela (Nativo) ---
         public double Width { get; set; } = 800;

@@ -32,6 +32,7 @@ namespace VN2Anki
         private bool _isHoldActive = false;
         private bool _isMouseOverHeader = false; 
         private int _modifierKeyVk = 0xA2;
+        private bool _isLoaded = false;
 
         public OverlayWindow(IConfigurationService configService, ITextHook textHook, VN2Anki.Services.Interfaces.IWindowService windowService)
         {
@@ -238,6 +239,108 @@ namespace VN2Anki
             };
         }
 
+        private void ApplyDynamicStyles()
+        {
+            if (webView.CoreWebView2 == null) return;
+
+            var conf = _configService.CurrentConfig.Overlay;
+            string cssBgColor = WpfHexToCss(conf.BgColor);
+            string cssFontColor = WpfHexToCss(conf.FontColor);
+            string cssOutlineColor = WpfHexToCss(conf.OutlineColor);
+
+            // Lógica do Modo Text Box vs Modo Solto
+            string boxStyles = "";
+            if (conf.UseTextBoxMode)
+            {
+                string align = string.IsNullOrEmpty(conf.TextVerticalAlignment) ? "center" : conf.TextVerticalAlignment;
+                boxStyles = $@"
+            min-height: {conf.TextBoxMinHeight}px;
+            width: {conf.TextBoxWidthPercentage}vw;
+            display: flex;
+            flex-direction: column;
+            justify-content: {align};
+            align-items: center; /* Centraliza horizontalmente o texto dentro da caixa */
+            box-sizing: border-box;
+            margin-left: auto;
+            margin-right: auto;
+        ";
+            }
+            else
+            {
+                boxStyles = $@"
+            width: auto;
+            min-height: auto;
+            display: inline-block;
+            margin-left: auto;
+            margin-right: auto;
+        ";
+            }
+
+            // Lógica da Borda (Outline / Stroke) 100% Externa
+            string textOutline = "";
+            if (conf.OutlineThickness > 0)
+            {
+                int t = conf.OutlineThickness;
+                string c = cssOutlineColor;
+
+                // Cria uma matriz de text-shadow (círculo perfeito ao redor da letra)
+                var shadowParts = new System.Collections.Generic.List<string>();
+                for (int x = -t; x <= t; x++)
+                {
+                    for (int y = -t; y <= t; y++)
+                    {
+                        if (x == 0 && y == 0) continue;
+                        shadowParts.Add($"{x}px {y}px 0px {c}");
+                    }
+                }
+                // Adiciona um blur suave no final para arredondar as pontas dos kanjis
+                shadowParts.Add($"0px 0px {t}px {c}");
+
+                textOutline = "text-shadow: " + string.Join(", ", shadowParts) + " !important;\n";
+                textOutline += "                -webkit-text-stroke: 0 !important;"; // Garante que o stroke nativo não atrapalhe
+            }
+            else
+            {
+                textOutline = "text-shadow: none !important; -webkit-text-stroke: 0 !important;";
+            }
+
+            // Injeção do CSS
+            string script = $@"
+        var style = document.getElementById('dynamic-config-style');
+        if (!style) {{
+            style = document.createElement('style');
+            style.id = 'dynamic-config-style';
+            document.head.appendChild(style);
+        }}
+        style.innerHTML = `
+            html, body {{
+                width: 100vw;
+            }}
+            #text-box {{
+                color: {cssFontColor} !important; 
+                font-family: '{conf.FontFamily}', sans-serif !important;
+                font-size: {conf.FontSize}px !important;
+                background-color: {cssBgColor} !important;
+                border-radius: 8px;
+                padding: 15px;
+                text-align: center;
+                {textOutline}
+                {boxStyles}
+            }}
+
+            /* Regra para o botão do 'olhinho' (Transparência) funcionar só na caixa de texto */
+            body.transp-on:not(.transp-off) #text-box {{
+                background-color: transparent !important;
+                box-shadow: none !important;
+            }}
+        `;
+    ";
+            webView.CoreWebView2.ExecuteScriptAsync(script);
+
+            // Força a atualização da margem logo a seguir
+            ApplyPositionState();
+        }
+
         private async void LoadExtensions()
         {
             if (webView.CoreWebView2 == null) return;
@@ -297,7 +400,7 @@ namespace VN2Anki
         {
             var conf = _configService.CurrentConfig.Overlay;
 
-            // Isso aqui é o que garante que a janela volte com o tamanho que tinha antes de fechar minimizada
+            // 1. SEMPRE aplica o tamanho e posição (isso serve de "RestoreBounds" caso ela abra maximizada)
             if (!double.IsInfinity(conf.Width) && !double.IsNaN(conf.Width) && conf.Width > 0)
                 this.Width = conf.Width;
 
@@ -310,8 +413,22 @@ namespace VN2Anki
                 this.Left = conf.Left;
             }
 
-            //_textHook.OnTextCopied += HandleNewText;
+            // 2. SÓ DEPOIS aplica o estado de maximizado
+            if (conf.IsMaximized)
+            {
+                this.WindowState = WindowState.Maximized;
+                if (BtnMaximize != null) BtnMaximize.Content = "🗗";
+            }
+            else
+            {
+                this.WindowState = WindowState.Normal;
+                if (BtnMaximize != null) BtnMaximize.Content = "🗖";
+            }
+
             ApplyPassThroughState();
+
+            // 3. Liberta a trava: a partir de agora, qualquer movimento do utilizador é real e deve ser guardado
+            _isLoaded = true;
         }
 
         private void HandleNewText(string text, DateTime timestamp)
@@ -470,19 +587,43 @@ namespace VN2Anki
         private void BtnPosition_Click(object sender, RoutedEventArgs e)
         {
             _isTextAtTop = !_isTextAtTop;
+            _configService.CurrentConfig.Overlay.IsTextAtTop = _isTextAtTop;
             ApplyPositionState();
+            WeakReferenceMessenger.Default.Send(new SaveOverlayStateMessage());
         }
 
         private void BtnTransparency_Click(object sender, RoutedEventArgs e)
         {
             _isTransparent = !_isTransparent;
+            _configService.CurrentConfig.Overlay.IsTransparent = _isTransparent;
             ApplyTransparencyState();
+            WeakReferenceMessenger.Default.Send(new SaveOverlayStateMessage());
         }
 
         private void BtnPassThrough_Click(object sender, RoutedEventArgs e)
         {
             _isPassThroughToggled = !_isPassThroughToggled;
+            _configService.CurrentConfig.Overlay.IsPassThrough = _isPassThroughToggled;
             ApplyPassThroughState();
+            WeakReferenceMessenger.Default.Send(new SaveOverlayStateMessage());
+        }
+
+        private void BtnMaximize_Click(object sender, RoutedEventArgs e)
+        {
+            var conf = _configService.CurrentConfig.Overlay;
+            if (this.WindowState == WindowState.Maximized)
+            {
+                this.WindowState = WindowState.Normal;
+                BtnMaximize.Content = "🗖";
+                conf.IsMaximized = false;
+            }
+            else
+            {
+                this.WindowState = WindowState.Maximized;
+                BtnMaximize.Content = "🗗";
+                conf.IsMaximized = true;
+            }
+            WeakReferenceMessenger.Default.Send(new SaveOverlayStateMessage());
         }
 
         private void BtnClose_Click(object sender, RoutedEventArgs e) => this.Close();
@@ -499,15 +640,24 @@ namespace VN2Anki
 
         private void OverlayWindow_LocationOrSizeChanged(object sender, EventArgs e)
         {
-            if (this.WindowState == WindowState.Normal)
+            // Bloqueia leituras enquanto o WPF ainda está a construir a janela
+            if (!_isLoaded) return;
+
+            var conf = _configService.CurrentConfig.Overlay;
+
+            if (this.WindowState == WindowState.Maximized)
             {
+                conf.IsMaximized = true;
+            }
+            else if (this.WindowState == WindowState.Normal)
+            {
+                conf.IsMaximized = false;
+
                 _lastNormalTop = this.Top;
                 _lastNormalLeft = this.Left;
                 _lastNormalWidth = this.Width;
                 _lastNormalHeight = this.Height;
 
-                // Atualiza a memória em tempo real para o sistema de perfis!
-                var conf = _configService.CurrentConfig.Overlay;
                 conf.Width = this.Width;
                 conf.Height = this.Height;
                 conf.Top = this.Top;
@@ -573,116 +723,17 @@ namespace VN2Anki
             }
         }
 
-        private void ApplyDynamicStyles()
-        {
-            if (webView.CoreWebView2 == null) return;
-
-            var conf = _configService.CurrentConfig.Overlay;
-            string cssBgColor = WpfHexToCss(conf.BgColor);
-            string cssFontColor = WpfHexToCss(conf.FontColor);
-            string cssOutlineColor = WpfHexToCss(conf.OutlineColor);
-
-            // Lógica do Modo Text Box vs Modo Solto
-            string boxStyles = "";
-            if (conf.UseTextBoxMode)
-            {
-                string align = string.IsNullOrEmpty(conf.TextVerticalAlignment) ? "center" : conf.TextVerticalAlignment;
-                boxStyles = $@"
-            min-height: {conf.TextBoxMinHeight}px;
-            width: {conf.TextBoxWidthPercentage}vw;
-            display: flex;
-            flex-direction: column;
-            justify-content: {align};
-            align-items: center; /* Centraliza horizontalmente o texto dentro da caixa */
-            box-sizing: border-box;
-            margin-left: auto;
-            margin-right: auto;
-        ";
-            }
-            else
-            {
-                boxStyles = $@"
-            width: auto;
-            min-height: auto;
-            display: inline-block;
-            margin-left: auto;
-            margin-right: auto;
-        ";
-            }
-
-            // Lógica da Borda (Outline / Stroke) 100% Externa
-            string textOutline = "";
-            if (conf.OutlineThickness > 0)
-            {
-                int t = conf.OutlineThickness;
-                string c = cssOutlineColor;
-
-                // Cria uma matriz de text-shadow (círculo perfeito ao redor da letra)
-                var shadowParts = new System.Collections.Generic.List<string>();
-                for (int x = -t; x <= t; x++)
-                {
-                    for (int y = -t; y <= t; y++)
-                    {
-                        if (x == 0 && y == 0) continue;
-                        shadowParts.Add($"{x}px {y}px 0px {c}");
-                    }
-                }
-                // Adiciona um blur suave no final para arredondar as pontas dos kanjis
-                shadowParts.Add($"0px 0px {t}px {c}");
-
-                textOutline = "text-shadow: " + string.Join(", ", shadowParts) + " !important;\n";
-                textOutline += "                -webkit-text-stroke: 0 !important;"; // Garante que o stroke nativo não atrapalhe
-            }
-            else
-            {
-                textOutline = "text-shadow: none !important; -webkit-text-stroke: 0 !important;";
-            }
-
-            // Injeção do CSS
-            string script = $@"
-        var style = document.getElementById('dynamic-config-style');
-        if (!style) {{
-            style = document.createElement('style');
-            style.id = 'dynamic-config-style';
-            document.head.appendChild(style);
-        }}
-        style.innerHTML = `
-            html, body {{
-                width: 100vw;
-            }}
-            #text-box {{
-                color: {cssFontColor} !important; 
-                font-family: '{conf.FontFamily}', sans-serif !important;
-                font-size: {conf.FontSize}px !important;
-                background-color: {cssBgColor} !important;
-                border-radius: 8px;
-                padding: 15px;
-                text-align: center;
-                {textOutline}
-                {boxStyles}
-            }}
-
-            /* Regra para o botão do 'olhinho' (Transparência) funcionar só na caixa de texto */
-            body.transp-on:not(.transp-off) #text-box {{
-                background-color: transparent !important;
-                box-shadow: none !important;
-            }}
-        `;
-    ";
-            webView.CoreWebView2.ExecuteScriptAsync(script);
-
-            // Força a atualização da margem logo a seguir
-            ApplyPositionState();
-        }
+        
 
         // this method will be called whenever the OverlayConfigUpdatedMessage is sent, allowing the overlay to update its appearance in real-time based on configuration changes
         public void Receive(OverlayConfigUpdatedMessage message)
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
+                _isLoaded = false; // Tranca a leitura
                 var conf = _configService.CurrentConfig.Overlay;
 
-                // Aplica os tamanhos físicos do perfil carregado
+                // 1. Posições e Tamanho Base
                 if (!double.IsInfinity(conf.Width) && !double.IsNaN(conf.Width) && conf.Width > 0)
                     this.Width = conf.Width;
 
@@ -695,16 +746,31 @@ namespace VN2Anki
                     this.Left = conf.Left;
                 }
 
-                // Restaura as variáveis de estado
+                // 2. Estado de Maximização
+                if (conf.IsMaximized)
+                {
+                    this.WindowState = WindowState.Maximized;
+                    if (BtnMaximize != null) BtnMaximize.Content = "🗗";
+                }
+                else
+                {
+                    this.WindowState = WindowState.Normal;
+                    if (BtnMaximize != null) BtnMaximize.Content = "🗖";
+                }
+
+                // 3. Restaura as variáveis de estado
                 _isTextAtTop = conf.IsTextAtTop;
                 _isTransparent = conf.IsTransparent;
                 _isPassThroughToggled = conf.IsPassThrough;
 
+                // 4. Atualiza visuais
                 UpdateBackground();
                 ApplyDynamicStyles();
                 ApplyTransparencyState();
                 ApplyPositionState();
                 ApplyPassThroughState();
+
+                _isLoaded = true; // Destranca a leitura
             });
         }
 
@@ -722,18 +788,6 @@ namespace VN2Anki
             });
         }
 
-        private void BtnMaximize_Click(object sender, RoutedEventArgs e)
-        {
-            if (this.WindowState == WindowState.Maximized)
-            {
-                this.WindowState = WindowState.Normal;
-                BtnMaximize.Content = "🗖"; // Ícone de Maximizar
-            }
-            else
-            {
-                this.WindowState = WindowState.Maximized;
-                BtnMaximize.Content = "🗗"; // Ícone de Restaurar (Janelas sobrepostas)
-            }
-        }
+        
     }
 }
