@@ -12,6 +12,7 @@ using System.Windows.Threading;
 using VN2Anki.Data;
 using VN2Anki.Locales;
 using VN2Anki.Messages;
+using VN2Anki.Models;
 using VN2Anki.Models.Entities;
 using VN2Anki.Services;
 using VN2Anki.Services.Interfaces;
@@ -19,13 +20,12 @@ using VN2Anki.Services.Interfaces;
 
 namespace VN2Anki.ViewModels
 {
-    public partial class MainWindowViewModel : ObservableObject, IRecipient<StatusMessage>, IRecipient<PlayVnMessage>, IRecipient<BufferStoppedMessage>
+    public partial class MainWindowViewModel : ObservableObject, IRecipient<StatusMessage>, IRecipient<PlayVnMessage>, IRecipient<BufferStoppedMessage>, IRecipient<SaveOverlayStateMessage>
     {
         private readonly MiningService _miningService;
         private readonly IConfigurationService _configService;
         private readonly AnkiHandler _ankiHandler;
         private CancellationTokenSource _pollingCts;
-        private readonly DiscordRpcService _discordRpc;
         private readonly ISessionManagerService _sessionManager;
 
         public bool HasUnsavedProgress => _sessionManager.HasUnsavedProgress;
@@ -272,8 +272,39 @@ namespace VN2Anki.ViewModels
         }
 
         // main window vsource/vn title
+        private VisualNovel _previousVn;
         partial void OnCurrentVNChanged(VN2Anki.Models.Entities.VisualNovel value)
         {
+            // 1. Salva o estado atual no jogo anterior para não perder resizes antes de trocar
+            if (_previousVn != null)
+            {
+                _previousVn.OverlayConfigJson = System.Text.Json.JsonSerializer.Serialize(_configService.CurrentConfig.Overlay);
+                _ = _vnDatabaseService.UpdateVisualNovelAsync(_previousVn);
+            }
+
+            // 2. Carrega o estado do novo jogo
+            if (value != null && !string.IsNullOrEmpty(value.OverlayConfigJson))
+            {
+                try
+                {
+                    var profile = System.Text.Json.JsonSerializer.Deserialize<OverlayConfig>(value.OverlayConfigJson);
+                    if (profile != null)
+                        _configService.CurrentConfig.Overlay = profile;
+                }
+                catch { /* Ignora e usa o global atual se falhar a leitura */ }
+            }
+            else
+            {
+                // Se o jogo novo não tem perfil, recarrega o template global do disco
+                _configService.Load();
+            }
+
+            // Avisa a OverlayWindow para se redimensionar fisicamente com o novo perfil
+            WeakReferenceMessenger.Default.Send(new OverlayConfigUpdatedMessage());
+
+            _previousVn = value; // Atualiza a referência
+
+            // Dispara as mensagens padrão do seu código
             if (value != null)
             {
                 WeakReferenceMessenger.Default.Send(new CurrentVnChangedMessage(value));
@@ -513,6 +544,16 @@ namespace VN2Anki.ViewModels
                 IsBufferActive = false;
                 _sessionManager.IsBufferActive = false;
             });
+        }
+
+        public void Receive(SaveOverlayStateMessage message)
+        {
+            // Se há um jogo rodando, salva a overlay atual no perfil dele!
+            if (CurrentVN != null)
+            {
+                CurrentVN.OverlayConfigJson = System.Text.Json.JsonSerializer.Serialize(_configService.CurrentConfig.Overlay);
+                _ = _vnDatabaseService.UpdateVisualNovelAsync(CurrentVN);
+            }
         }
     }
 }

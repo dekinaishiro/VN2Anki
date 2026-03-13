@@ -37,5 +37,7 @@ namespace VN2Anki.Models.Entities
 
         [NotMapped]
         public int SessionCount => Sessions?.Count ?? 0;
+
+        public string? OverlayConfigJson { get; set; }
     }
 }

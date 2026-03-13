@@ -133,6 +133,9 @@ namespace VN2Anki
             // Call the viewmodel's Save method so Bridge and other services restart correctly
             _viewModel.SaveCommand.Execute(null);
 
+            // Manda o MainWindowViewModel salvar isso no Banco de Dados do Jogo Atual (se houver)
+            WeakReferenceMessenger.Default.Send(new SaveOverlayStateMessage());
+
             WeakReferenceMessenger.Default.Send(new OverlayConfigUpdatedMessage());
             this.Close();
         }

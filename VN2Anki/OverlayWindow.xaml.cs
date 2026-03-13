@@ -510,6 +510,13 @@ namespace VN2Anki
                 _lastNormalLeft = this.Left;
                 _lastNormalWidth = this.Width;
                 _lastNormalHeight = this.Height;
+
+                // Atualiza a memória em tempo real para o sistema de perfis!
+                var conf = _configService.CurrentConfig.Overlay;
+                conf.Width = this.Width;
+                conf.Height = this.Height;
+                conf.Top = this.Top;
+                conf.Left = this.Left;
             }
         }
 
@@ -543,8 +550,8 @@ namespace VN2Anki
                 conf.Left = this.RestoreBounds.Left;
             }
 
-            _configService.Save();
-            //_textHook.OnTextCopied -= HandleNewText;
+            _configService.Save(); // Mantém o save global do disco
+            WeakReferenceMessenger.Default.Send(new SaveOverlayStateMessage()); // Dispara o save no Banco de Dados
 
             if (_webViewRenderHostHandle != IntPtr.Zero)
             {
@@ -678,9 +685,31 @@ namespace VN2Anki
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
+                var conf = _configService.CurrentConfig.Overlay;
+
+                // Aplica os tamanhos físicos do perfil carregado
+                if (!double.IsInfinity(conf.Width) && !double.IsNaN(conf.Width) && conf.Width > 0)
+                    this.Width = conf.Width;
+
+                if (!double.IsInfinity(conf.Height) && !double.IsNaN(conf.Height) && conf.Height > 0)
+                    this.Height = conf.Height;
+
+                if (!double.IsNaN(conf.Top) && !double.IsInfinity(conf.Top) && !double.IsNaN(conf.Left) && !double.IsInfinity(conf.Left))
+                {
+                    this.Top = conf.Top;
+                    this.Left = conf.Left;
+                }
+
+                // Restaura as variáveis de estado
+                _isTextAtTop = conf.IsTextAtTop;
+                _isTransparent = conf.IsTransparent;
+                _isPassThroughToggled = conf.IsPassThrough;
+
                 UpdateBackground();
                 ApplyDynamicStyles();
                 ApplyTransparencyState();
+                ApplyPositionState();
+                ApplyPassThroughState();
             });
         }
 

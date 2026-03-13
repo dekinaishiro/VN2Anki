@@ -76,3 +76,4 @@ namespace VN2Anki.Messages
     {
         public VnUpdatedMessage(VisualNovel value) : base(value) { }
     }
+    public class SaveOverlayStateMessage { }
