@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,6 +16,7 @@ namespace VN2Anki.Services
         private StreamWriter _writer = null;
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
         private string _sessionId = string.Empty;
+        private readonly JsonSerializerOptions _jsonOptions;
 
         public string CurrentLogPath => _currentLogPath;
         public string SessionId => _sessionId;
@@ -23,6 +25,12 @@ namespace VN2Anki.Services
 
         public SessionLoggerService()
         {
+            _jsonOptions = new JsonSerializerOptions
+            {
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                WriteIndented = false
+            };
+
             // Register to global messages for automatic logging
             WeakReferenceMessenger.Default.Register<TextCopiedMessage>(this, (r, m) =>
             {
@@ -93,7 +101,7 @@ namespace VN2Anki.Services
                 d = data
             };
 
-            var json = JsonSerializer.Serialize(logEntry);
+            var json = JsonSerializer.Serialize(logEntry, _jsonOptions);
             await _writer.WriteLineAsync(json);
             
             OnLogWritten?.Invoke(this, json);

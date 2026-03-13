@@ -202,7 +202,38 @@ namespace VN2Anki.Services
 
         private async Task ProcessActionAsync(string? action, JsonNode? parameters)
         {
-            if (parameters == null || (action != "addNote" && action != "guiAddCards" && action != "addNotes"))
+            if (parameters == null) return;
+
+            // Log Lookups based on common Yomitan actions
+            if (action == "canAddNotes" || action == "findNotes" || action == "findTerms")
+            {
+                string? term = null;
+                if (action == "canAddNotes")
+                {
+                    // canAddNotes has a "notes" array, we take the first field of the first note
+                    var notes = parameters["notes"] as JsonArray;
+                    var firstNoteFields = notes?[0]?["fields"] as JsonObject;
+                    term = firstNoteFields?.FirstOrDefault().Value?.ToString();
+                }
+                else if (action == "findNotes")
+                {
+                    term = parameters["query"]?.ToString();
+                }
+                else if (action == "findTerms")
+                {
+                    term = parameters["term"]?.ToString();
+                }
+
+                if (!string.IsNullOrEmpty(term))
+                {
+                    _logger.LogInformation($"Lookup detected: {term} (via {action})");
+                    _ = _sessionLogger.LogEventAsync("LOOKUP", new { term, action });
+                }
+                
+                if (action == "findTerms" || action == "findNotes") return;
+            }
+
+            if (action != "addNote" && action != "guiAddCards" && action != "addNotes")
                 return;
 
             LogMiningEvent(action, parameters);

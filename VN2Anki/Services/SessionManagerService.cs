@@ -23,6 +23,7 @@ namespace VN2Anki.Services
         private readonly IDispatcherService _dispatcherService;
         private readonly IExternalToolService _externalToolService;
         private readonly ISessionLoggerService _sessionLogger;
+        private readonly IUserActivityService _userActivityService;
 
         public bool IsBufferActive { get; set; }
 
@@ -38,7 +39,8 @@ namespace VN2Anki.Services
             VideoEngine videoEngine,
             IDispatcherService dispatcherService,
             IExternalToolService externalToolService,
-            ISessionLoggerService sessionLogger)
+            ISessionLoggerService sessionLogger,
+            IUserActivityService userActivityService)
         {
             _tracker = tracker;
             _miningService = miningService;
@@ -50,6 +52,7 @@ namespace VN2Anki.Services
             _dispatcherService = dispatcherService;
             _externalToolService = externalToolService;
             _sessionLogger = sessionLogger;
+            _userActivityService = userActivityService;
         }
 
         public bool ToggleBuffer(VisualNovel? currentVN)
@@ -95,6 +98,7 @@ namespace VN2Anki.Services
 
                 _ = _sessionLogger.StartNewSessionAsync();
                 _miningService.StartBuffer(deviceId);
+                _userActivityService.Start();
                 IsBufferActive = true;
 
                 WeakReferenceMessenger.Default.Send(new BufferStartedMessage());
@@ -102,6 +106,7 @@ namespace VN2Anki.Services
             else
             {
                 _miningService.StopBuffer();
+                _userActivityService.Stop();
                 IsBufferActive = false;
 
                 WeakReferenceMessenger.Default.Send(new BufferStoppedMessage());
@@ -153,6 +158,7 @@ namespace VN2Anki.Services
             }
 
             await _sessionLogger.EndSessionAsync(discard: !saved);
+            _userActivityService.Stop();
 
             if (IsBufferActive)
             {
