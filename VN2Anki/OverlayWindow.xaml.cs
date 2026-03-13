@@ -310,11 +310,6 @@ namespace VN2Anki
                 this.Left = conf.Left;
             }
 
-            // Desativar a maximização para evitar o Snap chato do Windows 11 no topo do ecrã
-            var handle = new WindowInteropHelper(this).Handle;
-            int style = GetWindowLong(handle, GWL_STYLE);
-            SetWindowLong(handle, GWL_STYLE, style & ~WS_MAXIMIZEBOX);
-
             //_textHook.OnTextCopied += HandleNewText;
             ApplyPassThroughState();
         }
@@ -725,6 +720,20 @@ namespace VN2Anki
             {
                 LoadExtensions();
             });
+        }
+
+        private void BtnMaximize_Click(object sender, RoutedEventArgs e)
+        {
+            if (this.WindowState == WindowState.Maximized)
+            {
+                this.WindowState = WindowState.Normal;
+                BtnMaximize.Content = "🗖"; // Ícone de Maximizar
+            }
+            else
+            {
+                this.WindowState = WindowState.Maximized;
+                BtnMaximize.Content = "🗗"; // Ícone de Restaurar (Janelas sobrepostas)
+            }
         }
     }
 }

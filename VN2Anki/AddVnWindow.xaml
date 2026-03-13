@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:VN2Anki.Locales"
         Title="Add/Bind Visual Novel" Height="500" Width="450"
-        Background="#1E1E1E" Foreground="White" WindowStartupLocation="CenterOwner" WindowStyle="ToolWindow">
+        Background="#1E1E1E" Foreground="White" WindowStartupLocation="CenterOwner" WindowStyle="ToolWindow"
+        Topmost="True">
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>

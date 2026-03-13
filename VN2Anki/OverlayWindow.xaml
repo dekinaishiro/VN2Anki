@@ -4,7 +4,8 @@
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         Title="VN2Anki Overlay" Height="250" Width="800"
         WindowStyle="None" AllowsTransparency="True" Background="#05000000"
-        Topmost="True">
+        Topmost="True"
+        >
 
     <WindowChrome.WindowChrome>
         <WindowChrome CaptionHeight="25" ResizeBorderThickness="8" GlassFrameThickness="0" CornerRadius="0" />
@@ -37,6 +38,8 @@
 
                 <Button x:Name="BtnMinimize" Content="➖" ToolTip="Minimize Overlay" Click="BtnMinimize_Click" 
                         Foreground="White" Background="Transparent" BorderThickness="0" Margin="5,0" FontSize="12"/>
+                <Button x:Name="BtnMaximize" Content="🗖" ToolTip="Maximize/Restore Overlay" Click="BtnMaximize_Click" 
+        Foreground="White" Background="Transparent" BorderThickness="0" Margin="5,0" FontSize="12"/>
                 <Button x:Name="BtnClose" Content="❌" ToolTip="Close Overlay" Click="BtnClose_Click" 
                         Foreground="#FF5555" Background="Transparent" BorderThickness="0" Margin="10,0,0,0" FontSize="10"/>
             </StackPanel>

@@ -474,12 +474,9 @@ namespace VN2Anki.ViewModels
 
             if (CurrentVN != null)
             {
-                CurrentVN = null; // safe manual unlinking
-
-                config.Media.VideoWindow = string.Empty;
-                _configService.Save();
-                _miningService.TargetVideoWindow = string.Empty;
-                UpdateVisualCurrentVN();
+                // Possibly prompt the user to confirm unlinking the current VN session before allowing them to link a new one manually, to prevent confusion
+                WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Está VN já está linkada!", IsError = true }));
+                return;
             }
             else
             {
