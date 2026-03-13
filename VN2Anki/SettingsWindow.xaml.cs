@@ -48,7 +48,7 @@ namespace VN2Anki
             try { PickerOverlayBgColor.SelectedColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(overlayConfig.OverlayBgColor); } 
             catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Error converting OverlayBgColor: {ex.Message}"); }
 
-            ListExtensions.ItemsSource = new System.Collections.ObjectModel.ObservableCollection<string>(overlayConfig.CustomExtensions);
+            //ListExtensions.ItemsSource = new System.Collections.ObjectModel.ObservableCollection<string>(overlayConfig.CustomExtensions);
         }
 
         private async Task LoadAnkiDataAsync()
@@ -119,7 +119,7 @@ namespace VN2Anki
             overlayConfig.BgColor = PickerBgColor.SelectedColor.ToString();
             overlayConfig.FontColor = PickerFontColor.SelectedColor.ToString();
             overlayConfig.OverlayBgColor = PickerOverlayBgColor.SelectedColor.ToString();
-            overlayConfig.CustomExtensions = ListExtensions.Items.Cast<string>().ToList();
+            //overlayConfig.CustomExtensions = ListExtensions.Items.Cast<string>().ToList();
 
             // Commit the current UI URL to the specific source field
             if (ComboHookType.SelectedItem is ComboBoxItem item)
@@ -139,30 +139,6 @@ namespace VN2Anki
             this.Close();
         }
 
-        private void BtnAddExtension_Click(object sender, RoutedEventArgs e)
-        {
-            _windowService.OpenExtensionsManager(this);
-            // After manager closes, we might want to refresh the local list if it's still showing paths
-            var overlayConfig = _viewModel.Config.Overlay;
-            ListExtensions.ItemsSource = new System.Collections.ObjectModel.ObservableCollection<string>(overlayConfig.CustomExtensions);
-        }
-        private void BtnExtensionSettings_Click(object sender, RoutedEventArgs e)
-        {
-            if (ListExtensions.SelectedItem is string selectedExtPath)
-            {
-                _windowService.OpenExtensionSettingsWindow(selectedExtPath, this);
-            }
-        }
-        private void BtnRemoveExtension_Click(object sender, RoutedEventArgs e)
-        {
-            if (ListExtensions.SelectedItem is string selectedExt)
-            {
-                var list = ListExtensions.ItemsSource as System.Collections.ObjectModel.ObservableCollection<string>;
-                list.Remove(selectedExt);
-                _viewModel.Config.Overlay.CustomExtensions.Remove(selectedExt);
-                _configService.Save();
-            }
-        }
         private void ChkOpenSettings_Checked(object sender, RoutedEventArgs e) { }
     }
 }

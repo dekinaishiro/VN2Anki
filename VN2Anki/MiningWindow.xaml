@@ -4,7 +4,8 @@
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         xmlns:loc="clr-namespace:VN2Anki.Locales"
         Title="{x:Static loc:Strings.TitleHistoryWindow}" Height="600" Width="800"
-        Background="#1E1E1E" Foreground="White" WindowStartupLocation="CenterScreen">
+        Background="#1E1E1E" Foreground="White" WindowStartupLocation="CenterScreen"
+        Topmost="True">
 
     <Grid Margin="10">
         <wv2:WebView2 x:Name="webView" />

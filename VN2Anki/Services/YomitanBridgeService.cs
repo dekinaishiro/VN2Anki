@@ -273,8 +273,6 @@ namespace VN2Anki.Services
                 foreach (var p in gameProcesses) p.Dispose();
             }
 
-            // 3. Decision Logic:
-            
             // IF Game is in focus -> CERTAINLY OVERLAY context.
             if (isGameInFocus)
             {

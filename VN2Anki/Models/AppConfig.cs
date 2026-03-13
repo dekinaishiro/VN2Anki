@@ -86,6 +86,12 @@ namespace VN2Anki.Models
         public double Height { get; set; } = 250;
         public double Top { get; set; } = double.NaN;
         public double Left { get; set; } = double.NaN;
+
+        // Em Models/AppConfig.cs, dentro da classe OverlayConfig:
+        public bool UseTextBoxMode { get; set; } = true;
+        public double TextBoxMinHeight { get; set; } = 150;
+        public double TextBoxWidthPercentage { get; set; } = 100;
+        public double VerticalMargin { get; set; } = 15;
     }
 
     public class ExtensionSettings

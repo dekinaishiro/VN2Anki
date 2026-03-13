@@ -75,11 +75,18 @@ namespace VN2Anki
         {
             if (webView.CoreWebView2 != null)
             {
+                var conf = _configService.CurrentConfig.Overlay;
                 string dir = _isTextAtTop ? "flex-start" : "flex-end";
-                string margin = _isTextAtTop ? "margin-top: 0px;" : "margin-bottom: 0px;";
+
+                // Aplica a margem dinamicamente baseada na posição (Top ou Bottom)
+                string marginStyle = _isTextAtTop
+                    ? $"margin-top: {conf.VerticalMargin}px; margin-bottom: 0px;"
+                    : $"margin-bottom: {conf.VerticalMargin}px; margin-top: 0px;";
+
                 webView.CoreWebView2.ExecuteScriptAsync($@"
             document.body.style.justifyContent = '{dir}';
-            document.getElementById('text-box').style.cssText += '{margin}';
+            var tb = document.getElementById('text-box');
+            if (tb) tb.style.cssText += '{marginStyle}';
         ");
             }
         }
@@ -99,29 +106,34 @@ namespace VN2Anki
             <!DOCTYPE html>
             <html>
             <head>
-                <meta charset='utf-8'>
-                <style>
-                    html, body {{
-                        margin: 0; padding: 0; height: 100vh;
-                        background-color: rgba(0, 0, 0, 0.0) !important;
-                        overflow: hidden;
-                        display: flex; flex-direction: column; 
-                        justify-content: flex-end;
-                    }}
-                    #text-box {{
-                        color: {cssFontColor}; 
-                        background-color: {cssBgColor};
-                        font-size: {conf.FontSize}px; 
-                        padding: 10px;
-                        font-family: 'Segoe UI', sans-serif;
-                        border-radius: 8px; margin: 15px;
-                        transition: background 0.3s ease, color 0.3s ease;
-                        text-align: center;
-                        box-shadow: none;
-                        text-shadow: none;
-                    }}
-                </style>
-            </head>
+    <meta charset='utf-8'>
+    <style>
+        html, body {{
+            margin: 0; padding: 0; height: 100vh;
+            background-color: rgba(0, 0, 0, 0.0) !important;
+            overflow: hidden;
+            display: flex; flex-direction: column; 
+            /* O justify-content do body (flex-end ou flex-start) define se a caixa fica em cima ou embaixo na janela */
+            justify-content: flex-end; 
+        }}
+        #text-box {{
+            color: {cssFontColor}; 
+            background-color: {cssBgColor};
+            font-size: {conf.FontSize}px; 
+            padding: 15px;
+            font-family: 'Segoe UI', sans-serif;
+            border-radius: 8px; margin: 15px;
+            text-align: center;
+            
+            
+            display: flex;
+            flex-direction: column;
+            width: calc(100vw - 30px);
+            box-sizing: border-box;
+            overflow-y: hidden;
+        }}
+    </style>
+</head>
             <body>
                 <div id='text-box'>Waiting for text...</div>
                 <script>
@@ -290,18 +302,24 @@ namespace VN2Anki
         private void OverlayWindow_Loaded(object sender, RoutedEventArgs e)
         {
             var conf = _configService.CurrentConfig.Overlay;
-            
+
+            // Isso aqui é o que garante que a janela volte com o tamanho que tinha antes de fechar minimizada
             if (!double.IsInfinity(conf.Width) && !double.IsNaN(conf.Width) && conf.Width > 0)
                 this.Width = conf.Width;
-            
+
             if (!double.IsInfinity(conf.Height) && !double.IsNaN(conf.Height) && conf.Height > 0)
                 this.Height = conf.Height;
-                
+
             if (!double.IsNaN(conf.Top) && !double.IsInfinity(conf.Top) && !double.IsNaN(conf.Left) && !double.IsInfinity(conf.Left))
             {
                 this.Top = conf.Top;
                 this.Left = conf.Left;
             }
+
+            // Desativar a maximização para evitar o Snap chato do Windows 11 no topo do ecrã
+            var handle = new WindowInteropHelper(this).Handle;
+            int style = GetWindowLong(handle, GWL_STYLE);
+            SetWindowLong(handle, GWL_STYLE, style & ~WS_MAXIMIZEBOX);
 
             //_textHook.OnTextCopied += HandleNewText;
             ApplyPassThroughState();
@@ -576,23 +594,56 @@ namespace VN2Anki
             string cssBgColor = WpfHexToCss(conf.BgColor);
             string cssFontColor = WpfHexToCss(conf.FontColor);
 
+            string boxStyles = "";
+            if (conf.UseTextBoxMode)
+            {
+                boxStyles = $@"
+            min-height: {conf.TextBoxMinHeight}px;
+            width: {conf.TextBoxWidthPercentage}vw;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+            margin-left: auto;
+            margin-right: auto;
+        ";
+            }
+            else
+            {
+                boxStyles = $@"
+            width: auto;
+            min-height: auto;
+            display: inline-block;
+            margin-left: auto;
+            margin-right: auto;
+        ";
+            }
+
             string script = $@"
-                var style = document.getElementById('dynamic-config-style');
-                if (!style) {{
-                    style = document.createElement('style');
-                    style.id = 'dynamic-config-style';
-                    document.head.appendChild(style);
-                }}
-                style.innerHTML = `
-                    #text-box {{
-                        color: {cssFontColor}; 
-                        font-size: {conf.FontSize}px !important;
-                        background-color: {cssBgColor} !important;
-                        text-shadow: none !important;
-                    }}
-                `;
-            ";
+        var style = document.getElementById('dynamic-config-style');
+        if (!style) {{
+            style = document.createElement('style');
+            style.id = 'dynamic-config-style';
+            document.head.appendChild(style);
+        }}
+        style.innerHTML = `
+            html, body {{
+                width: 100vw;
+            }}
+            #text-box {{
+                color: {cssFontColor} !important; 
+                font-size: {conf.FontSize}px !important;
+                background-color: {cssBgColor} !important;
+                text-shadow: none !important;
+                {boxStyles}
+            }}
+        `;
+    ";
             webView.CoreWebView2.ExecuteScriptAsync(script);
+
+            // Forçar atualização da margem vertical logo a seguir
+            ApplyPositionState();
         }
 
         // this method will be called whenever the OverlayConfigUpdatedMessage is sent, allowing the overlay to update its appearance in real-time based on configuration changes

@@ -20,6 +20,9 @@ namespace VN2Anki.Services
         public const uint WM_RBUTTONDOWN = 0x0204;
         public const uint WM_RBUTTONUP = 0x0205;
 
+        public const int GWL_STYLE = -16;
+        public const int WS_MAXIMIZEBOX = 0x00010000;
+
         [DllImport("user32.dll")]
         public static extern short GetAsyncKeyState(int vKey);
 
