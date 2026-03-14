@@ -51,9 +51,10 @@ namespace VN2Anki.Services
         {
             try
             {
-                if (CheckActivity())
+                var context = CheckActivity();
+                if (!string.IsNullOrEmpty(context))
                 {
-                    _ = _sessionLogger.LogEventAsync("HEARTBEAT", new { activity = true });
+                    _ = _sessionLogger.LogEventAsync("HEARTBEAT", new { activity = true, context });
                 }
             }
             catch (Exception ex)
@@ -62,20 +63,20 @@ namespace VN2Anki.Services
             }
         }
 
-        private bool CheckActivity()
+        private string? CheckActivity()
         {
             // 1. Identify Foreground Window
             IntPtr foregroundWindow = Win32InteropService.GetForegroundWindow();
-            if (foregroundWindow == IntPtr.Zero) return false;
+            if (foregroundWindow == IntPtr.Zero) return null;
 
             Win32InteropService.GetWindowThreadProcessId(foregroundWindow, out uint foregroundPid);
             uint currentAppPid = (uint)Process.GetCurrentProcess().Id;
 
             // 2. Identify if it's the Game or our App
-            bool isGameOrApp = false;
+            string? activeContext = null;
             if (foregroundPid == currentAppPid)
             {
-                isGameOrApp = true;
+                activeContext = "app";
             }
             else
             {
@@ -83,19 +84,20 @@ namespace VN2Anki.Services
                 if (!string.IsNullOrEmpty(gameWindowName))
                 {
                     var gameProcesses = Process.GetProcessesByName(gameWindowName);
-                    isGameOrApp = gameProcesses.Any(p => (uint)p.Id == foregroundPid);
+                    bool isGameInFocus = gameProcesses.Any(p => (uint)p.Id == foregroundPid);
+                    if (isGameInFocus) activeContext = "game";
                     foreach (var p in gameProcesses) p.Dispose();
                 }
             }
 
-            if (!isGameOrApp) return false;
+            if (activeContext == null) return null;
 
             // 3. Check for Mouse Movement
             Win32InteropService.GetCursorPos(out POINT currentMousePos);
             bool mouseMoved = currentMousePos.X != _lastMousePos.X || currentMousePos.Y != _lastMousePos.Y;
             _lastMousePos = currentMousePos;
 
-            if (mouseMoved) return true;
+            if (mouseMoved) return activeContext;
 
             // 4. Check for Key Presses (Common keys for VNs/Mining)
             // Left Mouse, Right Mouse, Enter, Space, Arrows, WASD, Ctrl, Shift, Alt
@@ -112,11 +114,11 @@ namespace VN2Anki.Services
             {
                 if ((Win32InteropService.GetAsyncKeyState(key) & 0x8000) != 0)
                 {
-                    return true;
+                    return activeContext;
                 }
             }
 
-            return false;
+            return null;
         }
 
         public void Dispose()

@@ -31,6 +31,7 @@ namespace VN2Anki.Services
         
         private WebApplication? _app;
         private CancellationTokenSource? _cts;
+        private DateTime _lastLookupTime = DateTime.MinValue;
 
         public string ActiveHoverSlotId { get; set; } = string.Empty;
 
@@ -207,80 +208,18 @@ namespace VN2Anki.Services
             // Log the action to debug console
             _logger.LogDebug($"Yomitan Bridge Action: {action}");
 
-            // BULLETPROOF LOOKUP DETECTION
-            // We explicitly target the actions Yomitan uses during a hover lookup.
+            // SIMPLIFIED LOOKUP DETECTION
+            // We just register that a lookup occurred without trying to guess the exact word.
+            // The analytics engine can deduplicate multiple rapid events later.
             if (action == "canAddNotes" || action == "canAddNotesWithErrorDetail" || action == "findNotes")
             {
-                string? term = null;
-                try
+                var now = DateTime.UtcNow;
+                if ((now - _lastLookupTime).TotalMilliseconds > 1000) // 1 second debounce
                 {
-                    if (action == "findNotes")
-                    {
-                        term = parameters["query"]?.GetValue<string>();
-                        if (!string.IsNullOrEmpty(term) && term.Contains(":"))
-                        {
-                            var parts = term.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                            var exprPart = parts.FirstOrDefault(p => p.Contains("Expression:") || p.Contains("Word:") || p.Contains("Kanji:"));
-                            if (exprPart != null && exprPart.Contains(":"))
-                            {
-                                term = exprPart.Split(':')[1].Trim('\"');
-                            }
-                            else if (parts.Length > 0 && !parts.Last().Contains(":"))
-                            {
-                                term = parts.Last().Trim('\"');
-                            }
-                            else 
-                            {
-                                term = null; // Unusable query (like nid:12345)
-                            }
-                        }
-                    }
-                    else // canAddNotes or canAddNotesWithErrorDetail
-                    {
-                        var notesArray = parameters["notes"] as JsonArray;
-                        if (notesArray != null && notesArray.Count > 0)
-                        {
-                            foreach (var nNode in notesArray)
-                            {
-                                var fObj = nNode?["fields"] as JsonObject;
-                                if (fObj != null)
-                                {
-                                    // 1. Try known field names
-                                    var wordField = fObj["Expression"] ?? fObj["Word"] ?? fObj["Kanji"] ?? fObj["Reading"];
-                                    term = wordField?.GetValue<string>();
-                                    
-                                    // 2. Fallback to the first non-empty field Yomitan left in the stripped note
-                                    if (string.IsNullOrWhiteSpace(term))
-                                    {
-                                        foreach (var kvp in fObj)
-                                        {
-                                            var val = kvp.Value?.GetValue<string>();
-                                            if (!string.IsNullOrWhiteSpace(val))
-                                            {
-                                                term = val;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                    
-                                    if (!string.IsNullOrWhiteSpace(term)) break; // Found a valid term
-                                }
-                            }
-                        }
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(term) && term.Length < 50)
-                    {
-                        _logger.LogInformation($"Lookup detected: {term} (via {action})");
-                        _ = _sessionLogger.LogEventAsync("LOOKUP", new { term, action });
-                    }
+                    _lastLookupTime = now;
+                    _logger.LogDebug($"Lookup detected (via {action})");
+                    _ = _sessionLogger.LogEventAsync("LOOKUP", new { action });
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogTrace($"Lookup extraction failed for {action}: {ex.Message}");
-                }
-                
-                // Do not block the request from reaching Anki
                 return;
             }
 
