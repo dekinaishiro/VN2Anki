@@ -170,7 +170,7 @@ namespace VN2Anki.Services
                 var jsonNode = JsonNode.Parse(originalBody);
                 if (jsonNode == null) return originalBody;
 
-                string? action = jsonNode["action"]?.ToString();
+                string? action = jsonNode["action"]?.GetValue<string>();
 
                 if (action == "multi")
                 {
@@ -179,7 +179,7 @@ namespace VN2Anki.Services
                     {
                         foreach (var actionItem in actions)
                         {
-                            var subAction = actionItem?["action"]?.ToString();
+                            var subAction = actionItem?["action"]?.GetValue<string>();
                             var subParams = actionItem?["params"];
                             
                             await ProcessActionAsync(subAction, subParams);
@@ -204,34 +204,89 @@ namespace VN2Anki.Services
         {
             if (parameters == null) return;
 
-            // Log Lookups based on common Yomitan actions
-            if (action == "canAddNotes" || action == "findNotes" || action == "findTerms")
+            // Log the action to debug console
+            _logger.LogDebug($"Yomitan Bridge Action: {action}");
+
+            // BULLETPROOF LOOKUP DETECTION
+            // We explicitly target the actions Yomitan uses during a hover lookup.
+            if (action == "canAddNotes" || action == "canAddNotesWithErrorDetail" || action == "findNotes")
             {
                 string? term = null;
-                if (action == "canAddNotes")
+                try
                 {
-                    // canAddNotes has a "notes" array, we take the first field of the first note
-                    var notes = parameters["notes"] as JsonArray;
-                    var firstNoteFields = notes?[0]?["fields"] as JsonObject;
-                    term = firstNoteFields?.FirstOrDefault().Value?.ToString();
-                }
-                else if (action == "findNotes")
-                {
-                    term = parameters["query"]?.ToString();
-                }
-                else if (action == "findTerms")
-                {
-                    term = parameters["term"]?.ToString();
-                }
+                    if (action == "findNotes")
+                    {
+                        term = parameters["query"]?.GetValue<string>();
+                        if (!string.IsNullOrEmpty(term) && term.Contains(":"))
+                        {
+                            var parts = term.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                            var exprPart = parts.FirstOrDefault(p => p.Contains("Expression:") || p.Contains("Word:") || p.Contains("Kanji:"));
+                            if (exprPart != null && exprPart.Contains(":"))
+                            {
+                                term = exprPart.Split(':')[1].Trim('\"');
+                            }
+                            else if (parts.Length > 0 && !parts.Last().Contains(":"))
+                            {
+                                term = parts.Last().Trim('\"');
+                            }
+                            else 
+                            {
+                                term = null; // Unusable query (like nid:12345)
+                            }
+                        }
+                    }
+                    else // canAddNotes or canAddNotesWithErrorDetail
+                    {
+                        var notesArray = parameters["notes"] as JsonArray;
+                        if (notesArray != null && notesArray.Count > 0)
+                        {
+                            foreach (var nNode in notesArray)
+                            {
+                                var fObj = nNode?["fields"] as JsonObject;
+                                if (fObj != null)
+                                {
+                                    // 1. Try known field names
+                                    var wordField = fObj["Expression"] ?? fObj["Word"] ?? fObj["Kanji"] ?? fObj["Reading"];
+                                    term = wordField?.GetValue<string>();
+                                    
+                                    // 2. Fallback to the first non-empty field Yomitan left in the stripped note
+                                    if (string.IsNullOrWhiteSpace(term))
+                                    {
+                                        foreach (var kvp in fObj)
+                                        {
+                                            var val = kvp.Value?.GetValue<string>();
+                                            if (!string.IsNullOrWhiteSpace(val))
+                                            {
+                                                term = val;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    
+                                    if (!string.IsNullOrWhiteSpace(term)) break; // Found a valid term
+                                }
+                            }
+                        }
+                    }
 
-                if (!string.IsNullOrEmpty(term))
+                    if (!string.IsNullOrWhiteSpace(term) && term.Length < 50)
+                    {
+                        _logger.LogInformation($"Lookup detected: {term} (via {action})");
+                        _ = _sessionLogger.LogEventAsync("LOOKUP", new { term, action });
+                    }
+                }
+                catch (Exception ex)
                 {
-                    _logger.LogInformation($"Lookup detected: {term} (via {action})");
-                    _ = _sessionLogger.LogEventAsync("LOOKUP", new { term, action });
+                    _logger.LogTrace($"Lookup extraction failed for {action}: {ex.Message}");
                 }
                 
-                if (action == "findTerms" || action == "findNotes") return;
+                // Do not block the request from reaching Anki
+                return;
             }
+
+            // Ignored Background Actions
+            if (action == "findTerms" || action == "notesInfo" || action == "modelNames" || action == "deckNames" || action == "version" || action == "guiBrowse" || action == "cardsInfo") 
+                return;
 
             if (action != "addNote" && action != "guiAddCards" && action != "addNotes")
                 return;
