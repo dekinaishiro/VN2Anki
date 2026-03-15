@@ -24,6 +24,7 @@ namespace VN2Anki.Services
         private readonly IExternalToolService _externalToolService;
         private readonly ISessionLoggerService _sessionLogger;
         private readonly IUserActivityService _userActivityService;
+        private readonly IWindowFocusMonitorService _focusMonitorService;
 
         public bool IsBufferActive { get; set; }
 
@@ -40,7 +41,8 @@ namespace VN2Anki.Services
             IDispatcherService dispatcherService,
             IExternalToolService externalToolService,
             ISessionLoggerService sessionLogger,
-            IUserActivityService userActivityService)
+            IUserActivityService userActivityService,
+            IWindowFocusMonitorService focusMonitorService)
         {
             _tracker = tracker;
             _miningService = miningService;
@@ -53,6 +55,7 @@ namespace VN2Anki.Services
             _externalToolService = externalToolService;
             _sessionLogger = sessionLogger;
             _userActivityService = userActivityService;
+            _focusMonitorService = focusMonitorService;
         }
 
         public bool ToggleBuffer(VisualNovel? currentVN)
@@ -99,6 +102,7 @@ namespace VN2Anki.Services
                 _ = _sessionLogger.StartNewSessionAsync();
                 _miningService.StartBuffer(deviceId);
                 _userActivityService.Start();
+                _focusMonitorService.Start();
                 IsBufferActive = true;
 
                 WeakReferenceMessenger.Default.Send(new BufferStartedMessage());
@@ -107,6 +111,7 @@ namespace VN2Anki.Services
             {
                 _miningService.StopBuffer();
                 _userActivityService.Stop();
+                _focusMonitorService.Stop();
                 IsBufferActive = false;
 
                 WeakReferenceMessenger.Default.Send(new BufferStoppedMessage());

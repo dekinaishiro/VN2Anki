@@ -1,6 +1,5 @@
+// E:\Coding\VN2Anki\VN2Anki\Services\UserActivityService.cs
 using System;
-using System.Diagnostics;
-using System.Linq;
 using System.Timers;
 using Microsoft.Extensions.Logging;
 using VN2Anki.Services.Interfaces;
@@ -10,33 +9,31 @@ namespace VN2Anki.Services
 {
     public class UserActivityService : IUserActivityService, IDisposable
     {
-        private readonly IConfigurationService _configService;
         private readonly ISessionLoggerService _sessionLogger;
         private readonly ILogger<UserActivityService> _logger;
         private readonly Timer _timer;
-        
+
         private POINT _lastMousePos;
         private bool _isStarted;
 
         public UserActivityService(
-            IConfigurationService configService,
             ISessionLoggerService sessionLogger,
             ILogger<UserActivityService> logger)
         {
-            _configService = configService;
             _sessionLogger = sessionLogger;
             _logger = logger;
 
-            _timer = new Timer(10000); // Check every 10 seconds
+            _timer = new Timer(10000); // Heartbeat a cada 10 segundos
             _timer.Elapsed += OnTimerElapsed;
         }
 
         public void Start()
         {
             if (_isStarted) return;
+            Win32InteropService.GetCursorPos(out _lastMousePos); // Reseta a posição inicial
             _timer.Start();
             _isStarted = true;
-            _logger.LogInformation("UserActivityService started.");
+            _logger.LogInformation("UserActivityService (Heartbeat) started.");
         }
 
         public void Stop()
@@ -44,65 +41,36 @@ namespace VN2Anki.Services
             if (!_isStarted) return;
             _timer.Stop();
             _isStarted = false;
-            _logger.LogInformation("UserActivityService stopped.");
+            _logger.LogInformation("UserActivityService (Heartbeat) stopped.");
         }
 
         private void OnTimerElapsed(object? sender, ElapsedEventArgs e)
         {
             try
             {
-                var context = CheckActivity();
-                if (!string.IsNullOrEmpty(context))
+                if (CheckActivity())
                 {
-                    _ = _sessionLogger.LogEventAsync("HEARTBEAT", new { activity = true, context });
+                    _ = _sessionLogger.LogEventAsync("HEARTBEAT", new { activity = true });
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Error during activity check.");
+                _logger.LogWarning(ex, "Error during activity heartbeat check.");
             }
         }
 
-        private string? CheckActivity()
+        private bool CheckActivity()
         {
-            // 1. Identify Foreground Window
-            IntPtr foregroundWindow = Win32InteropService.GetForegroundWindow();
-            if (foregroundWindow == IntPtr.Zero) return null;
-
-            Win32InteropService.GetWindowThreadProcessId(foregroundWindow, out uint foregroundPid);
-            uint currentAppPid = (uint)Process.GetCurrentProcess().Id;
-
-            // 2. Identify if it's the Game or our App
-            string? activeContext = null;
-            if (foregroundPid == currentAppPid)
-            {
-                activeContext = "app";
-            }
-            else
-            {
-                var gameWindowName = _configService.CurrentConfig.Media.VideoWindow;
-                if (!string.IsNullOrEmpty(gameWindowName))
-                {
-                    var gameProcesses = Process.GetProcessesByName(gameWindowName);
-                    bool isGameInFocus = gameProcesses.Any(p => (uint)p.Id == foregroundPid);
-                    if (isGameInFocus) activeContext = "game";
-                    foreach (var p in gameProcesses) p.Dispose();
-                }
-            }
-
-            if (activeContext == null) return null;
-
-            // 3. Check for Mouse Movement
+            // 1. Checa movimento do Mouse
             Win32InteropService.GetCursorPos(out POINT currentMousePos);
             bool mouseMoved = currentMousePos.X != _lastMousePos.X || currentMousePos.Y != _lastMousePos.Y;
             _lastMousePos = currentMousePos;
 
-            if (mouseMoved) return activeContext;
+            if (mouseMoved) return true;
 
-            // 4. Check for Key Presses (Common keys for VNs/Mining)
-            // Left Mouse, Right Mouse, Enter, Space, Arrows, WASD, Ctrl, Shift, Alt
-            int[] keysToCheck = { 
-                0x01, 0x02, // Mouse
+            // 2. Checa Teclas
+            int[] keysToCheck = {
+                0x01, 0x02, // Mouse L/R
                 0x0D, 0x20, // Enter, Space
                 0x25, 0x26, 0x27, 0x28, // Arrows
                 0x41, 0x53, 0x44, 0x57, // WASD
@@ -114,11 +82,11 @@ namespace VN2Anki.Services
             {
                 if ((Win32InteropService.GetAsyncKeyState(key) & 0x8000) != 0)
                 {
-                    return activeContext;
+                    return true;
                 }
             }
 
-            return null;
+            return false;
         }
 
         public void Dispose()

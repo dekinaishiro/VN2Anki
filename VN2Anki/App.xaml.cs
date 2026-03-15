@@ -19,10 +19,10 @@ namespace VN2Anki
     {
         private static Mutex _mutex = null;
 
-        // Exposes the DI container to the application
+        // exposes the DI container to the application
         public IServiceProvider Services { get; }
 
-        // Strongly-typed singleton instance of the App
+        // strongly-typed singleton instance of the App
         public new static App Current => (App)Application.Current;
 
         public App()
@@ -96,15 +96,17 @@ namespace VN2Anki
 
             services.AddSingleton<MediaService>();
 
-            services.AddSingleton<IProcessMonitoringService, ProcessMonitoringService>();
 
             services.AddSingleton<MiningService>();
             services.AddSingleton<ISessionManagerService, SessionManagerService>();
             services.AddSingleton<IGameLauncherService, GameLauncherService>();
             services.AddSingleton<IVnDatabaseService, VnDatabaseService>();
             services.AddSingleton<IExternalToolService, ExternalToolService>();
+
+            services.AddSingleton<IProcessMonitoringService, ProcessMonitoringService>();
             services.AddSingleton<ISessionLoggerService, SessionLoggerService>();
             services.AddSingleton<IUserActivityService, UserActivityService>();
+            services.AddSingleton<IWindowFocusMonitorService, WindowFocusMonitorService>();
 
             services.AddTransient<VN2Anki.ViewModels.MainWindowViewModel>();
             services.AddTransient<ViewModels.SettingsViewModel>();
