@@ -236,7 +236,12 @@ namespace VN2Anki.ViewModels
                         System.Windows.Application.Current.Dispatcher.Invoke(() =>
                         {
                             var navService = App.Current.Services.GetService(typeof(VN2Anki.Services.Interfaces.INavigationService)) as VN2Anki.Services.Interfaces.INavigationService;
-                            navService?.Push<VN2Anki.ViewModels.Hub.SessionDetailViewModel>(async vm => await vm.InitializeAsync(message.Session));
+                            if (navService == null) return;
+
+                            navService.Push<VN2Anki.ViewModels.Hub.SessionDetailViewModel>(async vm => 
+                            {
+                                if (vm != null) await vm.InitializeAsync(message.Session);
+                            });
                         });
                     });
                 });
