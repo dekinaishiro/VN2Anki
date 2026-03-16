@@ -35,9 +35,7 @@ namespace VN2Anki
 
         private async Task InitializeDataAsync()
         {
-            await _viewModel.LoadDevicesAsync();
-            await LoadAnkiDataAsync();
-
+            // 1. Aplica as cores IMEDIATAMENTE na UI para não haver atraso
             var overlayConfig = _viewModel.Config.Overlay;
             try { PickerBgColor.SelectedColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(overlayConfig.BgColor); }
             catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Error converting BgColor: {ex.Message}"); }
@@ -47,7 +45,10 @@ namespace VN2Anki
 
             try { PickerOutlineColor.SelectedColor = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(overlayConfig.OutlineColor); }
             catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Error converting OutlineColor: {ex.Message}"); }
-            //ListExtensions.ItemsSource = new System.Collections.ObjectModel.ObservableCollection<string>(overlayConfig.CustomExtensions);
+
+            // 2. Carrega as listas pesadas (Áudio, Vídeo e comunicação com o Anki)
+            await _viewModel.LoadDevicesAsync();
+            await LoadAnkiDataAsync();
         }
 
         private async Task LoadAnkiDataAsync()
