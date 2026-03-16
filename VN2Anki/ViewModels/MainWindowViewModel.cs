@@ -84,8 +84,6 @@ namespace VN2Anki.ViewModels
         [ObservableProperty]
         private Brush _linkIconColor = Brushes.White;
 
-        private readonly DispatcherTimer _idleWindowCheckTimer;
-
         private bool _isFirstLoad = true;
         private readonly IWindowService _windowService;
         private readonly IGameLauncherService _gameLauncher;
@@ -105,10 +103,6 @@ namespace VN2Anki.ViewModels
             _vnDatabaseService = vnDatabaseService;
             _processMonitor = processMonitor;
 
-            _idleWindowCheckTimer = new DispatcherTimer { Interval = System.TimeSpan.FromSeconds(2) };
-            _idleWindowCheckTimer.Tick += IdleWindowCheckTimer_Tick;
-            _idleWindowCheckTimer.Start();
-
             _processMonitor.VnProcessStarted += (s, e) =>
             {
                 Application.Current.Dispatcher.Invoke(() =>
@@ -119,6 +113,36 @@ namespace VN2Anki.ViewModels
                     }
 
                     _ = TryAutoLinkAsync(e.VisualNovel.ProcessName);
+                });
+            };
+
+            _processMonitor.VnProcessStopped += (s, e) =>
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    var config = _configService.CurrentConfig;
+                    if (CurrentVN != null && CurrentVN.Id == e.VisualNovel.Id)
+                    {
+                        // Se o jogo ativo foi fechado
+                        bool isZeroed = Tracker.ValidCharacterCount == 0 && Tracker.Elapsed.TotalSeconds == 0 && !IsBufferActive;
+                        if (isZeroed)
+                        {
+                            config.Media.VideoWindow = string.Empty;
+                            _configService.Save();
+                            _miningService.TargetVideoWindow = string.Empty;
+                            CurrentVN = null;
+                            UpdateVisualCurrentVN();
+                        }
+                    }
+                    else if (string.Equals(e.VisualNovel.ProcessName, config.Media.VideoWindow, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Ou se for só o "TargetVideoWindow" que não tava ativamente com session mas o cara tava usando
+                        config.Media.VideoWindow = string.Empty;
+                        _configService.Save();
+                        _miningService.TargetVideoWindow = string.Empty;
+                        CurrentVN = null;
+                        UpdateVisualCurrentVN();
+                    }
                 });
             };
 
@@ -547,17 +571,6 @@ namespace VN2Anki.ViewModels
             }
 
             await TryAutoLinkAsync();
-        }
-
-        private void IdleWindowCheckTimer_Tick(object? sender, System.EventArgs e)
-        {
-            bool wasDisconnected = _sessionManager.PerformIdleCheck();
-
-            if (wasDisconnected)
-            {
-                CurrentVN = null;
-                UpdateVisualCurrentVN();
-            }
         }
 
         public void Receive(BufferStoppedMessage message)

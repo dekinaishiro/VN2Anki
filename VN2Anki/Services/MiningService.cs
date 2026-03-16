@@ -26,10 +26,10 @@ namespace VN2Anki.Services
 
         private readonly MediaService _mediaService;
         private readonly Timer _idleTimer;
-        private readonly Timer _videoCheckTimer;
         // injetar dispatcher service para evitar dependência direta do WPF
         private readonly IDispatcherService _dispatcherService;
         private readonly IConfigurationService _configService;
+        private readonly IProcessMonitoringService _processMonitor;
 
         public ObservableCollection<MiningSlot> HistorySlots { get; }
 
@@ -42,7 +42,7 @@ namespace VN2Anki.Services
         private readonly Channel<TextCopiedMessage> _textChannel;
         private readonly CancellationTokenSource _cts = new();
 
-        public MiningService(ITextHook textHook, SessionTracker tracker, AudioEngine audio, MediaService mediaService, IDispatcherService dispatcherService, IConfigurationService configService)
+        public MiningService(ITextHook textHook, SessionTracker tracker, AudioEngine audio, MediaService mediaService, IDispatcherService dispatcherService, IConfigurationService configService, IProcessMonitoringService processMonitor)
         {
             TextHook = textHook;
             Tracker = tracker;
@@ -50,14 +50,25 @@ namespace VN2Anki.Services
             _mediaService = mediaService;
             _dispatcherService = dispatcherService;
             _configService = configService;
+            _processMonitor = processMonitor;
 
             HistorySlots = new ObservableCollection<MiningSlot>();
 
             _idleTimer = new Timer();
             _idleTimer.Elapsed += IdleTimer_Tick;
 
-            _videoCheckTimer = new Timer(2000);
-            _videoCheckTimer.Elapsed += VideoCheckTimer_Tick;
+            _processMonitor.VnProcessStopped += (s, e) =>
+            {
+                if (string.Equals(e.VisualNovel.ProcessName, TargetVideoWindow, StringComparison.OrdinalIgnoreCase))
+                {
+                    _dispatcherService.Invoke(() =>
+                    {
+                        StopBuffer();
+                        SendStatus(Locales.Strings.StatusVideoDisconnected);
+                        WeakReferenceMessenger.Default.Send(new BufferStoppedMessage());
+                    });
+                }
+            };
 
             _textChannel = Channel.CreateUnbounded<TextCopiedMessage>();
             _ = ProcessTextChannelAsync(); // Dispara o consumidor em background
@@ -75,7 +86,6 @@ namespace VN2Anki.Services
             Audio.Start(audioDeviceId);
             TextHook.Start();
             Tracker.Start();
-            _videoCheckTimer.Start();
             SendStatus("Buffer running...");
         }
 
@@ -86,7 +96,6 @@ namespace VN2Anki.Services
             TextHook.Stop();
             _idleTimer.Stop();
             Tracker.Pause();
-            _videoCheckTimer.Start();
             SendStatus("Buffer stopped.");
         }
 
@@ -105,29 +114,6 @@ namespace VN2Anki.Services
             {
                 SealSlotAudio(HistorySlots[0], DateTime.Now);
                 SendStatus("Slot sealed due to inactivity.");
-            }
-        }
-        private void VideoCheckTimer_Tick(object? sender, ElapsedEventArgs e)
-        {
-            if (string.IsNullOrEmpty(TargetVideoWindow)) return;
-
-            var procs = Process.GetProcessesByName(TargetVideoWindow);
-            bool isRunning = false;
-
-            foreach (var p in procs)
-            {
-                if (p.MainWindowHandle != IntPtr.Zero) isRunning = true;
-                p.Dispose();
-            }
-
-            if (!isRunning)
-            {
-                System.Windows.Application.Current.Dispatcher.Invoke(() =>
-                {
-                    StopBuffer();
-                    SendStatus(Locales.Strings.StatusVideoDisconnected);
-                    WeakReferenceMessenger.Default.Send(new BufferStoppedMessage());
-                });
             }
         }
 

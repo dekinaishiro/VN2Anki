@@ -10,6 +10,5 @@ namespace VN2Anki.Services.Interfaces
         bool ToggleBuffer(VisualNovel? currentVN);
         Task EndSessionAsync(VisualNovel? currentVN);
         Task<VisualNovel?> AutoSyncRunningVnAsync(string? specificProcessName = null);
-        bool PerformIdleCheck();
     }
 }

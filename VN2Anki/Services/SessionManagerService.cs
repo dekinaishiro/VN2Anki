@@ -317,32 +317,5 @@ namespace VN2Anki.Services
                 return null;
             }
         }
-        public bool PerformIdleCheck()
-        {
-            bool isZeroed = _tracker.ValidCharacterCount == 0 && _tracker.Elapsed.TotalSeconds == 0 && !IsBufferActive;
-            if (!isZeroed) return false;
-
-            var videoSource = _configService.CurrentConfig.Media.VideoWindow;
-            if (string.IsNullOrEmpty(videoSource)) return false; 
-
-            var procs = System.Diagnostics.Process.GetProcessesByName(videoSource);
-            bool isRunning = false;
-            foreach (var p in procs)
-            {
-                if (p.MainWindowHandle != IntPtr.Zero) isRunning = true;
-                p.Dispose();
-            }
-
-            if (!isRunning)
-            {
-                var config = _configService.CurrentConfig;
-                config.Media.VideoWindow = string.Empty;
-                _configService.Save();
-                _miningService.TargetVideoWindow = string.Empty;
-                return true; 
-            }
-
-            return false;
-        }
     }
 }
