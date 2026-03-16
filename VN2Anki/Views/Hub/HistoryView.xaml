@@ -16,7 +16,7 @@
                 <DataTemplate>
                     <Border Background="#2D2D30" CornerRadius="6" Margin="0,5,0,5" Padding="15,10">
                         <Border.InputBindings>
-                            <MouseBinding Gesture="LeftClick" Command="{Binding DataContext.GoToDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                            <MouseBinding Gesture="LeftClick" Command="{Binding DataContext.OpenSessionDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
                         </Border.InputBindings>
                         <Grid>
                             <Grid.ColumnDefinitions>

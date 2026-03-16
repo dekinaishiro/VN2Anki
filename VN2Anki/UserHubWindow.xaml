@@ -17,6 +17,9 @@
         <DataTemplate DataType="{x:Type vms:VnDetailsViewModel}">
             <views:VnDetailsView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vms:SessionDetailViewModel}">
+            <views:SessionDetailView />
+        </DataTemplate>
     </Window.Resources>
 
     <Grid>

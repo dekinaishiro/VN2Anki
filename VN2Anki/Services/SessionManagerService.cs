@@ -25,6 +25,7 @@ namespace VN2Anki.Services
         private readonly ISessionLoggerService _sessionLogger;
         private readonly IUserActivityService _userActivityService;
         private readonly IWindowFocusMonitorService _focusMonitorService;
+        private readonly ISessionAnalyticsEngine _analyticsEngine;
 
         public bool IsBufferActive { get; set; }
 
@@ -42,7 +43,8 @@ namespace VN2Anki.Services
             IExternalToolService externalToolService,
             ISessionLoggerService sessionLogger,
             IUserActivityService userActivityService,
-            IWindowFocusMonitorService focusMonitorService)
+            IWindowFocusMonitorService focusMonitorService,
+            ISessionAnalyticsEngine analyticsEngine)
         {
             _tracker = tracker;
             _miningService = miningService;
@@ -56,6 +58,7 @@ namespace VN2Anki.Services
             _sessionLogger = sessionLogger;
             _userActivityService = userActivityService;
             _focusMonitorService = focusMonitorService;
+            _analyticsEngine = analyticsEngine;
         }
 
         public bool ToggleBuffer(VisualNovel? currentVN)
@@ -124,6 +127,7 @@ namespace VN2Anki.Services
         {
             bool hasProgress = _tracker.Elapsed.TotalSeconds > 0 || _tracker.ValidCharacterCount > 0;
             bool saved = false;
+            SessionRecord? savedRecord = null;
 
             if (hasProgress)
             {
@@ -143,7 +147,7 @@ namespace VN2Anki.Services
 
                 if (hasProgress)
                 {
-                    var record = new SessionRecord
+                    savedRecord = new SessionRecord
                     {
                         VisualNovelId = vnIdToSave,
                         StartTime = System.DateTime.Now - _tracker.Elapsed,
@@ -151,11 +155,11 @@ namespace VN2Anki.Services
                         DurationSeconds = (int)_tracker.Elapsed.TotalSeconds,
                         CharactersRead = _tracker.ValidCharacterCount,
                         CardsMined = 0,
-                        RawFilePath = _sessionLogger.CurrentLogPath
+                        LogFilePath = _sessionLogger.CurrentLogPath
                     };
                     
                     var dbService = _serviceProvider.GetRequiredService<IVnDatabaseService>();
-                    await dbService.AddSessionAsync(record);
+                    await dbService.AddSessionAsync(savedRecord);
 
                     saved = true;
                     WeakReferenceMessenger.Default.Send(new SessionSavedMessage());
@@ -163,6 +167,22 @@ namespace VN2Anki.Services
             }
 
             await _sessionLogger.EndSessionAsync(discard: !saved);
+            
+            if (saved && savedRecord != null)
+            {
+                _ = Task.Run(async () => 
+                {
+                    try
+                    {
+                        await _analyticsEngine.ProcessAndSaveSessionAsync(savedRecord);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error processing analytics: {ex}");
+                    }
+                });
+            }
+
             _userActivityService.Stop();
 
             if (IsBufferActive)
@@ -174,7 +194,7 @@ namespace VN2Anki.Services
             foreach (var slot in _miningService.HistorySlots) slot.Dispose();
             _miningService.HistorySlots.Clear();
             
-            WeakReferenceMessenger.Default.Send(new SessionEndedMessage());
+            WeakReferenceMessenger.Default.Send(new SessionEndedMessage(savedRecord));
         }
 
         public async Task<VisualNovel> AutoSyncRunningVnAsync(string specificProcessName = null)

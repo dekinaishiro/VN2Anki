@@ -13,13 +13,15 @@ namespace VN2Anki.ViewModels.Hub
     public partial class HistoryViewModel : ObservableObject, IRecipient<SessionSavedMessage>
     {
         private readonly IVnDatabaseService _dbService;
+        public INavigationService Navigation { get; }
 
         [ObservableProperty]
         private ObservableCollection<SessionRecord> _sessionHistory = new();
 
-        public HistoryViewModel(IVnDatabaseService dbService)
+        public HistoryViewModel(IVnDatabaseService dbService, INavigationService navigation)
         {
             _dbService = dbService;
+            Navigation = navigation;
             _ = LoadHistoryAsync();
             WeakReferenceMessenger.Default.Register(this);
         }
@@ -38,6 +40,13 @@ namespace VN2Anki.ViewModels.Hub
             if (session == null) return;
             await _dbService.DeleteSessionAsync(session);
             SessionHistory.RemoveFromUIThread(session);
+        }
+
+        [RelayCommand]
+        private void OpenSessionDetails(SessionRecord session)
+        {
+            if (session == null) return;
+            Navigation.Push<SessionDetailViewModel>(async vm => await vm.InitializeAsync(session));
         }
     }
 }

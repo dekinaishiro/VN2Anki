@@ -84,6 +84,18 @@ namespace VN2Anki.Services
                 }
             });
 
+        public Task UpdateSessionAsync(SessionRecord session) =>
+            ExecuteWithDbAsync(async db =>
+            {
+                db.Sessions.Update(session);
+                await db.SaveChangesAsync();
+                
+                if (session.VisualNovelId.HasValue)
+                {
+                    await RecalculateVnStatsAsync(db, session.VisualNovelId.Value);
+                }
+            });
+
         public Task DeleteSessionAsync(SessionRecord session) =>
             ExecuteWithDbAsync(async db =>
             {
@@ -102,6 +114,7 @@ namespace VN2Anki.Services
             if (vn != null)
             {
                 vn.TotalTimePlayedSeconds = vn.Sessions.Sum(s => s.DurationSeconds);
+                vn.EffectiveTimePlayedSeconds = vn.Sessions.Sum(s => s.EffectiveDurationSeconds);
                 vn.TotalCharactersRead = vn.Sessions.Sum(s => s.CharactersRead);
                 await db.SaveChangesAsync();
             }

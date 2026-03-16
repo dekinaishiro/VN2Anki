@@ -15,5 +15,6 @@ namespace VN2Anki.Services.Interfaces
         Task<List<SessionRecord>> GetAllSessionsAsync();
         Task DeleteSessionAsync(SessionRecord session);
         Task AddSessionAsync(SessionRecord session);
+        Task UpdateSessionAsync(SessionRecord session);
     }
 }

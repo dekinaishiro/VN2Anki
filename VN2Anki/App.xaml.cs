@@ -105,6 +105,7 @@ namespace VN2Anki
 
             services.AddSingleton<IProcessMonitoringService, ProcessMonitoringService>();
             services.AddSingleton<ISessionLoggerService, SessionLoggerService>();
+            services.AddSingleton<ISessionAnalyticsEngine, SessionAnalyticsEngine>();
             services.AddSingleton<IUserActivityService, UserActivityService>();
             services.AddSingleton<IWindowFocusMonitorService, WindowFocusMonitorService>();
 
@@ -134,6 +135,7 @@ namespace VN2Anki
             services.AddTransient<ViewModels.Hub.LibraryViewModel>();
             services.AddTransient<ViewModels.Hub.HistoryViewModel>();
             services.AddTransient<ViewModels.Hub.VnDetailsViewModel>();
+            services.AddTransient<ViewModels.Hub.SessionDetailViewModel>();
 
             return services.BuildServiceProvider();
         }

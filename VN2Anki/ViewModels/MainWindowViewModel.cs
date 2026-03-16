@@ -20,7 +20,7 @@ using VN2Anki.Services.Interfaces;
 
 namespace VN2Anki.ViewModels
 {
-    public partial class MainWindowViewModel : ObservableObject, IRecipient<StatusMessage>, IRecipient<PlayVnMessage>, IRecipient<BufferStoppedMessage>, IRecipient<SaveOverlayStateMessage>
+    public partial class MainWindowViewModel : ObservableObject, IRecipient<StatusMessage>, IRecipient<PlayVnMessage>, IRecipient<BufferStoppedMessage>, IRecipient<SaveOverlayStateMessage>, IRecipient<SessionEndedMessage>
     {
         private readonly MiningService _miningService;
         private readonly IConfigurationService _configService;
@@ -195,6 +195,28 @@ namespace VN2Anki.ViewModels
 
             StatusText = Strings.StatusSessionEnded;
             StatusVisibility = Visibility.Visible;
+        }
+
+        public void Receive(SessionEndedMessage message)
+        {
+            if (message.Session != null)
+            {
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    _windowService.OpenUserHub();
+                    
+                    // We need a small delay to ensure the Hub is fully initialized and registered to receive navigation
+                    Task.Run(async () =>
+                    {
+                        await Task.Delay(200);
+                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            var navService = App.Current.Services.GetService(typeof(VN2Anki.Services.Interfaces.INavigationService)) as VN2Anki.Services.Interfaces.INavigationService;
+                            navService?.Push<VN2Anki.ViewModels.Hub.SessionDetailViewModel>(async vm => await vm.InitializeAsync(message.Session));
+                        });
+                    });
+                });
+            }
         }
 
         public void Receive(StatusMessage message)

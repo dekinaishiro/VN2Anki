@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -142,6 +143,21 @@ namespace VN2Anki.Services
 
             // Using ShowDialog to prevent multiple instances and force focus
             manager.ShowDialog();
+        }
+
+        public void OpenUserHub()
+        {
+            var existingWin = Application.Current.Windows.OfType<UserHubWindow>().FirstOrDefault();
+            if (existingWin != null)
+            {
+                if (existingWin.WindowState == WindowState.Minimized) existingWin.WindowState = WindowState.Normal;
+                existingWin.Activate();
+            }
+            else
+            {
+                var hubWin = App.Current.Services.GetRequiredService<UserHubWindow>();
+                hubWin.Show();
+            }
         }
 
         public bool ShowConfirmation(string message, string title, bool isWarning = false)

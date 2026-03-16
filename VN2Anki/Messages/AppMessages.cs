@@ -38,7 +38,14 @@ namespace VN2Anki.Messages
             VisualNovel = vn;
         }
     }
-    public class SessionEndedMessage{ }
+    public class SessionEndedMessage
+    {
+        public Models.Entities.SessionRecord? Session { get; }
+        public SessionEndedMessage(Models.Entities.SessionRecord? session = null)
+        {
+            Session = session;
+        }
+    }
     public class SessionSavedMessage{ }
 
     public class TextCopiedMessage

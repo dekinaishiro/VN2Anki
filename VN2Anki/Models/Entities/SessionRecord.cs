@@ -13,12 +13,16 @@ namespace VN2Anki.Models.Entities
         public DateTime EndTime { get; set; }
 
         public int DurationSeconds { get; set; }
-        public int EffectiveDurationSeconds { get; set; } // future implementation
+        public int EffectiveDurationSeconds { get; set; }
 
         public int CharactersRead { get; set; }
         public int CardsMined { get; set; }
 
-        public string? RawFilePath { get; set; } // future implementation
+        public string? LogFilePath { get; set; }
+        
+        public int LookupCount { get; set; }
+        public int LookupDurationSeconds { get; set; }
+        public bool IsProcessed { get; set; }
 
         [NotMapped]
         public string FormattedDuration => TimeSpan.FromSeconds(DurationSeconds).ToString(@"hh\:mm\:ss");
