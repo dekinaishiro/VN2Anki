@@ -133,6 +133,9 @@ namespace VN2Anki.Services
 
             result.CharactersRead = charsRead;
 
+            // Calculate total lookups regardless of AFK status
+            result.LookupCount = lookups.Count;
+
             // 2. MAD Calculation
             if (spcs.Count > 2)
             {

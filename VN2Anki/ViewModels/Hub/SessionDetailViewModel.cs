@@ -90,7 +90,15 @@ namespace VN2Anki.ViewModels.Hub
                             }
                             else if (e == "APP_STATE" && dataElement.TryGetProperty("state", out var stateEl))
                             {
-                                details = stateEl.GetString() ?? "";
+                                details = $"Janela Ativa: {stateEl.GetString() ?? ""}";
+                            }
+                            else if (e == "LOOKUP" && dataElement.TryGetProperty("action", out var actionEl))
+                            {
+                                details = $"Consulta no Dicionário ({actionEl.GetString() ?? "desconhecido"})";
+                            }
+                            else if (e == "MINE" && dataElement.TryGetProperty("card", out var cardEl))
+                            {
+                                details = $"Carta Criada: {cardEl.GetString() ?? ""}";
                             }
                             else
                             {
