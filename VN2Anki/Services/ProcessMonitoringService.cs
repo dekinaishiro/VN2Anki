@@ -57,6 +57,30 @@ namespace VN2Anki.Services
 
                 _isMonitoring = true;
                 _logger.LogInformation("WMI Process monitoring started successfully.");
+
+                // Scan for already running VNs
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var runningVns = await GetRunningVnsAsync();
+                        foreach (var item in runningVns)
+                        {
+                            var vn = item.Vn;
+                            var process = item.Process;
+                            
+                            if (!_activeVns.ContainsKey(process.Id))
+                            {
+                                _activeVns[process.Id] = vn;
+                                _logger.LogInformation($"Detected already running VN during startup: {vn.Title} (PID: {process.Id})");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to scan for already running VNs on startup.");
+                    }
+                });
             }
             catch (Exception ex)
             {

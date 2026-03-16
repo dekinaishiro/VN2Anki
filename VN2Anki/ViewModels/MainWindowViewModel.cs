@@ -468,8 +468,7 @@ namespace VN2Anki.ViewModels
 
         public async Task InitializeStartupAsync()
         {
-            var config = _configService.CurrentConfig;
-            await TryAutoLinkAsync(config.Media.VideoWindow);
+            await TryAutoLinkAsync(null);
         }
 
         [RelayCommand]
