@@ -34,6 +34,11 @@ namespace VN2Anki
         private int _modifierKeyVk = 0xA2;
         private bool _isLoaded = false;
 
+        private double _lastNormalTop = double.NaN;
+        private double _lastNormalLeft = double.NaN;
+        private double _lastNormalWidth = double.NaN;
+        private double _lastNormalHeight = double.NaN;
+
         public OverlayWindow(IConfigurationService configService, ITextHook textHook, VN2Anki.Services.Interfaces.IWindowService windowService)
         {
             InitializeComponent();
@@ -396,41 +401,6 @@ namespace VN2Anki
             }
         }
 
-        private void OverlayWindow_Loaded(object sender, RoutedEventArgs e)
-        {
-            var conf = _configService.CurrentConfig.Overlay;
-
-            // 1. SEMPRE aplica o tamanho e posição (isso serve de "RestoreBounds" caso ela abra maximizada)
-            if (!double.IsInfinity(conf.Width) && !double.IsNaN(conf.Width) && conf.Width > 0)
-                this.Width = conf.Width;
-
-            if (!double.IsInfinity(conf.Height) && !double.IsNaN(conf.Height) && conf.Height > 0)
-                this.Height = conf.Height;
-
-            if (!double.IsNaN(conf.Top) && !double.IsInfinity(conf.Top) && !double.IsNaN(conf.Left) && !double.IsInfinity(conf.Left))
-            {
-                this.Top = conf.Top;
-                this.Left = conf.Left;
-            }
-
-            // 2. SÓ DEPOIS aplica o estado de maximizado
-            if (conf.IsMaximized)
-            {
-                this.WindowState = WindowState.Maximized;
-                if (BtnMaximize != null) BtnMaximize.Content = "🗗";
-            }
-            else
-            {
-                this.WindowState = WindowState.Normal;
-                if (BtnMaximize != null) BtnMaximize.Content = "🗖";
-            }
-
-            ApplyPassThroughState();
-
-            // 3. Liberta a trava: a partir de agora, qualquer movimento do utilizador é real e deve ser guardado
-            _isLoaded = true;
-        }
-
         private void HandleNewText(string text, DateTime timestamp)
         {
             Application.Current.Dispatcher.InvokeAsync(() =>
@@ -633,10 +603,48 @@ namespace VN2Anki
             this.WindowState = WindowState.Minimized;
         }
 
-        private double _lastNormalTop = double.NaN;
-        private double _lastNormalLeft = double.NaN;
-        private double _lastNormalWidth = double.NaN;
-        private double _lastNormalHeight = double.NaN;
+        private void OverlayWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            var conf = _configService.CurrentConfig.Overlay;
+
+            // 1. SEMPRE aplica o tamanho e posição (isso serve de "RestoreBounds" caso ela abra maximizada)
+            if (!double.IsInfinity(conf.Width) && !double.IsNaN(conf.Width) && conf.Width > 0)
+                this.Width = conf.Width;
+
+            if (!double.IsInfinity(conf.Height) && !double.IsNaN(conf.Height) && conf.Height > 0)
+                this.Height = conf.Height;
+
+            if (!double.IsNaN(conf.Top) && !double.IsInfinity(conf.Top) && !double.IsNaN(conf.Left) && !double.IsInfinity(conf.Left))
+            {
+                this.Top = conf.Top;
+                this.Left = conf.Left;
+            }
+
+            // 2. SÓ DEPOIS aplica o estado de maximizado
+            if (conf.IsMaximized)
+            {
+                this.WindowState = WindowState.Maximized;
+                if (BtnMaximize != null) BtnMaximize.Content = "🗗";
+            }
+            else
+            {
+                this.WindowState = WindowState.Normal;
+                if (BtnMaximize != null) BtnMaximize.Content = "🗖";
+            }
+
+            ApplyPassThroughState();
+
+            // 3. Liberta a trava: a partir de agora, qualquer movimento do utilizador é real e deve ser guardado
+            _isLoaded = true;
+
+            if (this.WindowState == WindowState.Normal)
+            {
+                _lastNormalTop = this.Top;
+                _lastNormalLeft = this.Left;
+                _lastNormalWidth = this.Width;
+                _lastNormalHeight = this.Height;
+            }
+        }
 
         private void OverlayWindow_LocationOrSizeChanged(object? sender, EventArgs e)
         {
@@ -723,8 +731,6 @@ namespace VN2Anki
             }
         }
 
-        
-
         // this method will be called whenever the OverlayConfigUpdatedMessage is sent, allowing the overlay to update its appearance in real-time based on configuration changes
         public void Receive(OverlayConfigUpdatedMessage message)
         {
@@ -771,6 +777,14 @@ namespace VN2Anki
                 ApplyPassThroughState();
 
                 _isLoaded = true; // Destranca a leitura
+
+                if (this.WindowState == WindowState.Normal)
+                {
+                    _lastNormalTop = this.Top;
+                    _lastNormalLeft = this.Left;
+                    _lastNormalWidth = this.Width;
+                    _lastNormalHeight = this.Height;
+                }
             });
         }
 

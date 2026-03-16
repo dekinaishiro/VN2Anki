@@ -107,15 +107,29 @@ namespace VN2Anki.Services
                         var ankiUrl = _configService.CurrentConfig.Anki.Url;
                         var httpContent = new StringContent(interceptedBody, Encoding.UTF8, "application/json");
 
-                        var proxyResponse = await _httpClient.PostAsync(ankiUrl, httpContent, _cts.Token);
+                        try
+                        {
+                            var proxyResponse = await _httpClient.PostAsync(ankiUrl, httpContent, _cts.Token);
 
-                        // 3. Return response with Private Network headers
-                        context.Response.Headers["Access-Control-Allow-PrivateNetwork"] = "true";
-                        context.Response.ContentType = "application/json";
-                        context.Response.StatusCode = (int)proxyResponse.StatusCode;
+                            // 3. Return response with Private Network headers
+                            context.Response.Headers["Access-Control-Allow-PrivateNetwork"] = "true";
+                            context.Response.ContentType = "application/json";
+                            context.Response.StatusCode = (int)proxyResponse.StatusCode;
 
-                        byte[] responseBody = await proxyResponse.Content.ReadAsByteArrayAsync();
-                        await context.Response.Body.WriteAsync(responseBody, 0, responseBody.Length);
+                            byte[] responseBody = await proxyResponse.Content.ReadAsByteArrayAsync();
+                            await context.Response.Body.WriteAsync(responseBody, 0, responseBody.Length);
+                        }
+                        catch (HttpRequestException)
+                        {
+                            // Anki is likely closed or unreachable.
+                            // We return a simulated empty/null response so Yomitan doesn't break,
+                            // while still allowing our service to log the LOOKUP event.
+                            _logger.LogDebug("Anki is closed or unreachable. Returning simulated null response to Yomitan.");
+                            context.Response.Headers["Access-Control-Allow-PrivateNetwork"] = "true";
+                            context.Response.ContentType = "application/json";
+                            context.Response.StatusCode = 200;
+                            await context.Response.WriteAsync("{\"result\": null, \"error\": null}");
+                        }
                     }
                     catch (Exception ex)
                     {
