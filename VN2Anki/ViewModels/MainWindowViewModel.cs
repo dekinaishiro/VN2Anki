@@ -384,45 +384,52 @@ namespace VN2Anki.ViewModels
                 : new SolidColorBrush((Color)ColorConverter.ConvertFromString("#28A745"));
 
             var videoSource = _configService.CurrentConfig.Media.VideoWindow;
+            var windows = _videoEngine.GetWindows();
+            bool isProcessRunning = false;
 
             if (CurrentVN != null)
             {
+                isProcessRunning = windows.Any(w => string.Equals(w.ProcessName, CurrentVN.ProcessName, System.StringComparison.OrdinalIgnoreCase));
+                
                 DisplayVnTitle = CurrentVN.Title;
-                VnTitleColor = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#007ACC"));
+                VnTitleColor = isProcessRunning 
+                    ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#007ACC"))
+                    : Brushes.Crimson;
             }
             else if (string.IsNullOrEmpty(videoSource))
             {
                 DisplayVnTitle = "No Video Source";
                 VnTitleColor = Brushes.Crimson;
+                isProcessRunning = false;
             }
             else
             {
-                var windows = _videoEngine.GetWindows();
                 var targetWin = windows.FirstOrDefault(w => w.ProcessName == videoSource);
 
                 if (targetWin != null)
                 {
                     DisplayVnTitle = !string.IsNullOrWhiteSpace(targetWin.Title) ? targetWin.Title : targetWin.ProcessName;
+                    isProcessRunning = true;
                 }
                 else
                 {
                     DisplayVnTitle = "No Video Source";
+                    isProcessRunning = false;
                 }
 
                 VnTitleColor = Brushes.Crimson;
             }
 
-            UpdateSemaphoreState();
+            UpdateSemaphoreState(isProcessRunning);
         }
 
-        private void UpdateSemaphoreState()
+        private void UpdateSemaphoreState(bool isProcessRunning)
         {
             var config = _configService.CurrentConfig;
-            bool hasVideo = !string.IsNullOrEmpty(config.Media.VideoWindow);
             bool hasAudio = !string.IsNullOrEmpty(config.Media.AudioDevice);
 
             // Video
-            if (hasVideo)
+            if (isProcessRunning)
             {
                 VideoIconKind = "Monitor";
                 VideoIconColor = Brushes.LimeGreen;
@@ -446,7 +453,7 @@ namespace VN2Anki.ViewModels
             }
 
             // Link
-            if (!hasVideo)
+            if (!isProcessRunning)
             {
                 LinkIconKind = "LinkVariantOff";
                 LinkIconColor = Brushes.White; // Grey background with white icon, unselectable effectively
@@ -472,22 +479,38 @@ namespace VN2Anki.ViewModels
             }
             else
             {
-                var configWin = _configService.CurrentConfig.Media.VideoWindow;
+                var config = _configService.CurrentConfig;
+                var configWin = config.Media.VideoWindow;
 
                 if (string.IsNullOrEmpty(configWin))
                 {
                    CurrentVN = null;
                 }
-                else if (CurrentVN != null)
+                else 
                 {
-                    // If we have a CurrentVN but the current config video window doesn't match its ProcessName or ExecutablePath,
-                    // it means the user manually selected a different, unlinked window. We must unlink the session visually.
-                    if (!string.Equals(CurrentVN.ProcessName, configWin, System.StringComparison.OrdinalIgnoreCase))
+                    // Check if the process in config actually exists
+                    var windows = _videoEngine.GetWindows();
+                    bool exists = windows.Any(w => string.Equals(w.ProcessName, configWin, System.StringComparison.OrdinalIgnoreCase));
+
+                    if (!exists)
                     {
-                        string exeName = !string.IsNullOrEmpty(CurrentVN.ExecutablePath) ? System.IO.Path.GetFileName(CurrentVN.ExecutablePath) : "";
-                        if (string.IsNullOrEmpty(exeName) || !string.Equals(exeName, configWin, System.StringComparison.OrdinalIgnoreCase))
+                        // Ghost detected! Clear the config so it doesn't haunt the UI or services
+                        config.Media.VideoWindow = string.Empty;
+                        _configService.Save();
+                        _miningService.TargetVideoWindow = string.Empty;
+                        CurrentVN = null;
+                    }
+                    else if (CurrentVN != null)
+                    {
+                        // If we have a CurrentVN but the current config video window doesn't match its ProcessName or ExecutablePath,
+                        // it means the user manually selected a different, unlinked window. We must unlink the session visually.
+                        if (!string.Equals(CurrentVN.ProcessName, configWin, System.StringComparison.OrdinalIgnoreCase))
                         {
-                            CurrentVN = null;
+                            string exeName = !string.IsNullOrEmpty(CurrentVN.ExecutablePath) ? System.IO.Path.GetFileName(CurrentVN.ExecutablePath) : "";
+                            if (string.IsNullOrEmpty(exeName) || !string.Equals(exeName, configWin, System.StringComparison.OrdinalIgnoreCase))
+                            {
+                                CurrentVN = null;
+                            }
                         }
                     }
                 }

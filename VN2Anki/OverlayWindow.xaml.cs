@@ -66,6 +66,48 @@ namespace VN2Anki
             WeakReferenceMessenger.Default.RegisterAll(this); 
         }
 
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            var source = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
+            source?.AddHook(WndProc);
+        }
+
+        private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            if (msg == WM_GETMINMAXINFO)
+            {
+                WmGetMinMaxInfo(hwnd, lParam);
+                handled = true;
+            }
+            return IntPtr.Zero;
+        }
+
+        private void WmGetMinMaxInfo(IntPtr hwnd, IntPtr lParam)
+        {
+            MINMAXINFO mmi = (MINMAXINFO)Marshal.PtrToStructure(lParam, typeof(MINMAXINFO));
+
+            IntPtr monitor = MonitorFromWindow(hwnd, 0x00000002); // MONITOR_DEFAULTTONEAREST
+            if (monitor != IntPtr.Zero)
+            {
+                MONITORINFO info = new MONITORINFO();
+                info.cbSize = Marshal.SizeOf(typeof(MONITORINFO));
+                GetMonitorInfo(monitor, ref info);
+
+                var workArea = info.rcWork;
+                var monitorArea = info.rcMonitor;
+
+                mmi.ptMaxPosition.X = workArea.left - monitorArea.left;
+                mmi.ptMaxPosition.Y = workArea.top - monitorArea.top;
+                mmi.ptMaxSize.X = workArea.right - workArea.left;
+                mmi.ptMaxSize.Y = workArea.bottom - workArea.top;
+                mmi.ptMaxTrackSize.X = mmi.ptMaxSize.X;
+                mmi.ptMaxTrackSize.Y = mmi.ptMaxSize.Y;
+            }
+
+            Marshal.StructureToPtr(mmi, lParam, true);
+        }
+
         private void DetermineModifierKey()
         {
             string mod = _configService.CurrentConfig.Overlay.PassThroughModifier;

@@ -217,18 +217,6 @@ namespace VN2Anki.Services
                 ? runningWindows
                 : runningWindows.Where(w => w.ProcessName == specificProcessName).ToList();
 
-            // When specificProcessName is provided (e.g. settings changed), and it's NOT currently running,
-            // we should still try to find a DB match to set it as CurrentVN visually, even if we can't hook the window yet.
-            if (!string.IsNullOrEmpty(specificProcessName) && windowsToCheck.Count == 0)
-            {
-                var fallbackMatch = vnsDb.FirstOrDefault(v => v.ProcessName == specificProcessName);
-                if (fallbackMatch != null)
-                {
-                    return fallbackMatch; 
-                }
-                return null;
-            }
-
             foreach (var win in windowsToCheck)
             {
                 var match = vnsDb.FirstOrDefault(v =>
@@ -243,11 +231,6 @@ namespace VN2Anki.Services
 
             if (matchedVns.Count == 0)
             {
-                 // If no running window matches, check if the specific process is at least a known VN
-                 if (!string.IsNullOrEmpty(specificProcessName))
-                 {
-                     return vnsDb.FirstOrDefault(v => v.ProcessName == specificProcessName);
-                 }
                  return null;
             }
 
