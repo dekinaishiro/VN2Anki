@@ -651,6 +651,9 @@ namespace VN2Anki
             // Bloqueia leituras enquanto o WPF ainda está a construir a janela
             if (!_isLoaded) return;
 
+            // Se estiver minimizado, ignora completamente para não salvar tamanhos de "ícone"
+            if (this.WindowState == WindowState.Minimized) return;
+
             var conf = _configService.CurrentConfig.Overlay;
 
             if (this.WindowState == WindowState.Maximized)
@@ -659,6 +662,10 @@ namespace VN2Anki
             }
             else if (this.WindowState == WindowState.Normal)
             {
+                // PROTEÇÃO: Só atualiza se o tamanho for razoável. 
+                // Se o Windows reportar algo minúsculo (bug de minimização), ignoramos.
+                if (this.Width < 100 || this.Height < 40) return;
+
                 conf.IsMaximized = false;
 
                 _lastNormalTop = this.Top;
