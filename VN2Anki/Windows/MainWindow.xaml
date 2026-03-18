@@ -46,8 +46,8 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Column="0" Text="{Binding DisplayVnTitle}" 
-                               Foreground="{Binding VnTitleColor}" 
+                    <TextBlock Grid.Column="0" Text="{Binding ConnectionState.DisplayVnTitle}" 
+                               Foreground="{Binding ConnectionState.VnTitleColor}" 
                                FontWeight="Bold" VerticalAlignment="Center" 
                                TextWrapping="Wrap" MaxHeight="40" MaxWidth="250"
                                TextTrimming="CharacterEllipsis"/>
@@ -57,19 +57,19 @@
                                 Background="#444" BorderThickness="0" 
                                 Cursor="Hand" Margin="0,0,4,0" Padding="5"
                                 ToolTip="Selecionar fonte de Vídeo">
-                            <iconPacks:PackIconMaterial Kind="{Binding VideoIconKind}" Foreground="{Binding VideoIconColor}" Width="16" Height="16"/>
+                            <iconPacks:PackIconMaterial Kind="{Binding ConnectionState.VideoIconKind}" Foreground="{Binding ConnectionState.VideoIconColor}" Width="16" Height="16"/>
                         </Button>
                         <Button Command="{Binding SelectAudioCommand}" 
                                 Background="#444" BorderThickness="0" 
                                 Cursor="Hand" Margin="0,0,4,0" Padding="5"
                                 ToolTip="Selecionar fonte de Áudio">
-                            <iconPacks:PackIconMaterial Kind="{Binding AudioIconKind}" Foreground="{Binding AudioIconColor}" Width="16" Height="16"/>
+                            <iconPacks:PackIconMaterial Kind="{Binding ConnectionState.AudioIconKind}" Foreground="{Binding ConnectionState.AudioIconColor}" Width="16" Height="16"/>
                         </Button>
                         <Button Command="{Binding ManualLinkActionCommand}" 
                                 Background="#444" BorderThickness="0" 
                                 Cursor="Hand" Margin="0,0,4,0" Padding="5"
                                 ToolTip="Vincular Jogo (Link)">
-                            <iconPacks:PackIconMaterial Kind="{Binding LinkIconKind}" Foreground="{Binding LinkIconColor}" Width="16" Height="16"/>
+                            <iconPacks:PackIconMaterial Kind="{Binding ConnectionState.LinkIconKind}" Foreground="{Binding ConnectionState.LinkIconColor}" Width="16" Height="16"/>
                         </Button>
                     </StackPanel>
                 </Grid>

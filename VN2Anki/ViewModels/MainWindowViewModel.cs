@@ -15,6 +15,7 @@ using VN2Anki.Locales;
 using VN2Anki.Messages;
 using VN2Anki.Models;
 using VN2Anki.Models.Entities;
+using VN2Anki.Models.State;
 using VN2Anki.Services;
 using VN2Anki.Services.Interfaces;
 
@@ -31,7 +32,24 @@ namespace VN2Anki.ViewModels
 
         public bool HasUnsavedProgress => _sessionManager.HasUnsavedProgress;
 
+                private static class StateBrushes
+        {
+            public static readonly SolidColorBrush Crimson = CreateFrozenBrush("#DC3545");
+            public static readonly SolidColorBrush Green = CreateFrozenBrush("#28A745");
+            public static readonly SolidColorBrush Blue = CreateFrozenBrush("#007ACC");
+            public static readonly SolidColorBrush LimeGreen = CreateFrozenBrush("#32CD32");
+            public static readonly SolidColorBrush White = CreateFrozenBrush("#FFFFFF");
+            
+            private static SolidColorBrush CreateFrozenBrush(string hex)
+            {
+                var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
+                brush.Freeze();
+                return brush;
+            }
+        }
+
         public SessionTracker Tracker { get; }
+        public VnConnectionState ConnectionState { get; } = new VnConnectionState();
 
         [ObservableProperty]
         private string _statusText = "";
@@ -57,33 +75,7 @@ namespace VN2Anki.ViewModels
         public string BufferBtnText => IsBufferActive ? "ON" : "OFF";
         public Brush BufferBtnBackground => IsBufferActive ? Brushes.Green : Brushes.Crimson;
         
-        // main window title
-        [ObservableProperty]
-        private Brush _vnTitleColor = Brushes.Crimson;
-        [ObservableProperty]
-        private string _displayVnTitle = "No Video Source";
-        // manual sync vn
-        [ObservableProperty]
-        private string _manualLinkText = "+";
 
-        [ObservableProperty]
-        private Brush _manualLinkColor = Brushes.Teal;
-
-        // Semaphore properties
-        [ObservableProperty]
-        private string _videoIconKind = "MonitorOff";
-        [ObservableProperty]
-        private Brush _videoIconColor = Brushes.Crimson;
-
-        [ObservableProperty]
-        private string _audioIconKind = "VolumeOff";
-        [ObservableProperty]
-        private Brush _audioIconColor = Brushes.Crimson;
-
-        [ObservableProperty]
-        private string _linkIconKind = "LinkVariantOff";
-        [ObservableProperty]
-        private Brush _linkIconColor = Brushes.White;
 
         private bool _isFirstLoad = true;
         private readonly IWindowService _windowService;
@@ -392,10 +384,8 @@ namespace VN2Anki.ViewModels
             bool isZeroed = Tracker.ValidCharacterCount == 0 && Tracker.Elapsed.TotalSeconds == 0 && !IsBufferActive;
 
             ManualLinkVisibility = Visibility.Visible;
-            ManualLinkText = CurrentVN != null ? "-" : "+";
-            ManualLinkColor = CurrentVN != null
-                ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#DC3545"))
-                : new SolidColorBrush((Color)ColorConverter.ConvertFromString("#28A745"));
+            ConnectionState.ManualLinkText = CurrentVN != null ? "-" : "+";
+            ConnectionState.ManualLinkColor = CurrentVN != null ? StateBrushes.Crimson : StateBrushes.Green;
 
             var videoSource = _configService.CurrentConfig.Media.VideoWindow;
             var windows = _videoEngine.GetWindows();
@@ -403,17 +393,15 @@ namespace VN2Anki.ViewModels
 
             if (CurrentVN != null)
             {
-                isProcessRunning = windows.Any(w => string.Equals(w.ProcessName, CurrentVN.ProcessName, System.StringComparison.OrdinalIgnoreCase));
+                isProcessRunning = windows.Any(w => string.Equals(w.ProcessName, CurrentVN.ProcessName, StringComparison.OrdinalIgnoreCase));
                 
-                DisplayVnTitle = CurrentVN.Title;
-                VnTitleColor = isProcessRunning 
-                    ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#007ACC"))
-                    : Brushes.Crimson;
+                ConnectionState.DisplayVnTitle = CurrentVN.Title;
+                ConnectionState.VnTitleColor = isProcessRunning ? StateBrushes.Blue : Brushes.Crimson;
             }
             else if (string.IsNullOrEmpty(videoSource))
             {
-                DisplayVnTitle = "No Video Source";
-                VnTitleColor = Brushes.Crimson;
+                ConnectionState.DisplayVnTitle = "No Video Source";
+                ConnectionState.VnTitleColor = Brushes.Crimson;
                 isProcessRunning = false;
             }
             else
@@ -422,16 +410,16 @@ namespace VN2Anki.ViewModels
 
                 if (targetWin != null)
                 {
-                    DisplayVnTitle = !string.IsNullOrWhiteSpace(targetWin.Title) ? targetWin.Title : targetWin.ProcessName;
+                    ConnectionState.DisplayVnTitle = !string.IsNullOrWhiteSpace(targetWin.Title) ? targetWin.Title : targetWin.ProcessName;
                     isProcessRunning = true;
                 }
                 else
                 {
-                    DisplayVnTitle = "No Video Source";
+                    ConnectionState.DisplayVnTitle = "No Video Source";
                     isProcessRunning = false;
                 }
 
-                VnTitleColor = Brushes.Crimson;
+                ConnectionState.VnTitleColor = Brushes.Crimson;
             }
 
             UpdateSemaphoreState(isProcessRunning);
@@ -445,42 +433,42 @@ namespace VN2Anki.ViewModels
             // Video
             if (isProcessRunning)
             {
-                VideoIconKind = "Monitor";
-                VideoIconColor = Brushes.LimeGreen;
+                ConnectionState.VideoIconKind = "Monitor";
+                ConnectionState.VideoIconColor = Brushes.LimeGreen;
             }
             else
             {
-                VideoIconKind = "MonitorOff";
-                VideoIconColor = Brushes.Crimson;
+                ConnectionState.VideoIconKind = "MonitorOff";
+                ConnectionState.VideoIconColor = Brushes.Crimson;
             }
 
             // Audio
             if (hasAudio)
             {
-                AudioIconKind = "VolumeHigh";
-                AudioIconColor = Brushes.LimeGreen;
+                ConnectionState.AudioIconKind = "VolumeHigh";
+                ConnectionState.AudioIconColor = Brushes.LimeGreen;
             }
             else
             {
-                AudioIconKind = "VolumeOff";
-                AudioIconColor = Brushes.Crimson;
+                ConnectionState.AudioIconKind = "VolumeOff";
+                ConnectionState.AudioIconColor = Brushes.Crimson;
             }
 
             // Link
             if (!isProcessRunning)
             {
-                LinkIconKind = "LinkVariantOff";
-                LinkIconColor = Brushes.White; // Grey background with white icon, unselectable effectively
+                ConnectionState.LinkIconKind = "LinkVariantOff";
+                ConnectionState.LinkIconColor = Brushes.White; // Grey background with white icon, unselectable effectively
             }
             else if (CurrentVN != null)
             {
-                LinkIconKind = "LinkVariant";
-                LinkIconColor = Brushes.LimeGreen;
+                ConnectionState.LinkIconKind = "LinkVariant";
+                ConnectionState.LinkIconColor = Brushes.LimeGreen;
             }
             else
             {
-                LinkIconKind = "LinkVariantOff";
-                LinkIconColor = Brushes.Crimson;
+                ConnectionState.LinkIconKind = "LinkVariantOff";
+                ConnectionState.LinkIconColor = Brushes.Crimson;
             }
         }
 
