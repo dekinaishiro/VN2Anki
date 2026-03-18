@@ -203,63 +203,6 @@ namespace VN2Anki
             ApplyPositionState();
         }
 
-        private async void LoadExtensions()
-        {
-            if (webView.CoreWebView2 == null) return;
-            var profile = webView.CoreWebView2.Profile;
-
-            var loadedExtensions = await profile.GetBrowserExtensionsAsync();
-            var enabledPaths = _configService.CurrentConfig.Overlay.CustomExtensions;
-
-            // Get names of extensions we WANT to have enabled
-            var targetExtensions = new List<(string Path, string Name)>();
-            foreach (var originalPath in enabledPaths)
-            {
-                string pathToLoad = originalPath;
-
-                // Auto-Heal: Tenta encontrar a versão mais recente na pasta "pai" (ID da extensão)
-                try
-                {
-                    string parentDir = Directory.GetParent(originalPath)?.FullName;
-                    if (parentDir != null && Directory.Exists(parentDir))
-                    {
-                        var versionDirs = Directory.GetDirectories(parentDir);
-                        if (versionDirs.Length > 0)
-                        {
-                            pathToLoad = versionDirs.OrderByDescending(d => d).First();
-                        }
-                    }
-                }
-                catch { /* Fallback silencioso para o caminho original se der erro */ }
-
-                if (Directory.Exists(pathToLoad))
-                {
-                    var info = VN2Anki.Helpers.BrowserExtensionHelper.GetExtensionsFromPath(pathToLoad).FirstOrDefault();
-                    if (info != null) targetExtensions.Add((pathToLoad, info.Name));
-                }
-            }
-
-            // 1. Remove extensions that are NOT in the target list
-            foreach (var loadedExt in loadedExtensions)
-            {
-                if (!targetExtensions.Any(t => t.Name == loadedExt.Name))
-                {
-                    try { await loadedExt.RemoveAsync(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Failed to remove browser extension {loadedExt.Name}: {ex.Message}"); }
-                }
-            }
-
-            // 2. Add extensions that are in the target list but NOT yet loaded
-            foreach (var target in targetExtensions)
-            {
-                if (!loadedExtensions.Any(l => l.Name == target.Name))
-                {
-                    try { await profile.AddBrowserExtensionAsync(target.Path); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Failed to add browser extension from {target.Path}: {ex.Message}"); }
-                }
-            }
-        }
-
-
-
         private void ApplyPassThroughState()
         {
             bool finalPassThrough = _isPassThroughToggled ^ (_win32Manager?.IsHoldActive ?? false);
@@ -470,19 +413,6 @@ namespace VN2Anki
 
             // unregister from messages to prevent memory leaks
             WeakReferenceMessenger.Default.UnregisterAll(this);
-        }
-
-        private string WpfHexToCss(string hexColor)
-        {
-            try
-            {
-                var color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hexColor);
-                return $"rgba({color.R}, {color.G}, {color.B}, {(color.A / 255.0).ToString(System.Globalization.CultureInfo.InvariantCulture)})";
-            }
-            catch
-            {
-                return "rgba(0,0,0,0)";
-            }
         }
 
         // this method will be called whenever the OverlayConfigUpdatedMessage is sent, allowing the overlay to update its appearance in real-time based on configuration changes
