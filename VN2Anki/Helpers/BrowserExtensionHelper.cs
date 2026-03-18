@@ -190,5 +190,56 @@ namespace VN2Anki.Helpers
             }
             return null;
         }
+
+        public static async Task SyncProfileExtensionsAsync(Microsoft.Web.WebView2.Core.CoreWebView2Profile profile, IEnumerable<string> enabledPaths)
+        {
+            var loadedExtensions = await profile.GetBrowserExtensionsAsync();
+
+            // Get names of extensions we WANT to have enabled
+            var targetExtensions = new List<(string Path, string Name)>();
+            foreach (var originalPath in enabledPaths)
+            {
+                string pathToLoad = originalPath;
+
+                // Auto-Heal: Tenta encontrar a versão mais recente na pasta "pai" (ID da extensão)
+                try
+                {
+                    string parentDir = Directory.GetParent(originalPath)?.FullName;
+                    if (parentDir != null && Directory.Exists(parentDir))
+                    {
+                        var versionDirs = Directory.GetDirectories(parentDir);
+                        if (versionDirs.Length > 0)
+                        {
+                            pathToLoad = versionDirs.OrderByDescending(d => d).First();
+                        }
+                    }
+                }
+                catch { /* Fallback silencioso para o caminho original se der erro */ }
+
+                if (Directory.Exists(pathToLoad))
+                {
+                    var info = GetExtensionsFromPath(pathToLoad).FirstOrDefault();
+                    if (info != null) targetExtensions.Add((pathToLoad, info.Name));
+                }
+            }
+
+            // 1. Remove extensions that are NOT in the target list
+            foreach (var loadedExt in loadedExtensions)
+            {
+                if (!targetExtensions.Any(t => t.Name == loadedExt.Name))
+                {
+                    try { await loadedExt.RemoveAsync(); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Failed to remove browser extension {loadedExt.Name}: {ex.Message}"); }
+                }
+            }
+
+            // 2. Add extensions that are in the target list but NOT yet loaded
+            foreach (var target in targetExtensions)
+            {
+                if (!loadedExtensions.Any(l => l.Name == target.Name))
+                {
+                    try { await profile.AddBrowserExtensionAsync(target.Path); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Failed to add browser extension from {target.Path}: {ex.Message}"); }
+                }
+            }
+        }
     }
 }

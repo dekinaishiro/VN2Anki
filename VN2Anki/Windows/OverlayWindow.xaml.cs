@@ -22,16 +22,11 @@ namespace VN2Anki
         private readonly ITextHook _textHook;
         private readonly VN2Anki.Services.Interfaces.IWindowService _windowService;
 
-        private IntPtr _webViewRenderHostHandle = IntPtr.Zero;
-        private DispatcherTimer? _holdTimer;
-        private SUBCLASSPROC _webViewSubclassProc;
+        private OverlayWin32Manager _win32Manager;
 
         private bool _isTextAtTop = false;
         private bool _isTransparent = true;
         private bool _isPassThroughToggled = false;
-        private bool _isHoldActive = false;
-        private bool _isMouseOverHeader = false; 
-        private int _modifierKeyVk = 0xA2;
         private bool _isLoaded = false;
 
         private double _lastNormalTop = double.NaN;
@@ -46,8 +41,6 @@ namespace VN2Anki
             _textHook = textHook;
             _windowService = windowService;
 
-            _webViewSubclassProc = new SUBCLASSPROC(WebViewSubclassProc);
-
             this.Loaded += OverlayWindow_Loaded;
             this.Closed += OverlayWindow_Closed;
             this.LocationChanged += OverlayWindow_LocationOrSizeChanged;
@@ -58,9 +51,15 @@ namespace VN2Anki
             _isTransparent = conf.IsTransparent;
             _isPassThroughToggled = conf.IsPassThrough;
 
-            DetermineModifierKey();
+            _win32Manager = new OverlayWin32Manager(
+                this,
+                0xA2,
+                () => _isPassThroughToggled,
+                (finalPassThrough) => UpdatePassThroughVisuals(finalPassThrough)
+            );
+            UpdateModifierKey();
+
             InitializeWebViewAsync();
-            SetupHoldTimer();
 
             WeakReferenceMessenger.Default.RegisterAll(this); 
         }
@@ -68,54 +67,33 @@ namespace VN2Anki
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
-            var source = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
-            source?.AddHook(WndProc);
+            _win32Manager.Initialize(new WindowInteropHelper(this).Handle);
         }
 
-        private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        private void UpdatePassThroughVisuals(bool finalPassThrough)
         {
-            if (msg == WM_GETMINMAXINFO)
+            if (finalPassThrough)
             {
-                WmGetMinMaxInfo(hwnd, lParam);
-                handled = true;
+                BtnPassThrough.Foreground = new SolidColorBrush(Colors.Red);
+                BtnPassThrough.Content = "👻";
             }
-            return IntPtr.Zero;
+            else
+            {
+                BtnPassThrough.Foreground = new SolidColorBrush(Colors.White);
+                BtnPassThrough.Content = "🧱";
+            }
         }
 
-        private void WmGetMinMaxInfo(IntPtr hwnd, IntPtr lParam)
-        {
-            MINMAXINFO mmi = (MINMAXINFO)Marshal.PtrToStructure(lParam, typeof(MINMAXINFO));
-
-            IntPtr monitor = MonitorFromWindow(hwnd, 0x00000002); // MONITOR_DEFAULTTONEAREST
-            if (monitor != IntPtr.Zero)
-            {
-                MONITORINFO info = new MONITORINFO();
-                info.cbSize = Marshal.SizeOf(typeof(MONITORINFO));
-                GetMonitorInfo(monitor, ref info);
-
-                var workArea = info.rcWork;
-                var monitorArea = info.rcMonitor;
-
-                mmi.ptMaxPosition.X = workArea.left - monitorArea.left;
-                mmi.ptMaxPosition.Y = workArea.top - monitorArea.top;
-                mmi.ptMaxSize.X = workArea.right - workArea.left;
-                mmi.ptMaxSize.Y = workArea.bottom - workArea.top;
-                mmi.ptMaxTrackSize.X = mmi.ptMaxSize.X;
-                mmi.ptMaxTrackSize.Y = mmi.ptMaxSize.Y;
-            }
-
-            Marshal.StructureToPtr(mmi, lParam, true);
-        }
-
-        private void DetermineModifierKey()
+        private void UpdateModifierKey()
         {
             string mod = _configService.CurrentConfig.Overlay.PassThroughModifier;
-            _modifierKeyVk = mod switch
+            int vk = mod switch
             {
                 "Alt" => 0xA4,
                 "Shift" => 0xA0,
                 _ => 0xA2
             };
+            _win32Manager.SetModifierKey(vk);
         }
 
         private void ApplyPositionState()
@@ -152,7 +130,7 @@ namespace VN2Anki
                 return;
             }
 
-            LoadExtensions();
+            await VN2Anki.Helpers.BrowserExtensionHelper.SyncProfileExtensionsAsync(webView.CoreWebView2.Profile, _configService.CurrentConfig.Overlay.CustomExtensions);
 
             webView.WebMessageReceived += (s, e) =>
             {
@@ -168,32 +146,9 @@ namespace VN2Anki
                             int sy = (int)root.GetProperty("y").GetDouble();
                             int btn = (int)root.GetProperty("button").GetDouble();
 
-                            POINT p = new POINT { X = sx, Y = sy };
-
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                var handle = new WindowInteropHelper(this).Handle;
-                                int style = GetWindowLong(handle, GWL_EXSTYLE);
-                                SetWindowLong(handle, GWL_EXSTYLE, style | WS_EX_TRANSPARENT);
-                                
-                                IntPtr target = WindowFromPoint(p);
-                                
-                                SetWindowLong(handle, GWL_EXSTYLE, style);
-
-                                if (target != IntPtr.Zero && target != handle)
-                                {
-                                    uint downMsg = btn == 2 ? WM_RBUTTONDOWN : WM_LBUTTONDOWN;
-                                    uint upMsg   = btn == 2 ? WM_RBUTTONUP   : WM_LBUTTONUP;
-                                    
-                                    SetForegroundWindow(target);
-                                    
-                                    POINT clientP = p;
-                                    ScreenToClient(target, ref clientP);
-                                    
-                                    IntPtr lParam = MakeLParam(clientP.X, clientP.Y);
-                                    PostMessage(target, downMsg, IntPtr.Zero, lParam);
-                                    PostMessage(target, upMsg,   IntPtr.Zero, lParam);
-                                }
+                                _win32Manager?.ForwardClick(sx, sy, btn);
                             });
                         }
                     }
@@ -209,7 +164,7 @@ namespace VN2Anki
 
             webView.NavigationCompleted += (s, e) =>
             {
-                InstallWebViewSubclass();
+                _win32Manager.InstallWebViewSubclass(webView.Handle);
 
                 ApplyDynamicStyles();
 
@@ -229,9 +184,9 @@ namespace VN2Anki
                 action = "updateStyle",
                 data = new
                 {
-                    bgColor = WpfHexToCss(conf.BgColor),
-                    fontColor = WpfHexToCss(conf.FontColor),
-                    outlineColor = WpfHexToCss(conf.OutlineColor),
+                    bgColor = VN2Anki.Helpers.ColorHelper.WpfHexToCss(conf.BgColor),
+                    fontColor = VN2Anki.Helpers.ColorHelper.WpfHexToCss(conf.FontColor),
+                    outlineColor = VN2Anki.Helpers.ColorHelper.WpfHexToCss(conf.OutlineColor),
                     useTextBoxMode = conf.UseTextBoxMode,
                     textVerticalAlignment = string.IsNullOrEmpty(conf.TextVerticalAlignment) ? "center" : conf.TextVerticalAlignment,
                     textBoxMinHeight = conf.TextBoxMinHeight,
@@ -305,102 +260,11 @@ namespace VN2Anki
 
 
 
-        private void InstallWebViewSubclass()
-        {
-            IntPtr webViewHandle = webView.Handle;
-            if (webViewHandle != IntPtr.Zero)
-            {
-                if (SetWindowSubclass(webViewHandle, _webViewSubclassProc, 0, IntPtr.Zero))
-                {
-                    _webViewRenderHostHandle = webViewHandle;
-                }
-            }
-        }
-
-        private IntPtr WebViewSubclassProc(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam, uint uIdSubclass, IntPtr dwRefData)
-        {
-            if (uMsg == WM_NCHITTEST)
-            {
-                bool finalPassThrough = _isPassThroughToggled ^ _isHoldActive;
-                if (finalPassThrough && !_isMouseOverHeader) return (IntPtr)HTTRANSPARENT;
-            }
-            return DefSubclassProc(hWnd, uMsg, wParam, lParam);
-        }
-
-        private void SetupHoldTimer()
-        {
-            _holdTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
-            _holdTimer.Tick += (s, e) =>
-            {
-                bool isKeyDown = (GetAsyncKeyState(_modifierKeyVk) & 0x8000) != 0;
-                if (isKeyDown != _isHoldActive)
-                {
-                    _isHoldActive = isKeyDown;
-                    ApplyPassThroughState();
-                }
-
-                bool finalPassThrough = _isPassThroughToggled ^ _isHoldActive;
-                if (finalPassThrough)
-                {
-                    GetCursorPos(out POINT p);
-
-                    try
-                    {
-                        Point mouseRelative = this.PointFromScreen(new Point(p.X, p.Y));
-
-                        bool isOverHeader = (mouseRelative.X >= 0 && mouseRelative.X <= this.ActualWidth &&
-                                             mouseRelative.Y >= 0 && mouseRelative.Y <= 40);
-
-                        if (isOverHeader != _isMouseOverHeader)
-                        {
-                            _isMouseOverHeader = isOverHeader;
-                            ApplyWindowExStyle(); 
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Error calculating mouse position in OverlayWindow: {ex.Message}");
-                    }
-                }
-            };
-            _holdTimer.Start();
-        }
-
         private void ApplyPassThroughState()
         {
-            bool finalPassThrough = _isPassThroughToggled ^ _isHoldActive;
-
-            if (finalPassThrough)
-            {
-                BtnPassThrough.Foreground = new SolidColorBrush(Colors.Red);
-                BtnPassThrough.Content = "👻";
-            }
-            else
-            {
-                BtnPassThrough.Foreground = new SolidColorBrush(Colors.White);
-                BtnPassThrough.Content = "🧱";
-                _isMouseOverHeader = false;
-            }
-
-            ApplyWindowExStyle();
-        }
-
-        private void ApplyWindowExStyle()
-        {
-            var hwnd = new WindowInteropHelper(this).Handle;
-            if (hwnd == IntPtr.Zero) return;
-
-            int extendedStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
-            bool finalPassThrough = _isPassThroughToggled ^ _isHoldActive;
-
-            if (finalPassThrough && !_isMouseOverHeader)
-            {
-                SetWindowLong(hwnd, GWL_EXSTYLE, extendedStyle | WS_EX_TRANSPARENT);
-            }
-            else
-            {
-                SetWindowLong(hwnd, GWL_EXSTYLE, extendedStyle & ~WS_EX_TRANSPARENT);
-            }
+            bool finalPassThrough = _isPassThroughToggled ^ (_win32Manager?.IsHoldActive ?? false);
+            UpdatePassThroughVisuals(finalPassThrough);
+            _win32Manager?.ApplyWindowExStyle();
         }
 
         private void UpdateBackground()
@@ -598,12 +462,7 @@ namespace VN2Anki
             _configService.Save(); // Mantém o save global do disco
             WeakReferenceMessenger.Default.Send(new SaveOverlayStateMessage()); // Dispara o save no Banco de Dados
 
-            if (_webViewRenderHostHandle != IntPtr.Zero)
-            {
-                RemoveWindowSubclass(_webViewRenderHostHandle, _webViewSubclassProc, 0);
-            }
-
-            _holdTimer?.Stop();
+            _win32Manager?.Dispose();
             webView?.Dispose();
 
             // unregister from messages to prevent memory leaks
@@ -688,9 +547,12 @@ namespace VN2Anki
 
         public void Receive(BrowserExtensionUpdatedMessage message)
         {
-            Application.Current.Dispatcher.Invoke(() =>
+            Application.Current.Dispatcher.InvokeAsync(async () =>
             {
-                LoadExtensions();
+                if (webView.CoreWebView2 != null)
+                {
+                    await VN2Anki.Helpers.BrowserExtensionHelper.SyncProfileExtensionsAsync(webView.CoreWebView2.Profile, _configService.CurrentConfig.Overlay.CustomExtensions);
+                }
             });
         }
 
