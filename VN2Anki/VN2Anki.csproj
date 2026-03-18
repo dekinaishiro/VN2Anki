@@ -37,9 +37,15 @@
 	<PackageReference Include="System.Management" Version="10.0.4" />
   </ItemGroup>
 
-	<ItemGroup>
-		<Using Remove="System.Drawing" />
-	</ItemGroup>
+  <ItemGroup>
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\Web\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Update="Locales\Strings.pt.Designer.cs">

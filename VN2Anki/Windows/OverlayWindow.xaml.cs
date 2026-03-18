@@ -59,7 +59,6 @@ namespace VN2Anki
             _isPassThroughToggled = conf.IsPassThrough;
 
             DetermineModifierKey();
-            CreateDynamicHtml();
             InitializeWebViewAsync();
             SetupHoldTimer();
 
@@ -124,88 +123,20 @@ namespace VN2Anki
             if (webView.CoreWebView2 != null)
             {
                 var conf = _configService.CurrentConfig.Overlay;
-                string dir = _isTextAtTop ? "flex-start" : "flex-end";
-
-                // Aplica a margem vertical baseada na posição (Topo ou Fundo)
-                string margin = _isTextAtTop
-                    ? $"margin-top: {conf.VerticalMargin}px; margin-bottom: 0px;"
-                    : $"margin-bottom: {conf.VerticalMargin}px; margin-top: 0px;";
-
-                // Aplica o deslocamento horizontal (Displacement)
-                string transform = $"transform: translateX({conf.HorizontalDisplacement}px);";
-
-                webView.CoreWebView2.ExecuteScriptAsync($@"
-            document.body.style.justifyContent = '{dir}';
-            var tb = document.getElementById('text-box');
-            if (tb) {{
-                // Sobrescreve apenas a margem e o transform dinamicamente
-                tb.style.cssText = '{margin} {transform}';
-            }}
-        ");
-            }
-        }
-
-        private void CreateDynamicHtml()
-        {
-            var conf = _configService.CurrentConfig.Overlay;
-            string cssBgColor = WpfHexToCss(conf.BgColor);
-            string cssFontColor = WpfHexToCss(conf.FontColor);
-
-            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string vn2ankiFolder = Path.Combine(appData, "VN2Anki");
-            if (!Directory.Exists(vn2ankiFolder)) Directory.CreateDirectory(vn2ankiFolder);
-            string htmlPath = Path.Combine(vn2ankiFolder, "overlay.html");
-
-            string htmlBase = $@"
-            <!DOCTYPE html>
-            <html>
-            <!DOCTYPE html>
-<html>
-<head>
-    <meta charset='utf-8'>
-    <style>
-        html, body {{
-            margin: 0; padding: 0; height: 100vh;
-            background-color: rgba(0, 0, 0, 0.0) !important;
-            overflow: hidden;
-            display: flex; flex-direction: column; 
-            justify-content: flex-end;
-        }}
-        #text-box {{
-            transition: background 0.2s ease, color 0.2s ease;
-        }}
-    </style>
-</head>
-            <body>
-                <div id='text-box'>Waiting for text...</div>
-                <script>
-                    document.addEventListener('mousedown', (e) => {{
-                        let textBox = document.getElementById('text-box');
-                        let insideTextBox = false;
-                        if (textBox) {{
-                            let r = textBox.getBoundingClientRect();
-                            insideTextBox = e.clientX >= r.left && e.clientX <= r.right &&
-                                            e.clientY >= r.top  && e.clientY <= r.bottom;
-                        }}
                 
-                        if (!insideTextBox) {{
-                            if (window.chrome && window.chrome.webview) {{
-                                window.chrome.webview.postMessage(JSON.stringify({{
-                                    forwardClick: true,
-                                    x: e.screenX,
-                                    y: e.screenY,
-                                    button: e.button
-                                }}));
-                            }}
-                            e.preventDefault();
-                            e.stopPropagation();
-                        }}
-                    }});
-                </script>
-            </body>
-            </html>";
+                var payload = new
+                {
+                    action = "updatePosition",
+                    data = new
+                    {
+                        isTextAtTop = _isTextAtTop,
+                        verticalMargin = conf.VerticalMargin,
+                        horizontalDisplacement = conf.HorizontalDisplacement
+                    }
+                };
 
-            File.WriteAllText(htmlPath, htmlBase);
+                webView.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(payload));
+            }
         }
 
         private async void InitializeWebViewAsync()
@@ -270,9 +201,10 @@ namespace VN2Anki
                 catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Error handling click event in WebView: {ex.Message}"); }
             };
 
-            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string vn2ankiFolder = Path.Combine(appData, "VN2Anki");
-            webView.CoreWebView2.SetVirtualHostNameToFolderMapping("vn.local", vn2ankiFolder, CoreWebView2HostResourceAccessKind.Allow);
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string webFolder = Path.Combine(baseDir, "Assets", "Web");
+            
+            webView.CoreWebView2.SetVirtualHostNameToFolderMapping("vn.local", webFolder, CoreWebView2HostResourceAccessKind.Allow);
             webView.CoreWebView2.Navigate($"http://vn.local/overlay.html?t={DateTime.Now.Ticks}");
 
             webView.NavigationCompleted += (s, e) =>
@@ -291,98 +223,26 @@ namespace VN2Anki
             if (webView.CoreWebView2 == null) return;
 
             var conf = _configService.CurrentConfig.Overlay;
-            string cssBgColor = WpfHexToCss(conf.BgColor);
-            string cssFontColor = WpfHexToCss(conf.FontColor);
-            string cssOutlineColor = WpfHexToCss(conf.OutlineColor);
-
-            // Lógica do Modo Text Box vs Modo Solto
-            string boxStyles = "";
-            if (conf.UseTextBoxMode)
+            
+            var payload = new
             {
-                string align = string.IsNullOrEmpty(conf.TextVerticalAlignment) ? "center" : conf.TextVerticalAlignment;
-                boxStyles = $@"
-            min-height: {conf.TextBoxMinHeight}px;
-            width: {conf.TextBoxWidthPercentage}vw;
-            display: flex;
-            flex-direction: column;
-            justify-content: {align};
-            align-items: center; /* Centraliza horizontalmente o texto dentro da caixa */
-            box-sizing: border-box;
-            margin-left: auto;
-            margin-right: auto;
-        ";
-            }
-            else
-            {
-                boxStyles = $@"
-            width: auto;
-            min-height: auto;
-            display: inline-block;
-            margin-left: auto;
-            margin-right: auto;
-        ";
-            }
-
-            // Lógica da Borda (Outline / Stroke) 100% Externa
-            string textOutline = "";
-            if (conf.OutlineThickness > 0)
-            {
-                int t = conf.OutlineThickness;
-                string c = cssOutlineColor;
-
-                // Cria uma matriz de text-shadow (círculo perfeito ao redor da letra)
-                var shadowParts = new System.Collections.Generic.List<string>();
-                for (int x = -t; x <= t; x++)
+                action = "updateStyle",
+                data = new
                 {
-                    for (int y = -t; y <= t; y++)
-                    {
-                        if (x == 0 && y == 0) continue;
-                        shadowParts.Add($"{x}px {y}px 0px {c}");
-                    }
+                    bgColor = WpfHexToCss(conf.BgColor),
+                    fontColor = WpfHexToCss(conf.FontColor),
+                    outlineColor = WpfHexToCss(conf.OutlineColor),
+                    useTextBoxMode = conf.UseTextBoxMode,
+                    textVerticalAlignment = string.IsNullOrEmpty(conf.TextVerticalAlignment) ? "center" : conf.TextVerticalAlignment,
+                    textBoxMinHeight = conf.TextBoxMinHeight,
+                    textBoxWidthPercentage = conf.TextBoxWidthPercentage,
+                    outlineThickness = conf.OutlineThickness,
+                    fontFamily = conf.FontFamily,
+                    fontSize = conf.FontSize
                 }
-                // Adiciona um blur suave no final para arredondar as pontas dos kanjis
-                shadowParts.Add($"0px 0px {t}px {c}");
+            };
 
-                textOutline = "text-shadow: " + string.Join(", ", shadowParts) + " !important;\n";
-                textOutline += "                -webkit-text-stroke: 0 !important;"; // Garante que o stroke nativo não atrapalhe
-            }
-            else
-            {
-                textOutline = "text-shadow: none !important; -webkit-text-stroke: 0 !important;";
-            }
-
-            // Injeção do CSS
-            string script = $@"
-        var style = document.getElementById('dynamic-config-style');
-        if (!style) {{
-            style = document.createElement('style');
-            style.id = 'dynamic-config-style';
-            document.head.appendChild(style);
-        }}
-        style.innerHTML = `
-            html, body {{
-                width: 100vw;
-            }}
-            #text-box {{
-                color: {cssFontColor} !important; 
-                font-family: '{conf.FontFamily}', sans-serif !important;
-                font-size: {conf.FontSize}px !important;
-                background-color: {cssBgColor} !important;
-                border-radius: 8px;
-                padding: 15px;
-                text-align: center;
-                {textOutline}
-                {boxStyles}
-            }}
-
-            /* Regra para o botão do 'olhinho' (Transparência) funcionar só na caixa de texto */
-            body.transp-on:not(.transp-off) #text-box {{
-                background-color: transparent !important;
-                box-shadow: none !important;
-            }}
-        `;
-    ";
-            webView.CoreWebView2.ExecuteScriptAsync(script);
+            webView.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(payload));
 
             // Força a atualização da margem logo a seguir
             ApplyPositionState();
@@ -443,29 +303,7 @@ namespace VN2Anki
             }
         }
 
-        private void HandleNewText(string text, DateTime timestamp)
-        {
-            Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                if (webView.CoreWebView2 == null) return;
 
-                string safeText = text.Replace("\r\n", "<br>")
-                                      .Replace("\n", "<br>")
-                                      .Replace("\r", "<br>")
-                                      .Replace("\\", "\\\\")
-                                      .Replace("'", "\\'");
-
-                string injectScript = $@"
-                    var container = document.getElementById('text-box');
-                    container.innerHTML = '';
-                    var newSpan = document.createElement('span');
-                    newSpan.className = 'vn-text-line';
-                    newSpan.innerHTML = '{safeText}';
-                    container.appendChild(newSpan);
-                ";
-                webView.CoreWebView2.ExecuteScriptAsync(injectScript);
-            }, System.Windows.Threading.DispatcherPriority.Normal);
-        }
 
         private void InstallWebViewSubclass()
         {
@@ -578,14 +416,19 @@ namespace VN2Anki
             {
                 webView.DefaultBackgroundColor = System.Drawing.Color.Transparent;
 
+                var payload = new
+                {
+                    action = "updateTransparency",
+                    data = new { isTransparent = _isTransparent }
+                };
+                webView.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(payload));
+
                 if (_isTransparent)
                 {
-                    webView.CoreWebView2.ExecuteScriptAsync("document.body.className = 'transp-on';");
                     BtnTransparencia.Foreground = new SolidColorBrush(System.Windows.Media.Colors.White);
                 }
                 else
                 {
-                    webView.CoreWebView2.ExecuteScriptAsync("document.body.className = 'transp-on transp-off';");
                     BtnTransparencia.Foreground = new SolidColorBrush(System.Windows.Media.Colors.Gray);
                 }
             }
@@ -851,6 +694,26 @@ namespace VN2Anki
             });
         }
 
-        
+        private void HandleNewText(string text, DateTime timestamp)
+        {
+            Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                if (webView.CoreWebView2 == null) return;
+
+                string safeText = text.Replace("\r\n", "<br>")
+                                      .Replace("\n", "<br>")
+                                      .Replace("\r", "<br>")
+                                      .Replace("\\", "\\\\")
+                                      .Replace("'", "\\'");
+
+                var payload = new
+                {
+                    action = "newText",
+                    data = new { text = safeText }
+                };
+
+                webView.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(payload));
+            }, System.Windows.Threading.DispatcherPriority.Normal);
+        }
     }
 }
