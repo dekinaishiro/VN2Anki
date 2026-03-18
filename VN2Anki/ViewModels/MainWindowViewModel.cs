@@ -70,8 +70,6 @@ namespace VN2Anki.ViewModels
         [ObservableProperty]
         private VN2Anki.Models.Entities.VisualNovel? _currentVN;
 
-        [ObservableProperty]
-        private Visibility _manualLinkVisibility = Visibility.Collapsed;
         public string BufferBtnText => IsBufferActive ? "ON" : "OFF";
         public Brush BufferBtnBackground => IsBufferActive ? Brushes.Green : Brushes.Crimson;
         
@@ -382,10 +380,6 @@ namespace VN2Anki.ViewModels
         public void UpdateVisualCurrentVN()
         {
             bool isZeroed = Tracker.ValidCharacterCount == 0 && Tracker.Elapsed.TotalSeconds == 0 && !IsBufferActive;
-
-            ManualLinkVisibility = Visibility.Visible;
-            ConnectionState.ManualLinkText = CurrentVN != null ? "-" : "+";
-            ConnectionState.ManualLinkColor = CurrentVN != null ? StateBrushes.Crimson : StateBrushes.Green;
 
             var videoSource = _configService.CurrentConfig.Media.VideoWindow;
             var windows = _videoEngine.GetWindows();
