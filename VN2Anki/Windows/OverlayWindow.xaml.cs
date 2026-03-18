@@ -12,14 +12,12 @@ using Microsoft.Web.WebView2.Core;
 using VN2Anki.Services;
 using CommunityToolkit.Mvvm.Messaging;
 using VN2Anki.Messages;
-using static VN2Anki.Services.Win32InteropService;
 
 namespace VN2Anki
 {
     public partial class OverlayWindow : Window, IRecipient<OverlayConfigUpdatedMessage>, IRecipient<SlotCapturedMessage>, IRecipient<BrowserExtensionUpdatedMessage>
     {
         private readonly IConfigurationService _configService;
-        private readonly ITextHook _textHook;
         private readonly VN2Anki.Services.Interfaces.IWindowService _windowService;
 
         private OverlayWin32Manager _win32Manager;
@@ -29,16 +27,12 @@ namespace VN2Anki
         private bool _isPassThroughToggled = false;
         private bool _isLoaded = false;
 
-        private double _lastNormalTop = double.NaN;
-        private double _lastNormalLeft = double.NaN;
-        private double _lastNormalWidth = double.NaN;
-        private double _lastNormalHeight = double.NaN;
+        private Rect? _lastNormalBounds;
 
-        public OverlayWindow(IConfigurationService configService, ITextHook textHook, VN2Anki.Services.Interfaces.IWindowService windowService)
+        public OverlayWindow(IConfigurationService configService, VN2Anki.Services.Interfaces.IWindowService windowService)
         {
             InitializeComponent();
             _configService = configService;
-            _textHook = textHook;
             _windowService = windowService;
 
             this.Loaded += OverlayWindow_Loaded;
@@ -62,6 +56,23 @@ namespace VN2Anki
             InitializeWebViewAsync();
 
             WeakReferenceMessenger.Default.RegisterAll(this); 
+        }
+
+        private void CaptureNormalBounds()
+        {
+            if (this.WindowState == WindowState.Normal)
+            {
+                _lastNormalBounds = new Rect(this.Left, this.Top, this.Width, this.Height);
+            }
+        }
+
+        private void UpdateConfigFromBounds(Rect bounds)
+        {
+            var conf = _configService.CurrentConfig.Overlay;
+            conf.Left = bounds.Left;
+            conf.Top = bounds.Top;
+            conf.Width = bounds.Width;
+            conf.Height = bounds.Height;
         }
 
         protected override void OnSourceInitialized(EventArgs e)
@@ -332,13 +343,7 @@ namespace VN2Anki
             // 3. Liberta a trava: a partir de agora, qualquer movimento do utilizador é real e deve ser guardado
             _isLoaded = true;
 
-            if (this.WindowState == WindowState.Normal)
-            {
-                _lastNormalTop = this.Top;
-                _lastNormalLeft = this.Left;
-                _lastNormalWidth = this.Width;
-                _lastNormalHeight = this.Height;
-            }
+            CaptureNormalBounds();
         }
 
         private void OverlayWindow_LocationOrSizeChanged(object? sender, EventArgs e)
@@ -363,15 +368,11 @@ namespace VN2Anki
 
                 conf.IsMaximized = false;
 
-                _lastNormalTop = this.Top;
-                _lastNormalLeft = this.Left;
-                _lastNormalWidth = this.Width;
-                _lastNormalHeight = this.Height;
-
-                conf.Width = this.Width;
-                conf.Height = this.Height;
-                conf.Top = this.Top;
-                conf.Left = this.Left;
+                CaptureNormalBounds();
+                if (_lastNormalBounds.HasValue)
+                {
+                    UpdateConfigFromBounds(_lastNormalBounds.Value);
+                }
             }
         }
 
@@ -385,24 +386,15 @@ namespace VN2Anki
             // save current window position and size properly accounting for Minimized state
             if (this.WindowState == WindowState.Normal)
             {
-                conf.Width = this.Width;
-                conf.Height = this.Height;
-                conf.Top = this.Top;
-                conf.Left = this.Left;
+                UpdateConfigFromBounds(new Rect(this.Left, this.Top, this.Width, this.Height));
             }
-            else if (!double.IsNaN(_lastNormalTop))
+            else if (_lastNormalBounds.HasValue)
             {
-                conf.Width = _lastNormalWidth;
-                conf.Height = _lastNormalHeight;
-                conf.Top = _lastNormalTop;
-                conf.Left = _lastNormalLeft;
+                UpdateConfigFromBounds(_lastNormalBounds.Value);
             }
             else if (this.RestoreBounds != Rect.Empty)
             {
-                conf.Width = this.RestoreBounds.Width;
-                conf.Height = this.RestoreBounds.Height;
-                conf.Top = this.RestoreBounds.Top;
-                conf.Left = this.RestoreBounds.Left;
+                UpdateConfigFromBounds(this.RestoreBounds);
             }
 
             _configService.Save(); // Mantém o save global do disco
@@ -462,13 +454,7 @@ namespace VN2Anki
 
                 _isLoaded = true; // Destranca a leitura
 
-                if (this.WindowState == WindowState.Normal)
-                {
-                    _lastNormalTop = this.Top;
-                    _lastNormalLeft = this.Left;
-                    _lastNormalWidth = this.Width;
-                    _lastNormalHeight = this.Height;
-                }
+                CaptureNormalBounds();
             });
         }
 
@@ -497,9 +483,7 @@ namespace VN2Anki
 
                 string safeText = text.Replace("\r\n", "<br>")
                                       .Replace("\n", "<br>")
-                                      .Replace("\r", "<br>")
-                                      .Replace("\\", "\\\\")
-                                      .Replace("'", "\\'");
+                                      .Replace("\r", "<br>");
 
                 var payload = new
                 {
