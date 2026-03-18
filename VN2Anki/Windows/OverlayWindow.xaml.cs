@@ -75,12 +75,12 @@ namespace VN2Anki
             if (finalPassThrough)
             {
                 BtnPassThrough.Foreground = new SolidColorBrush(Colors.Red);
-                BtnPassThrough.Content = "👻";
+                IconPassThrough.Kind = MahApps.Metro.IconPacks.PackIconMaterialKind.Ghost;
             }
             else
             {
                 BtnPassThrough.Foreground = new SolidColorBrush(Colors.White);
-                BtnPassThrough.Content = "🧱";
+                IconPassThrough.Kind = MahApps.Metro.IconPacks.PackIconMaterialKind.Wall;
             }
         }
 
@@ -289,11 +289,14 @@ namespace VN2Anki
 
                 if (_isTransparent)
                 {
-                    BtnTransparencia.Foreground = new SolidColorBrush(System.Windows.Media.Colors.White);
+                    BtnTransparency.Foreground = new SolidColorBrush(System.Windows.Media.Colors.Red);
+                    IconTransparency.Kind = MahApps.Metro.IconPacks.PackIconMaterialKind.EyeOff;
+                    
                 }
                 else
                 {
-                    BtnTransparencia.Foreground = new SolidColorBrush(System.Windows.Media.Colors.Gray);
+                    BtnTransparency.Foreground = new SolidColorBrush(System.Windows.Media.Colors.White);
+                    IconTransparency.Kind = MahApps.Metro.IconPacks.PackIconMaterialKind.Eye;
                 }
             }
         }
@@ -333,13 +336,13 @@ namespace VN2Anki
             if (this.WindowState == WindowState.Maximized)
             {
                 this.WindowState = WindowState.Normal;
-                BtnMaximize.Content = "🗖";
+                IconMaximize.Kind = MahApps.Metro.IconPacks.PackIconMaterialKind.WindowMaximize;
                 conf.IsMaximized = false;
             }
             else
             {
                 this.WindowState = WindowState.Maximized;
-                BtnMaximize.Content = "🗗";
+                if (IconMaximize != null) IconMaximize.Kind = MahApps.Metro.IconPacks.PackIconMaterialKind.WindowRestore;
                 conf.IsMaximized = true;
             }
             WeakReferenceMessenger.Default.Send(new SaveOverlayStateMessage());
@@ -373,12 +376,12 @@ namespace VN2Anki
             if (conf.IsMaximized)
             {
                 this.WindowState = WindowState.Maximized;
-                if (BtnMaximize != null) BtnMaximize.Content = "🗗";
+                if (IconMaximize != null) IconMaximize.Kind = MahApps.Metro.IconPacks.PackIconMaterialKind.WindowRestore;
             }
             else
             {
                 this.WindowState = WindowState.Normal;
-                if (BtnMaximize != null) BtnMaximize.Content = "🗖";
+                if (IconMaximize != null) IconMaximize.Kind = MahApps.Metro.IconPacks.PackIconMaterialKind.WindowMaximize;
             }
 
             ApplyPassThroughState();
@@ -507,12 +510,12 @@ namespace VN2Anki
                 if (conf.IsMaximized)
                 {
                     this.WindowState = WindowState.Maximized;
-                    if (BtnMaximize != null) BtnMaximize.Content = "🗗";
+                    if (IconMaximize != null) IconMaximize.Kind = MahApps.Metro.IconPacks.PackIconMaterialKind.WindowRestore;
                 }
                 else
                 {
                     this.WindowState = WindowState.Normal;
-                    if (BtnMaximize != null) BtnMaximize.Content = "🗖";
+                    if (IconMaximize != null) IconMaximize.Kind = MahApps.Metro.IconPacks.PackIconMaterialKind.WindowMaximize;
                 }
 
                 // 3. Restaura as variáveis de estado
