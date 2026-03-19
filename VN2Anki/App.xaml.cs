@@ -103,6 +103,7 @@ namespace VN2Anki
             services.AddSingleton<IVnDatabaseService, VnDatabaseService>();
             services.AddSingleton<IExternalToolService, ExternalToolService>();
 
+            services.AddSingleton<IVnLinkerService, VnLinkerService>();
             services.AddSingleton<IProcessMonitoringService, ProcessMonitoringService>();
             services.AddSingleton<ISessionLoggerService, SessionLoggerService>();
             services.AddSingleton<ISessionAnalyticsEngine, SessionAnalyticsEngine>();

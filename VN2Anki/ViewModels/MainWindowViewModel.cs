@@ -81,8 +81,9 @@ namespace VN2Anki.ViewModels
         private readonly IVnDatabaseService _vnDatabaseService;
         private readonly IProcessMonitoringService _processMonitor;
         private readonly IDispatcherService _dispatcher;
+        private readonly IVnLinkerService _linkerService;
 
-        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiHandler ankiHandler, VideoEngine videoEngine, IWindowService windowService, ISessionManagerService sessionManager, IGameLauncherService gameLauncher, IVnDatabaseService vnDatabaseService, IProcessMonitoringService processMonitor, IDispatcherService dispatcher)
+        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiHandler ankiHandler, VideoEngine videoEngine, IWindowService windowService, ISessionManagerService sessionManager, IGameLauncherService gameLauncher, IVnDatabaseService vnDatabaseService, IProcessMonitoringService processMonitor, IDispatcherService dispatcher, IVnLinkerService linkerService)
         {
             Tracker = tracker;
             _miningService = miningService;
@@ -95,6 +96,7 @@ namespace VN2Anki.ViewModels
             _vnDatabaseService = vnDatabaseService;
             _processMonitor = processMonitor;
             _dispatcher = dispatcher;
+            _linkerService = linkerService;
 
             _processMonitor.VnProcessStarted += OnVnProcessStarted;
             _processMonitor.VnProcessStopped += OnVnProcessStopped;
@@ -468,49 +470,7 @@ namespace VN2Anki.ViewModels
 
         public async Task TryAutoLinkAsync(string? specificProcessName = null)
         {
-            var selectedVn = await _sessionManager.AutoSyncRunningVnAsync(specificProcessName);
-            if (selectedVn != null)
-            {
-                CurrentVN = selectedVn;
-            }
-            else
-            {
-                var config = _configService.CurrentConfig;
-                var configWin = config.Media.VideoWindow;
-
-                if (string.IsNullOrEmpty(configWin))
-                {
-                   CurrentVN = null;
-                }
-                else 
-                {
-                    // Check if the process in config actually exists
-                    var windows = _videoEngine.GetWindows();
-                    bool exists = windows.Any(w => string.Equals(w.ProcessName, configWin, System.StringComparison.OrdinalIgnoreCase));
-
-                    if (!exists)
-                    {
-                        // Ghost detected! Clear the config so it doesn't haunt the UI or services
-                        config.Media.VideoWindow = string.Empty;
-                        _configService.Save();
-                        _miningService.TargetVideoWindow = string.Empty;
-                        CurrentVN = null;
-                    }
-                    else if (CurrentVN != null)
-                    {
-                        // If we have a CurrentVN but the current config video window doesn't match its ProcessName or ExecutablePath,
-                        // it means the user manually selected a different, unlinked window. We must unlink the session visually.
-                        if (!string.Equals(CurrentVN.ProcessName, configWin, System.StringComparison.OrdinalIgnoreCase))
-                        {
-                            string exeName = !string.IsNullOrEmpty(CurrentVN.ExecutablePath) ? System.IO.Path.GetFileName(CurrentVN.ExecutablePath) : "";
-                            if (string.IsNullOrEmpty(exeName) || !string.Equals(exeName, configWin, System.StringComparison.OrdinalIgnoreCase))
-                            {
-                                CurrentVN = null;
-                            }
-                        }
-                    }
-                }
-            }
+            CurrentVN = await _linkerService.TryAutoLinkAsync(CurrentVN, specificProcessName);
             _dispatcher.Invoke(() => UpdateVisualCurrentVN());
         }
 
