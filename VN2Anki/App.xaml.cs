@@ -104,6 +104,7 @@ namespace VN2Anki
             services.AddSingleton<IExternalToolService, ExternalToolService>();
 
             services.AddSingleton<IVnLinkerService, VnLinkerService>();
+            services.AddSingleton<IOverlayProfileService, OverlayProfileService>();
             services.AddSingleton<IProcessMonitoringService, ProcessMonitoringService>();
             services.AddSingleton<ISessionLoggerService, SessionLoggerService>();
             services.AddSingleton<ISessionAnalyticsEngine, SessionAnalyticsEngine>();
@@ -196,6 +197,7 @@ namespace VN2Anki
             _ = Services.GetRequiredService<DiscordRpcService>();
             _ = Services.GetRequiredService<IBridgeService>();
             _ = Services.GetRequiredService<ISessionLoggerService>();
+            _ = Services.GetRequiredService<IOverlayProfileService>();
             
             var processMonitor = Services.GetRequiredService<IProcessMonitoringService>();
             processMonitor.StartMonitoring();

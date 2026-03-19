@@ -22,7 +22,7 @@ using VN2Anki.Services.Interfaces;
 
 namespace VN2Anki.ViewModels
 {
-    public partial class MainWindowViewModel : ObservableObject, IDisposable, IRecipient<StatusMessage>, IRecipient<PlayVnMessage>, IRecipient<BufferStoppedMessage>, IRecipient<SaveOverlayStateMessage>, IRecipient<SessionEndedMessage>
+    public partial class MainWindowViewModel : ObservableObject, IDisposable, IRecipient<StatusMessage>, IRecipient<PlayVnMessage>, IRecipient<BufferStoppedMessage>, IRecipient<SessionEndedMessage>
     {
         private readonly MiningService _miningService;
         private readonly IConfigurationService _configService;
@@ -235,20 +235,12 @@ namespace VN2Anki.ViewModels
                 {
                     _windowService.OpenUserHub();
                     
-                    // We need a small delay to ensure the Hub is fully initialized and registered to receive navigation
-                    Task.Run(async () =>
-                    {
-                        await Task.Delay(200);
-                        _dispatcher.Invoke(() =>
-                        {
-                            var navService = App.Current.Services.GetService(typeof(VN2Anki.Services.Interfaces.INavigationService)) as VN2Anki.Services.Interfaces.INavigationService;
-                            if (navService == null) return;
+                    var navService = App.Current.Services.GetService(typeof(VN2Anki.Services.Interfaces.INavigationService)) as VN2Anki.Services.Interfaces.INavigationService;
+                    if (navService == null) return;
 
-                            navService.Push<VN2Anki.ViewModels.Hub.SessionDetailViewModel>(async vm => 
-                            {
-                                if (vm != null) await vm.InitializeAsync(message.Session);
-                            });
-                        });
+                    navService.Push<VN2Anki.ViewModels.Hub.SessionDetailViewModel>(async vm => 
+                    {
+                        if (vm != null) await vm.InitializeAsync(message.Session);
                     });
                 });
             }
@@ -333,40 +325,10 @@ namespace VN2Anki.ViewModels
             }
         }
 
-        // main window vsource/vn title
-        private VisualNovel? _previousVn;
         partial void OnCurrentVNChanged(VN2Anki.Models.Entities.VisualNovel? value)
         {
-            // 1. Salva o estado atual no jogo anterior para não perder resizes antes de trocar
-            if (_previousVn != null)
-            {
-                _previousVn.OverlayConfigJson = System.Text.Json.JsonSerializer.Serialize(_configService.CurrentConfig.Overlay);
-                _ = _vnDatabaseService.UpdateVisualNovelAsync(_previousVn);
-            }
-
-            // 2. Carrega o estado do novo jogo
-            if (value != null && !string.IsNullOrEmpty(value.OverlayConfigJson))
-            {
-                try
-                {
-                    var profile = System.Text.Json.JsonSerializer.Deserialize<OverlayConfig>(value.OverlayConfigJson);
-                    if (profile != null)
-                        _configService.CurrentConfig.Overlay = profile;
-                }
-                catch { /* Ignora e usa o global atual se falhar a leitura */ }
-            }
-            else
-            {
-                // Se o jogo novo não tem perfil, recarrega o template global do disco
-                _configService.Load();
-            }
-
-            // Avisa a OverlayWindow para se redimensionar fisicamente com o novo perfil
-            WeakReferenceMessenger.Default.Send(new OverlayConfigUpdatedMessage());
-
-            _previousVn = value; // Atualiza a referência
-
             // Dispara as mensagens padrão do seu código
+            // O OverlayProfileService vai escutar isso para salvar/carregar JSON no banco
             if (value != null)
             {
                 WeakReferenceMessenger.Default.Send(new CurrentVnChangedMessage(value));
@@ -566,14 +528,6 @@ namespace VN2Anki.ViewModels
             });
         }
 
-        public void Receive(SaveOverlayStateMessage message)
-        {
-            // Se há um jogo rodando, salva a overlay atual no perfil dele!
-            if (CurrentVN != null)
-            {
-                CurrentVN.OverlayConfigJson = System.Text.Json.JsonSerializer.Serialize(_configService.CurrentConfig.Overlay);
-                _ = _vnDatabaseService.UpdateVisualNovelAsync(CurrentVN);
-            }
-        }
+
     }
 }
