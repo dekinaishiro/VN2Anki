@@ -1,16 +1,13 @@
 using System;
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
-using System.Windows.Threading;
-using VN2Anki.Data;
 using VN2Anki.Locales;
 using VN2Anki.Messages;
 using VN2Anki.Models;
@@ -32,14 +29,14 @@ namespace VN2Anki.ViewModels
 
         public bool HasUnsavedProgress => _sessionManager.HasUnsavedProgress;
 
-                private static class StateBrushes
+        private static class StateBrushes
         {
             public static readonly SolidColorBrush Crimson = CreateFrozenBrush("#DC3545");
             public static readonly SolidColorBrush Green = CreateFrozenBrush("#28A745");
             public static readonly SolidColorBrush Blue = CreateFrozenBrush("#007ACC");
             public static readonly SolidColorBrush LimeGreen = CreateFrozenBrush("#32CD32");
             public static readonly SolidColorBrush White = CreateFrozenBrush("#FFFFFF");
-            
+
             private static SolidColorBrush CreateFrozenBrush(string hex)
             {
                 var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
@@ -72,18 +69,17 @@ namespace VN2Anki.ViewModels
 
         public string BufferBtnText => IsBufferActive ? "ON" : "OFF";
         public Brush BufferBtnBackground => IsBufferActive ? Brushes.Green : Brushes.Crimson;
-        
+
 
 
         private bool _isFirstLoad = true;
         private readonly IWindowService _windowService;
         private readonly IGameLauncherService _gameLauncher;
-        private readonly IVnDatabaseService _vnDatabaseService;
         private readonly IProcessMonitoringService _processMonitor;
         private readonly IDispatcherService _dispatcher;
         private readonly IVnLinkerService _linkerService;
 
-        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiHandler ankiHandler, VideoEngine videoEngine, IWindowService windowService, ISessionManagerService sessionManager, IGameLauncherService gameLauncher, IVnDatabaseService vnDatabaseService, IProcessMonitoringService processMonitor, IDispatcherService dispatcher, IVnLinkerService linkerService)
+        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiHandler ankiHandler, VideoEngine videoEngine, IWindowService windowService, ISessionManagerService sessionManager, IGameLauncherService gameLauncher, IProcessMonitoringService processMonitor, IDispatcherService dispatcher, IVnLinkerService linkerService)
         {
             Tracker = tracker;
             _miningService = miningService;
@@ -93,7 +89,6 @@ namespace VN2Anki.ViewModels
             _windowService = windowService;
             _sessionManager = sessionManager;
             _gameLauncher = gameLauncher;
-            _vnDatabaseService = vnDatabaseService;
             _processMonitor = processMonitor;
             _dispatcher = dispatcher;
             _linkerService = linkerService;
@@ -234,11 +229,11 @@ namespace VN2Anki.ViewModels
                 _dispatcher.Invoke(() =>
                 {
                     _windowService.OpenUserHub();
-                    
+
                     var navService = App.Current.Services.GetService(typeof(VN2Anki.Services.Interfaces.INavigationService)) as VN2Anki.Services.Interfaces.INavigationService;
                     if (navService == null) return;
 
-                    navService.Push<VN2Anki.ViewModels.Hub.SessionDetailViewModel>(async vm => 
+                    navService.Push<VN2Anki.ViewModels.Hub.SessionDetailViewModel>(async vm =>
                     {
                         if (vm != null) await vm.InitializeAsync(message.Session);
                     });
@@ -352,7 +347,7 @@ namespace VN2Anki.ViewModels
             if (CurrentVN != null)
             {
                 isProcessRunning = windows.Any(w => string.Equals(w.ProcessName, CurrentVN.ProcessName, StringComparison.OrdinalIgnoreCase));
-                
+
                 ConnectionState.DisplayVnTitle = CurrentVN.Title;
                 ConnectionState.VnTitleColor = isProcessRunning ? StateBrushes.Blue : Brushes.Crimson;
             }
