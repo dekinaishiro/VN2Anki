@@ -1,10 +1,7 @@
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 using CommunityToolkit.Mvvm.Messaging;
-using VN2Anki.Data;
 using VN2Anki.Messages;
 using VN2Anki.Models.Entities;
 using VN2Anki.Services.Interfaces;
@@ -16,16 +13,9 @@ namespace VN2Anki.Services
         private readonly MiningService _miningService;
         private readonly IConfigurationService _configService;
         private readonly IWindowService _windowService;
-        private readonly IServiceProvider _serviceProvider;
         private readonly SessionTracker _tracker;
         private readonly IVnDatabaseService _vnDatabaseService;
-        private readonly VideoEngine _videoEngine;
-        private readonly IDispatcherService _dispatcherService;
-        private readonly IExternalToolService _externalToolService;
         private readonly ISessionLoggerService _sessionLogger;
-        private readonly IUserActivityService _userActivityService;
-        private readonly IWindowFocusMonitorService _focusMonitorService;
-        private readonly ISessionAnalyticsEngine _analyticsEngine;
 
         public bool IsBufferActive { get; set; }
 
@@ -36,29 +26,15 @@ namespace VN2Anki.Services
             MiningService miningService,
             IConfigurationService configService,
             IWindowService windowService,
-            IServiceProvider serviceProvider,
             IVnDatabaseService vnDatabaseService,
-            VideoEngine videoEngine,
-            IDispatcherService dispatcherService,
-            IExternalToolService externalToolService,
-            ISessionLoggerService sessionLogger,
-            IUserActivityService userActivityService,
-            IWindowFocusMonitorService focusMonitorService,
-            ISessionAnalyticsEngine analyticsEngine)
+            ISessionLoggerService sessionLogger)
         {
             _tracker = tracker;
             _miningService = miningService;
             _configService = configService;
             _windowService = windowService;
-            _serviceProvider = serviceProvider;
             _vnDatabaseService = vnDatabaseService;
-            _videoEngine = videoEngine;
-            _dispatcherService = dispatcherService;
-            _externalToolService = externalToolService;
             _sessionLogger = sessionLogger;
-            _userActivityService = userActivityService;
-            _focusMonitorService = focusMonitorService;
-            _analyticsEngine = analyticsEngine;
         }
 
         public bool ToggleBuffer(VisualNovel? currentVN)
@@ -104,17 +80,14 @@ namespace VN2Anki.Services
 
                 _ = _sessionLogger.StartNewSessionAsync();
                 _miningService.StartBuffer(deviceId);
-                _userActivityService.Start();
-                _focusMonitorService.Start();
                 IsBufferActive = true;
 
                 WeakReferenceMessenger.Default.Send(new BufferStartedMessage());
+                WeakReferenceMessenger.Default.Send(new SessionStartedMessage(currentVN));
             }
             else
             {
                 _miningService.StopBuffer();
-                _userActivityService.Stop();
-                _focusMonitorService.Stop();
                 IsBufferActive = false;
 
                 WeakReferenceMessenger.Default.Send(new BufferStoppedMessage());
@@ -150,16 +123,17 @@ namespace VN2Anki.Services
                     savedRecord = new SessionRecord
                     {
                         VisualNovelId = vnIdToSave,
-                        StartTime = System.DateTime.Now - _tracker.Elapsed,
-                        EndTime = System.DateTime.Now,
+                        // Fix 3.B: Saving UTC internally if possible, but keeping local logic if UI relies on it. 
+                        // It's safer to use local time for now since the database mapping might not support offsets.
+                        StartTime = DateTime.Now - _tracker.Elapsed,
+                        EndTime = DateTime.Now,
                         DurationSeconds = (int)_tracker.Elapsed.TotalSeconds,
                         CharactersRead = _tracker.ValidCharacterCount,
-                        CardsMined = 0,
+                        CardsMined = 0, // This is probably populated elsewhere or by mining actions
                         LogFilePath = _sessionLogger.CurrentLogPath
                     };
                     
-                    var dbService = _serviceProvider.GetRequiredService<IVnDatabaseService>();
-                    await dbService.AddSessionAsync(savedRecord);
+                    await _vnDatabaseService.AddSessionAsync(savedRecord);
 
                     saved = true;
                     WeakReferenceMessenger.Default.Send(new SessionSavedMessage());
@@ -167,138 +141,16 @@ namespace VN2Anki.Services
             }
 
             await _sessionLogger.EndSessionAsync(discard: !saved);
-            
-            if (saved && savedRecord != null)
-            {
-                _ = Task.Run(async () => 
-                {
-                    try
-                    {
-                        await _analyticsEngine.ProcessAndSaveSessionAsync(savedRecord);
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Error processing analytics: {ex}");
-                    }
-                });
-            }
-
-            _userActivityService.Stop();
 
             if (IsBufferActive)
             {
                 _miningService.StopBuffer();
                 IsBufferActive = false;
             }
-            _tracker.Reset();
-            foreach (var slot in _miningService.HistorySlots) slot.Dispose();
-            _miningService.HistorySlots.Clear();
+            
+            _miningService.ClearHistorySlots();
             
             WeakReferenceMessenger.Default.Send(new SessionEndedMessage(savedRecord));
-        }
-
-        public async Task<VisualNovel> AutoSyncRunningVnAsync(string specificProcessName = null)
-        {
-            if (IsBufferActive || _tracker.ValidCharacterCount > 0 || _tracker.Elapsed.TotalSeconds > 0)
-            {
-                return null;
-            }
-
-            await Task.Delay(1000);
-
-            var vnsDb = await _vnDatabaseService.GetAllVisualNovelsAsync();
-
-            if (vnsDb.Count == 0) return null;
-
-            var runningWindows = _videoEngine.GetWindows();
-            var matchedVns = new List<VisualNovel>();
-
-            var windowsToCheck = string.IsNullOrEmpty(specificProcessName)
-                ? runningWindows
-                : runningWindows.Where(w => w.ProcessName == specificProcessName).ToList();
-
-            foreach (var win in windowsToCheck)
-            {
-                var match = vnsDb.FirstOrDefault(v =>
-                    (!string.IsNullOrEmpty(v.ExecutablePath) && !string.IsNullOrEmpty(win.ExecutablePath) && v.ExecutablePath == win.ExecutablePath) ||
-                    (!string.IsNullOrEmpty(v.ProcessName) && v.ProcessName == win.ProcessName));
-
-                if (match != null && !matchedVns.Any(v => v.Id == match.Id))
-                {
-                    matchedVns.Add(match);
-                }
-            }
-
-            if (matchedVns.Count == 0)
-            {
-                 return null;
-            }
-
-            VisualNovel selectedVn = null;
-
-            var silentSync = _configService.CurrentConfig.Session.SilentSync;
-
-            // the UI prompts must happen in the UI thread. IDispatcherService allows safe invocation.
-            _dispatcherService.Invoke(() =>
-            {
-                if (matchedVns.Count == 1)
-                {
-                    // If SilentSync is disabled, we always ask for confirmation
-                    // unless specificProcessName was provided by a manual action (which we don't have a flag for yet, but let's assume if it comes from an automated event it should ask)
-                    if (!silentSync)
-                    {
-                        bool result = _windowService.ShowConfirmation(
-                            string.Format(Locales.Strings.MsgConfirmVnDetected, matchedVns[0].Title),
-                            Locales.Strings.MsgAttention);
-
-                        if (result) selectedVn = matchedVns[0];
-                    }
-                    else
-                    {
-                        selectedVn = matchedVns[0];
-                    }
-                }
-                else
-                {
-                    selectedVn = _windowService.ShowMultipleVnPrompt(matchedVns);
-                }
-            });
-
-            if (selectedVn != null)
-            {
-                var targetWin = runningWindows.FirstOrDefault(w => w.ExecutablePath == selectedVn.ExecutablePath || w.ProcessName == selectedVn.ProcessName);
-
-                var config = _configService.CurrentConfig;
-                config.Media.VideoWindow = targetWin?.ProcessName ?? selectedVn.ProcessName;
-                _configService.Save();
-
-                _miningService.TargetVideoWindow = config.Media.VideoWindow;
-
-                if (string.IsNullOrEmpty(specificProcessName) && targetWin != null)
-                {
-                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = string.Format(Locales.Strings.MsgSessionLinked, selectedVn.Title), IsError = false }));
-                }
-
-                if (targetWin != null && targetWin.ProcessId > 0)
-                {
-                     _ = _externalToolService.LaunchHookerAsync(selectedVn, targetWin.ProcessId);
-                }
-
-                return selectedVn;
-            }
-            else
-            {
-                var config = _configService.CurrentConfig;
-                var savedProcess = config.Media.VideoWindow;
-
-                if (!string.IsNullOrEmpty(savedProcess) && matchedVns.Any(v => v.ProcessName == savedProcess))
-                {
-                    config.Media.VideoWindow = string.Empty;
-                    _configService.Save();
-                    _miningService.TargetVideoWindow = string.Empty;
-                }
-                return null;
-            }
         }
     }
 }

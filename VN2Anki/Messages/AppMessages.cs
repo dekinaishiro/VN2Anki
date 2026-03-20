@@ -48,6 +48,26 @@ namespace VN2Anki.Messages
     }
     public class SessionSavedMessage{ }
 
+    public class SessionStartedMessage
+    {
+        public VisualNovel? Vn { get; }
+        public SessionStartedMessage(VisualNovel? vn)
+        {
+            Vn = vn;
+        }
+    }
+
+    public class VnDetectedMessage
+    {
+        public List<VisualNovel> MatchedVns { get; }
+        public string? SpecificProcessName { get; }
+        public VnDetectedMessage(List<VisualNovel> vns, string? specificProcessName = null)
+        {
+            MatchedVns = vns;
+            SpecificProcessName = specificProcessName;
+        }
+    }
+
     public class TextCopiedMessage
     {
         public string Text { get; }

@@ -2,11 +2,13 @@
 using System.Diagnostics;
 using System.Timers;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
+using VN2Anki.Messages;
 using Timer = System.Timers.Timer;
 
 namespace VN2Anki.Services
 {
-    public partial class SessionTracker : ObservableObject
+    public partial class SessionTracker : ObservableObject, IRecipient<SessionEndedMessage>
     {
         private readonly Timer _timer;
         private readonly Stopwatch _stopwatch;
@@ -30,7 +32,11 @@ namespace VN2Anki.Services
 
            _timer = new Timer(1000);
             _timer.Elapsed += (s, e) => Elapsed = _stopwatch.Elapsed;
+
+            WeakReferenceMessenger.Default.RegisterAll(this);
         }
+
+        public void Receive(SessionEndedMessage message) => Reset();
 
         public double SpeedCharsPerMinute =>
             Elapsed.TotalMinutes > 0 ? Math.Round(ValidCharacterCount / Elapsed.TotalMinutes, 1) : 0;

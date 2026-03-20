@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CommunityToolkit.Mvvm.Messaging;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -31,13 +32,23 @@ namespace VN2Anki.Services
         Task ProcessAndSaveSessionAsync(SessionRecord session);
     }
 
-    public class SessionAnalyticsEngine : ISessionAnalyticsEngine
+    public class SessionAnalyticsEngine : ISessionAnalyticsEngine, CommunityToolkit.Mvvm.Messaging.IRecipient<VN2Anki.Messages.SessionEndedMessage>
     {
         private readonly IVnDatabaseService _dbService;
 
         public SessionAnalyticsEngine(IVnDatabaseService dbService)
         {
             _dbService = dbService;
+
+            CommunityToolkit.Mvvm.Messaging.WeakReferenceMessenger.Default.RegisterAll(this);
+        }
+
+        public void Receive(VN2Anki.Messages.SessionEndedMessage message)
+        {
+            if (message.Session != null)
+            {
+                _ = ProcessAndSaveSessionAsync(message.Session);
+            }
         }
 
         public async Task ProcessAndSaveSessionAsync(SessionRecord session)

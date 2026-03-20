@@ -198,6 +198,9 @@ namespace VN2Anki
             _ = Services.GetRequiredService<IBridgeService>();
             _ = Services.GetRequiredService<ISessionLoggerService>();
             _ = Services.GetRequiredService<IOverlayProfileService>();
+            _ = Services.GetRequiredService<IUserActivityService>();
+            _ = Services.GetRequiredService<IWindowFocusMonitorService>();
+            _ = Services.GetRequiredService<ISessionAnalyticsEngine>();
             
             var processMonitor = Services.GetRequiredService<IProcessMonitoringService>();
             processMonitor.StartMonitoring();

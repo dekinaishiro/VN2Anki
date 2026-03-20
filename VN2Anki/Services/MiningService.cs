@@ -33,6 +33,12 @@ namespace VN2Anki.Services
 
         public ObservableCollection<MiningSlot> HistorySlots { get; }
 
+        public void ClearHistorySlots()
+        {
+            foreach (var slot in HistorySlots) slot.Dispose();
+            HistorySlots.Clear();
+        }
+
         public string TargetVideoWindow { get; set; }
         public int MaxSlots { get; set; } = 25;
         public double IdleTimeoutFixo { get; set; } = 30.0;

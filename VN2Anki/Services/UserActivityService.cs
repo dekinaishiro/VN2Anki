@@ -3,11 +3,13 @@ using System;
 using System.Timers;
 using Microsoft.Extensions.Logging;
 using VN2Anki.Services.Interfaces;
+using CommunityToolkit.Mvvm.Messaging;
+using VN2Anki.Messages;
 using Timer = System.Timers.Timer;
 
 namespace VN2Anki.Services
 {
-    public class UserActivityService : IUserActivityService, IDisposable
+    public class UserActivityService : IUserActivityService, IDisposable, IRecipient<BufferStartedMessage>, IRecipient<BufferStoppedMessage>, IRecipient<SessionEndedMessage>
     {
         private readonly ISessionLoggerService _sessionLogger;
         private readonly ILogger<UserActivityService> _logger;
@@ -25,7 +27,13 @@ namespace VN2Anki.Services
 
             _timer = new Timer(10000); // Heartbeat a cada 10 segundos
             _timer.Elapsed += OnTimerElapsed;
+
+            WeakReferenceMessenger.Default.RegisterAll(this);
         }
+
+        public void Receive(BufferStartedMessage message) => Start();
+        public void Receive(BufferStoppedMessage message) => Stop();
+        public void Receive(SessionEndedMessage message) => Stop();
 
         public void Start()
         {

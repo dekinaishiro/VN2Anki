@@ -6,10 +6,12 @@ using System.Windows;
 using System.Windows.Interop;
 using Microsoft.Extensions.Logging;
 using VN2Anki.Services.Interfaces;
+using CommunityToolkit.Mvvm.Messaging;
+using VN2Anki.Messages;
 
 namespace VN2Anki.Services
 {
-    public class WindowFocusMonitorService : IWindowFocusMonitorService, IDisposable
+    public class WindowFocusMonitorService : IWindowFocusMonitorService, IDisposable, IRecipient<BufferStartedMessage>, IRecipient<BufferStoppedMessage>, IRecipient<SessionEndedMessage>
     {
         private readonly IConfigurationService _configService;
         private readonly ISessionLoggerService _sessionLogger;
@@ -30,7 +32,13 @@ namespace VN2Anki.Services
 
             // prevents hook delegate from being garbage collected
             _hookDelegate = new Win32InteropService.WinEventDelegate(WinEventProc);
+
+            WeakReferenceMessenger.Default.RegisterAll(this);
         }
+
+        public void Receive(BufferStartedMessage message) => Start();
+        public void Receive(BufferStoppedMessage message) => Stop();
+        public void Receive(SessionEndedMessage message) => Stop();
 
         public void Start()
         {

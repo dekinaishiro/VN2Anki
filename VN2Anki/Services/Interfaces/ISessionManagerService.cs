@@ -9,6 +9,5 @@ namespace VN2Anki.Services.Interfaces
         bool HasUnsavedProgress { get; }
         bool ToggleBuffer(VisualNovel? currentVN);
         Task EndSessionAsync(VisualNovel? currentVN);
-        Task<VisualNovel?> AutoSyncRunningVnAsync(string? specificProcessName = null);
     }
 }
