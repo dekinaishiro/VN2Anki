@@ -19,13 +19,15 @@ using VN2Anki.Services.Interfaces;
 
 namespace VN2Anki.ViewModels
 {
-    public partial class MainWindowViewModel : ObservableObject, IDisposable, IRecipient<StatusMessage>, IRecipient<PlayVnMessage>, IRecipient<BufferStoppedMessage>, IRecipient<SessionEndedMessage>
+    public partial class MainWindowViewModel : ObservableObject, IDisposable, IRecipient<StatusMessage>, IRecipient<PlayVnMessage>, IRecipient<BufferStoppedMessage>, IRecipient<SessionEndedMessage>, IRecipient<SlotCapturedMessage>, IRecipient<SlotRemovedMessage>, IRecipient<HistoryClearedMessage>
     {
         private readonly MiningService _miningService;
         private readonly IConfigurationService _configService;
         private readonly AnkiHandler _ankiHandler;
         private CancellationTokenSource? _pollingCts;
         private readonly ISessionManagerService _sessionManager;
+
+        public System.Collections.ObjectModel.ObservableCollection<MiningSlot> MiningHistory { get; } = new();
 
         public bool HasUnsavedProgress => _sessionManager.HasUnsavedProgress;
 
@@ -523,6 +525,29 @@ namespace VN2Anki.ViewModels
             });
         }
 
+        public void Receive(SlotCapturedMessage message)
+        {
+            _dispatcher.Invoke(() =>
+            {
+                MiningHistory.Insert(0, message.Value);
+            });
+        }
+
+        public void Receive(SlotRemovedMessage message)
+        {
+            _dispatcher.Invoke(() =>
+            {
+                MiningHistory.Remove(message.Value);
+            });
+        }
+
+        public void Receive(HistoryClearedMessage message)
+        {
+            _dispatcher.Invoke(() =>
+            {
+                MiningHistory.Clear();
+            });
+        }
 
     }
 }

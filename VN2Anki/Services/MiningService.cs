@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
@@ -26,17 +27,25 @@ namespace VN2Anki.Services
 
         private readonly MediaService _mediaService;
         private readonly Timer _idleTimer;
-        // injetar dispatcher service para evitar dependência direta do WPF
-        private readonly IDispatcherService _dispatcherService;
         private readonly IConfigurationService _configService;
         private readonly IProcessMonitoringService _processMonitor;
 
-        public ObservableCollection<MiningSlot> HistorySlots { get; }
+        private readonly object _slotsLock = new object();
+        private readonly List<MiningSlot> _historySlots = new List<MiningSlot>();
+
+        public IReadOnlyList<MiningSlot> HistorySlots 
+        {
+            get { lock(_slotsLock) return _historySlots.ToList(); }
+        }
 
         public void ClearHistorySlots()
         {
-            foreach (var slot in HistorySlots) slot.Dispose();
-            HistorySlots.Clear();
+            lock (_slotsLock)
+            {
+                foreach (var slot in _historySlots) slot.Dispose();
+                _historySlots.Clear();
+            }
+            WeakReferenceMessenger.Default.Send(new HistoryClearedMessage());
         }
 
         public string TargetVideoWindow { get; set; }
@@ -48,17 +57,14 @@ namespace VN2Anki.Services
         private readonly Channel<TextCopiedMessage> _textChannel;
         private readonly CancellationTokenSource _cts = new();
 
-        public MiningService(ITextHook textHook, SessionTracker tracker, AudioEngine audio, MediaService mediaService, IDispatcherService dispatcherService, IConfigurationService configService, IProcessMonitoringService processMonitor)
+        public MiningService(ITextHook textHook, SessionTracker tracker, AudioEngine audio, MediaService mediaService, IConfigurationService configService, IProcessMonitoringService processMonitor)
         {
             TextHook = textHook;
             Tracker = tracker;
             Audio = audio;
             _mediaService = mediaService;
-            _dispatcherService = dispatcherService;
             _configService = configService;
             _processMonitor = processMonitor;
-
-            HistorySlots = new ObservableCollection<MiningSlot>();
 
             _idleTimer = new Timer();
             _idleTimer.Elapsed += IdleTimer_Tick;
@@ -67,12 +73,9 @@ namespace VN2Anki.Services
             {
                 if (string.Equals(e.VisualNovel.ProcessName, TargetVideoWindow, StringComparison.OrdinalIgnoreCase))
                 {
-                    _dispatcherService.Invoke(() =>
-                    {
-                        StopBuffer();
-                        SendStatus(Locales.Strings.StatusVideoDisconnected);
-                        WeakReferenceMessenger.Default.Send(new BufferStoppedMessage());
-                    });
+                    StopBuffer();
+                    SendStatus(Locales.Strings.StatusVideoDisconnected);
+                    WeakReferenceMessenger.Default.Send(new BufferStoppedMessage());
                 }
             };
 
@@ -118,8 +121,12 @@ namespace VN2Anki.Services
 
             if (SealAllOpenSlots(DateTime.Now) > 0)
             {
-                SealSlotAudio(HistorySlots[0], DateTime.Now);
-                SendStatus("Slot sealed due to inactivity.");
+                var slots = HistorySlots;
+                if (slots.Count > 0)
+                {
+                    SealSlotAudio(slots[0], DateTime.Now);
+                    SendStatus("Slot sealed due to inactivity.");
+                }
             }
         }
 
@@ -163,12 +170,22 @@ namespace VN2Anki.Services
 
         public void DeleteSlot(MiningSlot slot)
         {
-            if (HistorySlots.Contains(slot))
+            bool removed = false;
+            lock (_slotsLock)
+            {
+                if (_historySlots.Contains(slot))
+                {
+                    _historySlots.Remove(slot);
+                    removed = true;
+                }
+            }
+            
+            if (removed)
             {
                 int spokenCharCount = CountJapaneseCharacters(slot.Text);
                 Tracker.RemoveCharacters(spokenCharCount);
                 slot.Dispose();
-                HistorySlots.Remove(slot);
+                WeakReferenceMessenger.Default.Send(new SlotRemovedMessage(slot));
             }
         }
 
@@ -180,19 +197,15 @@ namespace VN2Anki.Services
 
         public void Receive(AudioErrorMessage message)
         {
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
-            {
-                StopBuffer();
-                SendStatus($"⚠️ ERROR: {message.Value}");
-                WeakReferenceMessenger.Default.Send(new BufferStoppedMessage());
-            });
+            StopBuffer();
+            SendStatus($"⚠️ ERROR: {message.Value}");
+            WeakReferenceMessenger.Default.Send(new BufferStoppedMessage());
         }
 
         private async Task ProcessTextChannelAsync()
         {
             await foreach (var message in _textChannel.Reader.ReadAllAsync(_cts.Token))
             {
-                // 1. FASE 3 (Fire-and-forget): Dispara a foto imediatamente no ThreadPool
                 string targetWin = TargetVideoWindow;
                 int maxWidth = MaxImageWidth;
 
@@ -202,16 +215,16 @@ namespace VN2Anki.Services
                 });
 
                 DebugLogger.Log($"[4-CHANNEL-READER] Pulled from channel by background thread | Text: {message.Text}");
-                // 2. Não travamos o consumidor! Jogamos para a UI e o loop volta a ler a rede no mesmo milissegundo.
-                _ = System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
+                
+                // Processa livremente em background sem amarras de UI
+                _ = Task.Run(async () =>
                 {
                     try
                     {
-                        DebugLogger.Log($"[5-UI-THREAD] Starting Mining Slot creation | Text: {message.Text}");
+                        DebugLogger.Log($"[5-BACKGROUND] Starting Mining Slot creation | Text: {message.Text}");
                         _idleTimer.Stop();
                         SealAllOpenSlots(DateTime.Now);
 
-                        // Garantir que a imagem esteja pronta antes de criar o slot
                         byte[] screenshot = await screenshotTask;
 
                         string safeText = message.Text.Length > 1000 ? message.Text.Substring(0, 1000) + " [...]" : message.Text;
@@ -223,20 +236,22 @@ namespace VN2Anki.Services
                             ScreenshotBytes = screenshot
                         };
 
-                        // Limpar qualquer hover antigo para que a overlay foque no novo slot automaticamente
                         var bridge = App.Current.Services.GetService<IBridgeService>();
                         if (bridge != null) bridge.ActiveHoverSlotId = string.Empty;
-
-                        HistorySlots.Insert(0, newSlot);
 
                         int spokenCharCount = CountJapaneseCharacters(safeText);
                         Tracker.AddCharacters(spokenCharCount);
 
-                        if (HistorySlots.Count > MaxSlots)
+                        lock (_slotsLock)
                         {
-                            var oldSlot = HistorySlots[HistorySlots.Count - 1];
-                            oldSlot.Dispose();
-                            HistorySlots.RemoveAt(HistorySlots.Count - 1);
+                            _historySlots.Insert(0, newSlot);
+
+                            if (_historySlots.Count > MaxSlots)
+                            {
+                                var oldSlot = _historySlots[_historySlots.Count - 1];
+                                oldSlot.Dispose();
+                                _historySlots.RemoveAt(_historySlots.Count - 1);
+                            }
                         }
 
                         double finalSeconds;
@@ -256,19 +271,17 @@ namespace VN2Anki.Services
                         _idleTimer.Interval = finalSeconds * 1000;
                         _idleTimer.Start();
 
-                        // Envia a frase para a OverlayWindow AGORA
-                        DebugLogger.Log($"[6-UI-THREAD] Slot created in list. Dispatching SlotCapturedMessage to Overlay.");
+                        DebugLogger.Log($"[6-BACKGROUND] Slot created in list. Dispatching SlotCapturedMessage to System.");
                         WeakReferenceMessenger.Default.Send(new SlotCapturedMessage(newSlot));
 
-                        // 3. Aguarda silenciosamente a foto terminar e anexa ao slot (Trigga a UI via OnPropertyChanged)
                         newSlot.ScreenshotBytes = await screenshotTask;
                     }
                     catch (Exception ex)
                     {
-                        DebugLogger.Log($"[ERROR-UI-THREAD] Exception while processing slot: {ex.Message}");
-                        System.Diagnostics.Debug.WriteLine($"[UI Process Error] {ex.Message}");
+                        DebugLogger.Log($"[ERROR-BACKGROUND] Exception while processing slot: {ex.Message}");
+                        System.Diagnostics.Debug.WriteLine($"[Background Process Error] {ex.Message}");
                     }
-                }, System.Windows.Threading.DispatcherPriority.Normal);
+                });
             }
         }
     }
