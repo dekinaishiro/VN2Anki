@@ -283,6 +283,11 @@ namespace VN2Anki.Services
             return runningVns;
         }
 
+        public bool IsAnyInstanceRunning(int vnId)
+        {
+            return _activeVns.Values.Any(v => v.Id == vnId);
+        }
+
         private bool IsSystemProcess(string processName)
         {
             if (string.IsNullOrEmpty(processName)) return true;

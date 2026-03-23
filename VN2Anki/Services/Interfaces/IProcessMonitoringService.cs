@@ -22,5 +22,6 @@ namespace VN2Anki.Services.Interfaces
         void StopMonitoring();
         
         Task<List<(VisualNovel Vn, Process Process)>> GetRunningVnsAsync();
+        bool IsAnyInstanceRunning(int vnId);
     }
 }

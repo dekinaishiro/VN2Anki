@@ -73,9 +73,13 @@ namespace VN2Anki.Services
             {
                 if (string.Equals(e.VisualNovel.ProcessName, TargetVideoWindow, StringComparison.OrdinalIgnoreCase))
                 {
-                    StopBuffer();
-                    SendStatus(Locales.Strings.StatusVideoDisconnected);
-                    WeakReferenceMessenger.Default.Send(new BufferStoppedMessage());
+                    // For multi-process apps like browsers (Brave, Chrome), we only stop if the LAST instance is closed
+                    if (!_processMonitor.IsAnyInstanceRunning(e.VisualNovel.Id))
+                    {
+                        StopBuffer();
+                        SendStatus(Locales.Strings.StatusVideoDisconnected);
+                        WeakReferenceMessenger.Default.Send(new BufferStoppedMessage());
+                    }
                 }
             };
 
