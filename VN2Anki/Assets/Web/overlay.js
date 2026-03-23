@@ -33,10 +33,22 @@ if (window.chrome && window.chrome.webview) {
             const container = document.getElementById('text-box');
             if(container) {
                 container.innerHTML = '';
+                container.dataset.slotId = msg.data.id; // Salva o ID do slot atual
+                
                 const newSpan = document.createElement('span');
                 newSpan.className = 'vn-text-line';
                 newSpan.innerHTML = msg.data.text;
                 container.appendChild(newSpan);
+
+                // Avisa que este slot é o que está "ativo" na tela se o mouse já estiver lá
+                window.chrome.webview.postMessage(JSON.stringify({ action: 'hover', id: msg.data.id }));
+
+                if (!container.dataset.hasListeners) {
+                    container.addEventListener('mouseenter', () => {
+                        window.chrome.webview.postMessage(JSON.stringify({ action: 'hover', id: container.dataset.slotId }));
+                    });
+                    container.dataset.hasListeners = "true";
+                }
             }
         } else if (msg.action === 'updateStyle') {
             applyStyles(msg.data);

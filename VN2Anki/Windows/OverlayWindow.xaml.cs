@@ -12,6 +12,7 @@ using Microsoft.Web.WebView2.Core;
 using VN2Anki.Services;
 using CommunityToolkit.Mvvm.Messaging;
 using VN2Anki.Messages;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace VN2Anki
 {
@@ -162,9 +163,15 @@ namespace VN2Anki
                                 _win32Manager?.ForwardClick(sx, sy, btn);
                             });
                         }
+                        else if (root.TryGetProperty("action", out JsonElement action) && action.GetString() == "hover")
+                        {
+                            string id = root.GetProperty("id").GetString();
+                            var bridge = App.Current.Services.GetService<VN2Anki.Services.Interfaces.IBridgeService>();
+                            if (bridge != null) bridge.ActiveHoverSlotId = id;
+                        }
                     }
                 }
-                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Error handling click event in WebView: {ex.Message}"); }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Error handling click or hover event in WebView: {ex.Message}"); }
             };
 
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
@@ -461,7 +468,7 @@ namespace VN2Anki
         public void Receive(SlotCapturedMessage message)
         {
             DebugLogger.Log($"[7-OVERLAY] Message arrived at Overlay. Calling HandleNewText | Text: {message.Value.Text}");
-            HandleNewText(message.Value.Text, message.Value.Timestamp);
+            HandleNewText(message.Value.Text, message.Value.Id);
         }
 
         public void Receive(BrowserExtensionUpdatedMessage message)
@@ -475,7 +482,7 @@ namespace VN2Anki
             });
         }
 
-        private void HandleNewText(string text, DateTime timestamp)
+        private void HandleNewText(string text, string slotId)
         {
             Application.Current.Dispatcher.InvokeAsync(() =>
             {
@@ -488,7 +495,11 @@ namespace VN2Anki
                 var payload = new
                 {
                     action = "newText",
-                    data = new { text = safeText }
+                    data = new 
+                    { 
+                        text = safeText,
+                        id = slotId
+                    }
                 };
 
                 webView.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(payload));

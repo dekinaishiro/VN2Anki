@@ -293,53 +293,22 @@ namespace VN2Anki.Services
 
         private MiningSlot? ResolveTargetSlot()
         {
-            var config = _configService.CurrentConfig;
             var history = _miningService.HistorySlots;
-            
             if (history.Count == 0) return null;
 
-            // 1. Get window in focus and its process PID
-            IntPtr foregroundWindow = Win32InteropService.GetForegroundWindow();
-            Win32InteropService.GetWindowThreadProcessId(foregroundWindow, out uint foregroundPid);
-            uint currentAppPid = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
-
-            // 2. Identify Game Process
-            bool isGameInFocus = false;
-            if (!string.IsNullOrEmpty(config.Media.VideoWindow))
+            // Priority 1: Explicitly tracked slot (via hover/selection in Overlay or History)
+            if (!string.IsNullOrEmpty(ActiveHoverSlotId))
             {
-                var gameProcesses = System.Diagnostics.Process.GetProcessesByName(config.Media.VideoWindow);
-                isGameInFocus = gameProcesses.Any(p => (uint)p.Id == foregroundPid);
-                foreach (var p in gameProcesses) p.Dispose();
-            }
-
-            // IF Game is in focus -> CERTAINLY OVERLAY context.
-            if (isGameInFocus)
-            {
-                _logger.LogDebug("Context identified: OVERLAY (Game window active). Using most recent capture.");
-                return history[0];
-            }
-
-            // IF App itself is in focus -> Either HISTORY list or manual OVERLAY interaction.
-            if (foregroundPid == currentAppPid)
-            {
-                if (!string.IsNullOrEmpty(ActiveHoverSlotId))
+                var slot = history.FirstOrDefault(s => s.Id == ActiveHoverSlotId);
+                if (slot != null)
                 {
-                    var slot = history.FirstOrDefault(s => s.Id == ActiveHoverSlotId);
-                    if (slot != null)
-                    {
-                        _logger.LogDebug($"Context identified: HISTORY (App window active, Slot {ActiveHoverSlotId} hovered).");
-                        ActiveHoverSlotId = string.Empty; // Consume the hover state
-                        return slot;
-                    }
+                    _logger.LogDebug($"Context identified: TRACKED (ID {ActiveHoverSlotId}).");
+                    return slot;
                 }
-                
-                _logger.LogDebug("Context identified: APP (App window active, no hover). Defaulting to most recent.");
-                return history[0];
             }
 
-            // fall back = uses most recent
-            _logger.LogDebug("Context identified: EXTERNAL. Defaulting to most recent.");
-            ActiveHoverSlotId = string.Empty; 
+            // Priority 2: Fallback to most recent (covers rapid clicks and external contexts)
+            _logger.LogDebug("Context identified: FALLBACK (Using most recent capture).");
             return history[0];
         }
 
