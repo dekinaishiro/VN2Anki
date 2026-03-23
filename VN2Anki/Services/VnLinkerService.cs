@@ -161,9 +161,8 @@ namespace VN2Anki.Services
 
             if (!exists)
             {
-                // Ghost detected! Clear the config so it doesn't haunt the UI or services
+                // empty the config if the specified process doesn't exist to avoid repeated failed attempts in the future
                 config.Media.VideoWindow = string.Empty;
-                // Implicit save removed here as well to respect UI state.
                 _miningService.TargetVideoWindow = string.Empty;
                 return null;
             }

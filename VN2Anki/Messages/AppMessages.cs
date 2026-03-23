@@ -13,6 +13,13 @@ namespace VN2Anki.Messages
     {
         public SlotCapturedMessage(MiningSlot value) : base(value) { }
     }
+
+    public class SlotRemovedMessage : ValueChangedMessage<MiningSlot>
+    {
+        public SlotRemovedMessage(MiningSlot value) : base(value) { }
+    }
+
+    public class HistoryClearedMessage { }
     public class OverlayConfigUpdatedMessage
     {
         // Overlay config update trigger
