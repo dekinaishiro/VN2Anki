@@ -53,10 +53,23 @@ namespace VN2Anki
 
         private async Task LoadAnkiDataAsync()
         {
-            if (await _anki.IsConnectedAsync())
+            var (version, connError) = await _anki.IsConnectedAsync();
+            if (string.IsNullOrEmpty(connError))
             {
-                ComboDeck.ItemsSource = await _anki.GetDecksAsync();
-                ComboModel.ItemsSource = await _anki.GetModelsAsync();
+                var (decks, deckError) = await _anki.GetDecksAsync();
+                ComboDeck.ItemsSource = decks;
+                
+                var (models, modelError) = await _anki.GetModelsAsync();
+                ComboModel.ItemsSource = models;
+
+                if (!string.IsNullOrEmpty(deckError) || !string.IsNullOrEmpty(modelError))
+                {
+                    _windowService.ShowWarning(deckError ?? modelError, Locales.Strings.TitleError);
+                }
+            }
+            else
+            {
+                _windowService.ShowWarning(connError, Locales.Strings.TitleError);
             }
         }
         private void BtnRefreshAnki_Click(object sender, RoutedEventArgs e) => _ = LoadAnkiDataAsync();
@@ -67,9 +80,16 @@ namespace VN2Anki
         {
             if (ComboModel.SelectedItem is string modelName)
             {
-                var fields = await _anki.GetModelFieldsAsync(modelName);
-                ComboFieldAudio.ItemsSource = fields;
-                ComboFieldImage.ItemsSource = fields;
+                var (fields, error) = await _anki.GetModelFieldsAsync(modelName);
+                if (string.IsNullOrEmpty(error))
+                {
+                    ComboFieldAudio.ItemsSource = fields;
+                    ComboFieldImage.ItemsSource = fields;
+                }
+                else
+                {
+                    _windowService.ShowWarning(error, Locales.Strings.TitleError);
+                }
             }
         }
 

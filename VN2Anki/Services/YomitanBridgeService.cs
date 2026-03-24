@@ -319,25 +319,31 @@ namespace VN2Anki.Services
             // Audio injection
             if (slot.AudioBytes != null && !string.IsNullOrWhiteSpace(config.Anki.AudioField))
             {
-                try
+                string filename = $"vn2anki_{uniqueId}.mp3";
+                var (success, error) = await _ankiHandler.StoreMediaAsync(filename, slot.AudioBytes);
+                if (success)
                 {
-                    string filename = $"miner_{uniqueId}.mp3";
-                    if (await _ankiHandler.StoreMediaAsync(filename, slot.AudioBytes))
-                        fields[config.Anki.AudioField] = $"[sound:{filename}]";
+                    fields[config.Anki.AudioField] = $"[sound:{filename}]";
                 }
-                catch (Exception ex) { _logger.LogError(ex, "Failed to inject audio."); }
+                else if (!string.IsNullOrEmpty(error))
+                {
+                    _logger.LogError($"Failed to inject audio: {error}");
+                }
             }
 
             // Image injection
             if (slot.ScreenshotBytes != null && !string.IsNullOrWhiteSpace(config.Anki.ImageField))
             {
-                try
+                string filename = $"vn2anki_{uniqueId}.jpg";
+                var (success, error) = await _ankiHandler.StoreMediaAsync(filename, slot.ScreenshotBytes);
+                if (success)
                 {
-                    string filename = $"miner_{uniqueId}.jpg";
-                    if (await _ankiHandler.StoreMediaAsync(filename, slot.ScreenshotBytes))
-                        fields[config.Anki.ImageField] = $"<img src=\"{filename}\">";
+                    fields[config.Anki.ImageField] = $"<img src=\"{filename}\">";
                 }
-                catch (Exception ex) { _logger.LogError(ex, "Failed to inject screenshot."); }
+                else if (!string.IsNullOrEmpty(error))
+                {
+                    _logger.LogError($"Failed to inject screenshot: {error}");
+                }
             }
         }
 
