@@ -27,6 +27,13 @@ namespace VN2Anki.ViewModels
         private CancellationTokenSource? _pollingCts;
         private readonly ISessionManagerService _sessionManager;
 
+        private bool _isFirstLoad = true;
+        private readonly IWindowService _windowService;
+        private readonly IGameLauncherService _gameLauncher;
+        private readonly IProcessMonitoringService _processMonitor;
+        private readonly IDispatcherService _dispatcher;
+        private readonly IVnLinkerService _linkerService;
+
         public System.Collections.ObjectModel.ObservableCollection<MiningSlot> MiningHistory { get; } = new();
 
         public bool HasUnsavedProgress => _sessionManager.HasUnsavedProgress;
@@ -72,14 +79,6 @@ namespace VN2Anki.ViewModels
         public string BufferBtnText => IsBufferActive ? "ON" : "OFF";
         public Brush BufferBtnBackground => IsBufferActive ? Brushes.Green : Brushes.Crimson;
 
-
-
-        private bool _isFirstLoad = true;
-        private readonly IWindowService _windowService;
-        private readonly IGameLauncherService _gameLauncher;
-        private readonly IProcessMonitoringService _processMonitor;
-        private readonly IDispatcherService _dispatcher;
-        private readonly IVnLinkerService _linkerService;
 
         public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiHandler ankiHandler, VideoEngine videoEngine, IWindowService windowService, ISessionManagerService sessionManager, IGameLauncherService gameLauncher, IProcessMonitoringService processMonitor, IDispatcherService dispatcher, IVnLinkerService linkerService)
         {
@@ -499,21 +498,6 @@ namespace VN2Anki.ViewModels
                     UpdateVisualCurrentVN();
                 }
             }
-        }
-
-        // checks for registered running VN processes 
-        [RelayCommand]
-        private async Task AutoSyncActionAsync()
-        {
-            // prevents if there's an ongoing session
-            // avoid data loss
-            if (IsBufferActive || Tracker.ValidCharacterCount > 0 || Tracker.Elapsed.TotalSeconds > 0)
-            {
-                _windowService.ShowWarning(Locales.Strings.MsgActionBlockedAutoSync, Locales.Strings.TitleWarning);
-                return;
-            }
-
-            await TryAutoLinkAsync();
         }
 
         public void Receive(BufferStoppedMessage message)

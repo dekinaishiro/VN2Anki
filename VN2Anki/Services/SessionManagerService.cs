@@ -31,16 +31,19 @@ namespace VN2Anki.Services
         {
             _tracker = tracker;
             _miningService = miningService;
-            _configService = configService;
+            _sessionLogger = sessionLogger;
             _windowService = windowService;
             _vnDatabaseService = vnDatabaseService;
-            _sessionLogger = sessionLogger;
+
+            _configService = configService;
         }
 
         public bool ToggleBuffer(VisualNovel? currentVN)
         {
             if (!IsBufferActive)
             {
+
+                // 
                 var config = _configService.CurrentConfig;
 
                 if (string.IsNullOrEmpty(config.Media.VideoWindow))
