@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -28,7 +28,6 @@ namespace VN2Anki.Services
         private readonly MediaService _mediaService;
         private readonly Timer _idleTimer;
         private readonly IConfigurationService _configService;
-        private readonly IProcessMonitoringService _processMonitor;
 
         private readonly object _slotsLock = new object();
         private readonly List<MiningSlot> _historySlots = new List<MiningSlot>();
@@ -48,40 +47,19 @@ namespace VN2Anki.Services
             WeakReferenceMessenger.Default.Send(new HistoryClearedMessage());
         }
 
-        public string TargetVideoWindow { get; set; }
-        public int MaxSlots { get; set; } = 25;
-        public double IdleTimeoutFixo { get; set; } = 30.0;
-        public bool UseDynamicTimeout { get; set; } = true;
-        public int MaxImageWidth { get; set; } = 1280;
-
         private readonly Channel<TextCopiedMessage> _textChannel;
         private readonly CancellationTokenSource _cts = new();
 
-        public MiningService(ITextHook textHook, SessionTracker tracker, AudioEngine audio, MediaService mediaService, IConfigurationService configService, IProcessMonitoringService processMonitor)
+        public MiningService(ITextHook textHook, SessionTracker tracker, AudioEngine audio, MediaService mediaService, IConfigurationService configService)
         {
             TextHook = textHook;
             Tracker = tracker;
             Audio = audio;
             _mediaService = mediaService;
             _configService = configService;
-            _processMonitor = processMonitor;
 
             _idleTimer = new Timer();
             _idleTimer.Elapsed += IdleTimer_Tick;
-
-            _processMonitor.VnProcessStopped += (s, e) =>
-            {
-                if (string.Equals(e.VisualNovel.ProcessName, TargetVideoWindow, StringComparison.OrdinalIgnoreCase))
-                {
-                    // For multi-process apps like browsers (Brave, Chrome), we only stop if the LAST instance is closed
-                    if (!_processMonitor.IsAnyInstanceRunning(e.VisualNovel.Id))
-                    {
-                        StopBuffer();
-                        SendStatus(Locales.Strings.StatusVideoDisconnected);
-                        WeakReferenceMessenger.Default.Send(new BufferStoppedMessage());
-                    }
-                }
-            };
 
             _textChannel = Channel.CreateUnbounded<TextCopiedMessage>();
             _ = ProcessTextChannelAsync(); // Dispara o consumidor em background
@@ -210,8 +188,9 @@ namespace VN2Anki.Services
         {
             await foreach (var message in _textChannel.Reader.ReadAllAsync(_cts.Token))
             {
-                string targetWin = TargetVideoWindow;
-                int maxWidth = MaxImageWidth;
+                var config = _configService.CurrentConfig;
+                string targetWin = config.Media.VideoWindow;
+                int maxWidth = config.Media.MaxImageWidth;
 
                 Task<byte[]> screenshotTask = Task.Run(() =>
                 {
@@ -250,7 +229,10 @@ namespace VN2Anki.Services
                         {
                             _historySlots.Insert(0, newSlot);
 
-                            if (_historySlots.Count > MaxSlots)
+                            int maxSlots = 30;
+                            if (int.TryParse(config.Session.MaxSlots, out int parsedMax)) maxSlots = parsedMax;
+
+                            if (_historySlots.Count > maxSlots)
                             {
                                 var oldSlot = _historySlots[_historySlots.Count - 1];
                                 oldSlot.Dispose();
@@ -259,9 +241,9 @@ namespace VN2Anki.Services
                         }
 
                         double finalSeconds;
-                        var sessionConfig = _configService.CurrentConfig.Session;
+                        var sessionConfig = config.Session;
 
-                        if (UseDynamicTimeout)
+                        if (sessionConfig.UseDynamicTimeout)
                         {
                             char[] pauseChars = new[] { '。', '、', '？', '！', '…', '　' };
                             int pauseCount = safeText.Count(c => pauseChars.Contains(c));
@@ -269,7 +251,7 @@ namespace VN2Anki.Services
                         }
                         else
                         {
-                            finalSeconds = IdleTimeoutFixo;
+                            if (!double.TryParse(sessionConfig.IdleTime, out finalSeconds)) finalSeconds = 30;
                         }
 
                         _idleTimer.Interval = finalSeconds * 1000;

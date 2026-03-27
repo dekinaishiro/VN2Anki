@@ -15,32 +15,27 @@ namespace VN2Anki.Services
         private readonly ISessionManagerService _sessionManager;
         private readonly IConfigurationService _configService;
         private readonly VideoEngine _videoEngine;
-        private readonly MiningService _miningService;
         private readonly IVnDatabaseService _vnDatabaseService;
         private readonly IDispatcherService _dispatcherService;
         private readonly IWindowService _windowService;
         private readonly IExternalToolService _externalToolService;
-
-        public VnLinkerService(
-            ISessionManagerService sessionManager,
-            IConfigurationService configService,
-            VideoEngine videoEngine,
-            MiningService miningService,
-            IVnDatabaseService vnDatabaseService,
-            IDispatcherService dispatcherService,
-            IWindowService windowService,
-            IExternalToolService externalToolService)
-        {
-            _sessionManager = sessionManager;
-            _configService = configService;
-            _videoEngine = videoEngine;
-            _miningService = miningService;
-            _vnDatabaseService = vnDatabaseService;
-            _dispatcherService = dispatcherService;
-            _windowService = windowService;
-            _externalToolService = externalToolService;
-        }
-
+public VnLinkerService(
+    ISessionManagerService sessionManager,
+    IConfigurationService configService,
+    VideoEngine videoEngine,
+    IVnDatabaseService vnDatabaseService,
+    IDispatcherService dispatcherService,
+    IWindowService windowService,
+    IExternalToolService externalToolService)
+{
+    _sessionManager = sessionManager;
+    _configService = configService;
+    _videoEngine = videoEngine;
+    _vnDatabaseService = vnDatabaseService;
+    _dispatcherService = dispatcherService;
+    _windowService = windowService;
+    _externalToolService = externalToolService;
+}
         private async Task<VisualNovel?> AutoSyncRunningVnAsync(string? specificProcessName = null)
         {
             if (_sessionManager.HasUnsavedProgress)
@@ -111,8 +106,6 @@ namespace VN2Anki.Services
                 config.Media.VideoWindow = targetWin?.ProcessName ?? selectedVn.ProcessName;
                 // Removed implicit _configService.Save() here to avoid unwanted config pollution during AutoSync
 
-                _miningService.TargetVideoWindow = config.Media.VideoWindow;
-
                 if (string.IsNullOrEmpty(specificProcessName) && targetWin != null)
                 {
                     WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = string.Format(Locales.Strings.MsgSessionLinked, selectedVn.Title), IsError = false }));
@@ -133,7 +126,6 @@ namespace VN2Anki.Services
                 if (!string.IsNullOrEmpty(savedProcess) && matchedVns.Any(v => v.ProcessName == savedProcess))
                 {
                     config.Media.VideoWindow = string.Empty;
-                    _miningService.TargetVideoWindow = string.Empty;
                 }
                 return null;
             }
@@ -163,7 +155,6 @@ namespace VN2Anki.Services
             {
                 // empty the config if the specified process doesn't exist to avoid repeated failed attempts in the future
                 config.Media.VideoWindow = string.Empty;
-                _miningService.TargetVideoWindow = string.Empty;
                 return null;
             }
 

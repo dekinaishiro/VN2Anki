@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using VN2Anki.Locales;
 using VN2Anki.Messages;
 using VN2Anki.Services;
+using VN2Anki.Services.Interfaces;
 using VN2Anki.ViewModels;
 
 namespace VN2Anki
@@ -17,17 +18,19 @@ namespace VN2Anki
         private readonly IConfigurationService _configService;
         private readonly MainWindowViewModel _viewModel;
         private readonly MiningService _miningService;
+        private readonly ISessionManagerService _sessionManager;
 
         private SettingsWindow? _settingsWindowInstance;
         private OverlayWindow? _overlayWindowInstance;
         private UserHubWindow? _hubWindowInstance;
 
-        public MainWindow(MainWindowViewModel viewModel, IConfigurationService configService, MiningService miningService)
+        public MainWindow(MainWindowViewModel viewModel, IConfigurationService configService, MiningService miningService, ISessionManagerService sessionManager)
         {
             InitializeComponent();
             _viewModel = viewModel;
             _configService = configService;
             _miningService = miningService;
+            _sessionManager = sessionManager;
 
             this.DataContext = _viewModel;
             WeakReferenceMessenger.Default.Register(this);
@@ -73,7 +76,7 @@ namespace VN2Anki
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            await _viewModel.ApplyConfigToServices();
+            _viewModel.ApplyConfigToServices();
 
             var config = _configService.CurrentConfig.General;
             if (!double.IsNaN(config.MainWindowTop) && !double.IsNaN(config.MainWindowLeft))
@@ -93,7 +96,7 @@ namespace VN2Anki
                 }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
             }
 
-            await _viewModel.InitializeStartupAsync();
+            await _sessionManager.InitializeAsync();
         }
 
         private void SaveWindowPosition()
@@ -145,7 +148,7 @@ namespace VN2Anki
                 onClosed: async () => 
                 { 
                     _configService.Load(); 
-                    await _viewModel.ApplyConfigToServices(); 
+                    _viewModel.ApplyConfigToServices(); 
                 },
                 onCreated: win => win.Owner = this);
 
