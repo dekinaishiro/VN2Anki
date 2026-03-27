@@ -19,7 +19,6 @@ namespace VN2Anki.Services
         private readonly IProcessMonitoringService _processMonitor;
         private readonly IVnLinkerService _linkerService;
         private readonly IGameLauncherService _gameLauncher;
-        private readonly IDispatcherService _dispatcher;
 
         private VisualNovel? _currentVN;
         public VisualNovel? CurrentVN => _currentVN;
@@ -51,7 +50,6 @@ namespace VN2Anki.Services
             _processMonitor = processMonitor;
             _linkerService = linkerService;
             _gameLauncher = gameLauncher;
-            _dispatcher = dispatcher;
 
             _processMonitor.VnProcessStarted += OnVnProcessStarted;
             _processMonitor.VnProcessStopped += OnVnProcessStopped;
@@ -62,6 +60,14 @@ namespace VN2Anki.Services
         public async Task InitializeAsync()
         {
             await TryAutoLinkAsync(null);
+        }
+
+        public async Task TryAutoLinkAsync(string? specificProcessName = null)
+        {
+            if (HasUnsavedProgress) return;
+
+            var vn = await _linkerService.TryAutoLinkAsync(_currentVN, specificProcessName);
+            SetCurrentVN(vn);
         }
 
         private void OnVnProcessStarted(object? s, VnProcessEventArgs e)
@@ -93,12 +99,6 @@ namespace VN2Anki.Services
                 _configService.Save();
                 SetCurrentVN(null);
             }
-        }
-
-        public async Task TryAutoLinkAsync(string? specificProcessName = null)
-        {
-            var vn = await _linkerService.TryAutoLinkAsync(_currentVN, specificProcessName);
-            SetCurrentVN(vn);
         }
 
         private void SetCurrentVN(VisualNovel? vn)

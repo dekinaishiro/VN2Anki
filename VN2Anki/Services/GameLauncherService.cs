@@ -13,14 +13,12 @@ namespace VN2Anki.Services
     {
         private readonly VideoEngine _videoEngine;
         private readonly IConfigurationService _configService;
-        private readonly MiningService _miningService;
         private readonly IExternalToolService _externalToolService;
 
         public GameLauncherService(VideoEngine videoEngine, IConfigurationService configService, MiningService miningService, IExternalToolService externalToolService)
         {
             _videoEngine = videoEngine;
             _configService = configService;
-            _miningService = miningService;
             _externalToolService = externalToolService;
         }
 
@@ -63,7 +61,7 @@ namespace VN2Anki.Services
                         config.Media.VideoWindow = targetWin.ProcessName;
                         _configService.Save();
 
-                        _miningService.TargetVideoWindow = targetWin.ProcessName;
+                        //_miningService.TargetVideoWindow = targetWin.ProcessName;
                         
                         if (targetWin.ProcessId > 0)
                         {

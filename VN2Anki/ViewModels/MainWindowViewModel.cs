@@ -21,7 +21,7 @@ namespace VN2Anki.ViewModels
 {
     public partial class MainWindowViewModel : ObservableObject, IDisposable, IRecipient<StatusMessage>, IRecipient<BufferStoppedMessage>, IRecipient<SessionEndedMessage>, IRecipient<SlotCapturedMessage>, IRecipient<SlotRemovedMessage>, IRecipient<HistoryClearedMessage>, IRecipient<CurrentVnChangedMessage>, IRecipient<CurrentVnUnlinkedMessage>
     {
-        private readonly MiningService _miningService;
+        //private readonly MiningService _miningService;
         private readonly IConfigurationService _configService;
         private readonly AnkiHandler _ankiHandler;
         private readonly ISessionManagerService _sessionManager;
@@ -76,7 +76,6 @@ namespace VN2Anki.ViewModels
         public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiHandler ankiHandler, VideoEngine videoEngine, IWindowService windowService, ISessionManagerService sessionManager, IDispatcherService dispatcher)
         {
             Tracker = tracker;
-            _miningService = miningService;
             _configService = configService;
             _ankiHandler = ankiHandler;
             _videoEngine = videoEngine;
@@ -84,6 +83,7 @@ namespace VN2Anki.ViewModels
             _sessionManager = sessionManager;
             _dispatcher = dispatcher;
 
+            //_miningService = miningService;
             WeakReferenceMessenger.Default.RegisterAll(this);
             
             // Initial sync
@@ -187,6 +187,11 @@ namespace VN2Anki.ViewModels
 
         public void UpdateVisualCurrentVN()
         {
+            // isso está errado
+            // quem deveria ser responsável por isso é o session manager
+            // que deveria expor um VNLinkState ou algo do tipo, e não a VM ficar fazendo
+            // lógica de checar processos e etc
+            // ESSA FUNÇÃO TEM MUITA COISA ERRADA KKKK
             var videoSource = _configService.CurrentConfig.Media.VideoWindow;
             var windows = _videoEngine.GetWindows();
             bool isProcessRunning = false;

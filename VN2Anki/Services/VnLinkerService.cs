@@ -12,37 +12,33 @@ namespace VN2Anki.Services
 {
     public class VnLinkerService : IVnLinkerService
     {
-        private readonly ISessionManagerService _sessionManager;
         private readonly IConfigurationService _configService;
         private readonly VideoEngine _videoEngine;
         private readonly IVnDatabaseService _vnDatabaseService;
         private readonly IDispatcherService _dispatcherService;
         private readonly IWindowService _windowService;
         private readonly IExternalToolService _externalToolService;
-public VnLinkerService(
-    ISessionManagerService sessionManager,
-    IConfigurationService configService,
-    VideoEngine videoEngine,
-    IVnDatabaseService vnDatabaseService,
-    IDispatcherService dispatcherService,
-    IWindowService windowService,
-    IExternalToolService externalToolService)
-{
-    _sessionManager = sessionManager;
-    _configService = configService;
-    _videoEngine = videoEngine;
-    _vnDatabaseService = vnDatabaseService;
-    _dispatcherService = dispatcherService;
-    _windowService = windowService;
-    _externalToolService = externalToolService;
-}
+
+        public VnLinkerService(
+            IConfigurationService configService,
+            VideoEngine videoEngine,
+            IVnDatabaseService vnDatabaseService,
+            IDispatcherService dispatcherService,
+            IWindowService windowService,
+            IExternalToolService externalToolService)
+        {
+            _configService = configService;
+            _videoEngine = videoEngine;
+            _vnDatabaseService = vnDatabaseService;
+            _dispatcherService = dispatcherService;
+            _windowService = windowService;
+            _externalToolService = externalToolService;
+        }
+
         private async Task<VisualNovel?> AutoSyncRunningVnAsync(string? specificProcessName = null)
         {
-            if (_sessionManager.HasUnsavedProgress)
-            {
-                return null;
-            }
-
+            // Note: Validation if we SHOULD sync (HasUnsavedProgress) moved to caller (SessionManager)
+            
             var vnsDb = await _vnDatabaseService.GetAllVisualNovelsAsync();
 
             if (vnsDb.Count == 0) return null;
@@ -104,7 +100,6 @@ public VnLinkerService(
 
                 var config = _configService.CurrentConfig;
                 config.Media.VideoWindow = targetWin?.ProcessName ?? selectedVn.ProcessName;
-                // Removed implicit _configService.Save() here to avoid unwanted config pollution during AutoSync
 
                 if (string.IsNullOrEmpty(specificProcessName) && targetWin != null)
                 {
