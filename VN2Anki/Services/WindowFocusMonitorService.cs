@@ -1,5 +1,4 @@
-﻿// E:\Coding\VN2Anki\VN2Anki\Services\WindowFocusMonitorService.cs
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Windows;

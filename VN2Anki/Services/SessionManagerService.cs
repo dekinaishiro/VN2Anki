@@ -38,8 +38,7 @@ namespace VN2Anki.Services
             ISessionLoggerService sessionLogger,
             IProcessMonitoringService processMonitor,
             IVnLinkerService linkerService,
-            IGameLauncherService gameLauncher,
-            IDispatcherService dispatcher)
+            IGameLauncherService gameLauncher)
         {
             _tracker = tracker;
             _miningService = miningService;
@@ -67,7 +66,7 @@ namespace VN2Anki.Services
             if (HasUnsavedProgress) return;
 
             var vn = await _linkerService.TryAutoLinkAsync(_currentVN, specificProcessName);
-            SetCurrentVN(vn);
+            SetCurrentVN(vn, forceNotify: true);
         }
 
         private void OnVnProcessStarted(object? s, VnProcessEventArgs e)
@@ -101,9 +100,9 @@ namespace VN2Anki.Services
             }
         }
 
-        private void SetCurrentVN(VisualNovel? vn)
+        private void SetCurrentVN(VisualNovel? vn, bool forceNotify = false)
         {
-            if (_currentVN?.Id == vn?.Id) return;
+            if (!forceNotify && _currentVN?.Id == vn?.Id) return;
 
             _currentVN = vn;
 

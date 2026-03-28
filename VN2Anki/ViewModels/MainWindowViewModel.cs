@@ -19,15 +19,14 @@ using VN2Anki.Services.Interfaces;
 
 namespace VN2Anki.ViewModels
 {
-    public partial class MainWindowViewModel : ObservableObject, IDisposable, IRecipient<StatusMessage>, IRecipient<BufferStoppedMessage>, IRecipient<SessionEndedMessage>, IRecipient<SlotCapturedMessage>, IRecipient<SlotRemovedMessage>, IRecipient<HistoryClearedMessage>, IRecipient<CurrentVnChangedMessage>, IRecipient<CurrentVnUnlinkedMessage>
+    public partial class MainWindowViewModel : ObservableObject, IDisposable, IRecipient<StatusMessage>, IRecipient<BufferStoppedMessage>, IRecipient<SessionEndedMessage>, IRecipient<SlotCapturedMessage>, IRecipient<SlotRemovedMessage>, IRecipient<HistoryClearedMessage>, IRecipient<CurrentVnChangedMessage>, IRecipient<CurrentVnUnlinkedMessage>, IRecipient<AppConfigChangedMessage>
     {
-        //private readonly MiningService _miningService;
         private readonly IConfigurationService _configService;
+        private readonly IWindowService _windowService;
         private readonly AnkiHandler _ankiHandler;
         private readonly ISessionManagerService _sessionManager;
-        private readonly IWindowService _windowService;
         private readonly IDispatcherService _dispatcher;
-        private readonly VideoEngine _videoEngine;
+        private readonly MiningService _miningService;
 
         public System.Collections.ObjectModel.ObservableCollection<MiningSlot> MiningHistory { get; } = new();
 
@@ -73,21 +72,21 @@ namespace VN2Anki.ViewModels
         public Brush BufferBtnBackground => IsBufferActive ? Brushes.Green : Brushes.Crimson;
 
 
-        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiHandler ankiHandler, VideoEngine videoEngine, IWindowService windowService, ISessionManagerService sessionManager, IDispatcherService dispatcher)
+        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiHandler ankiHandler, IWindowService windowService, ISessionManagerService sessionManager, IDispatcherService dispatcher)
         {
             Tracker = tracker;
+            _miningService = miningService;
             _configService = configService;
             _ankiHandler = ankiHandler;
-            _videoEngine = videoEngine;
             _windowService = windowService;
             _sessionManager = sessionManager;
             _dispatcher = dispatcher;
 
-            //_miningService = miningService;
             WeakReferenceMessenger.Default.RegisterAll(this);
             
             // Initial sync
             CurrentVN = _sessionManager.CurrentVN;
+            SyncAnkiSettings();
             UpdateVisualCurrentVN();
         }
 
@@ -96,11 +95,9 @@ namespace VN2Anki.ViewModels
             WeakReferenceMessenger.Default.UnregisterAll(this);
         }
 
-        public void ApplyConfigToServices()
+        private void SyncAnkiSettings()
         {
-            // Sync any immediate non-session related config if needed
             var config = _configService.CurrentConfig;
-            
             try
             {
                 _ankiHandler.UpdateSettings(config.Anki.Url, config.Anki.TimeoutSeconds);
@@ -109,8 +106,15 @@ namespace VN2Anki.ViewModels
             {
                 System.Diagnostics.Debug.WriteLine($"AnkiHandler.UpdateSettings failed: {ex.Message}");
             }
+        }
 
-            _dispatcher.Invoke(() => UpdateVisualCurrentVN());
+        public void Receive(AppConfigChangedMessage message)
+        {
+            _dispatcher.Invoke(() =>
+            {
+                SyncAnkiSettings();
+                UpdateVisualCurrentVN();
+            });
         }
 
         [RelayCommand]
@@ -124,6 +128,18 @@ namespace VN2Anki.ViewModels
         {
             MiniStatsVisibility = MiniStatsVisibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
         }
+
+        [RelayCommand]
+        private void OpenHub() => _windowService.OpenUserHub();
+
+        [RelayCommand]
+        private void OpenSettings() => _windowService.OpenSettings();
+
+        [RelayCommand]
+        private void OpenOverlay() => _windowService.OpenOverlay();
+
+        [RelayCommand]
+        private void OpenHistory() => _windowService.OpenMiningHistory(MiningHistory, slot => _miningService.DeleteSlot(slot));
 
         public async Task EndSessionAsync()
         {
@@ -174,6 +190,7 @@ namespace VN2Anki.ViewModels
             _dispatcher.Invoke(() =>
             {
                 CurrentVN = message.Value;
+                UpdateVisualCurrentVN();
             });
         }
 
@@ -182,24 +199,25 @@ namespace VN2Anki.ViewModels
             _dispatcher.Invoke(() =>
             {
                 CurrentVN = null;
+                UpdateVisualCurrentVN();
             });
         }
 
         public void UpdateVisualCurrentVN()
         {
-            // isso está errado
-            // quem deveria ser responsável por isso é o session manager
-            // que deveria expor um VNLinkState ou algo do tipo, e não a VM ficar fazendo
-            // lógica de checar processos e etc
-            // ESSA FUNÇÃO TEM MUITA COISA ERRADA KKKK
-            var videoSource = _configService.CurrentConfig.Media.VideoWindow;
-            var windows = _videoEngine.GetWindows();
+            var config = _configService.CurrentConfig;
+            var videoSource = config.Media.VideoWindow;
+            
             bool isProcessRunning = false;
+            if (!string.IsNullOrEmpty(videoSource))
+            {
+                var procs = System.Diagnostics.Process.GetProcessesByName(videoSource);
+                isProcessRunning = procs.Any(p => p.MainWindowHandle != IntPtr.Zero);
+                foreach (var p in procs) p.Dispose();
+            }
 
             if (CurrentVN != null)
             {
-                isProcessRunning = windows.Any(w => string.Equals(w.ProcessName, CurrentVN.ProcessName, StringComparison.OrdinalIgnoreCase));
-
                 ConnectionState.DisplayVnTitle = CurrentVN.Title;
                 ConnectionState.VnTitleColor = isProcessRunning ? StateBrushes.Blue : Brushes.Crimson;
             }
@@ -207,30 +225,17 @@ namespace VN2Anki.ViewModels
             {
                 ConnectionState.DisplayVnTitle = "No Video Source";
                 ConnectionState.VnTitleColor = Brushes.Crimson;
-                isProcessRunning = false;
             }
             else
             {
-                var targetWin = windows.FirstOrDefault(w => w.ProcessName == videoSource);
-
-                if (targetWin != null)
-                {
-                    ConnectionState.DisplayVnTitle = !string.IsNullOrWhiteSpace(targetWin.Title) ? targetWin.Title : targetWin.ProcessName;
-                    isProcessRunning = true;
-                }
-                else
-                {
-                    ConnectionState.DisplayVnTitle = "No Video Source";
-                    isProcessRunning = false;
-                }
-
+                ConnectionState.DisplayVnTitle = videoSource;
                 ConnectionState.VnTitleColor = Brushes.Crimson;
             }
 
-            UpdateConnectionStates(isProcessRunning);
+            UpdateSemaphoreState(isProcessRunning);
         }
 
-        private void UpdateConnectionStates(bool isProcessRunning)
+        private void UpdateSemaphoreState(bool isProcessRunning)
         {
             var config = _configService.CurrentConfig;
             bool hasAudio = !string.IsNullOrEmpty(config.Media.AudioDevice);
@@ -278,20 +283,10 @@ namespace VN2Anki.ViewModels
         }
 
         [RelayCommand]
-        private async Task SelectVideoAsync()
-        {
-            var settings = App.Current.Services.GetRequiredService<SettingsWindow>();
-            settings.ShowDialog();
-            ApplyConfigToServices();
-        }
+        private void SelectVideo() => _windowService.OpenSettings();
 
         [RelayCommand]
-        private async Task SelectAudioAsync()
-        {
-            var settings = App.Current.Services.GetRequiredService<SettingsWindow>();
-            settings.ShowDialog();
-            ApplyConfigToServices();
-        }
+        private void SelectAudio() => _windowService.OpenSettings();
 
         [RelayCommand]
         private async Task ManualLinkActionAsync()
@@ -318,23 +313,25 @@ namespace VN2Anki.ViewModels
                     return;
                 }
 
-                var addWindow = App.Current.Services.GetRequiredService<AddVnWindow>();
-                var vm = addWindow.DataContext as VN2Anki.ViewModels.Hub.AddVnViewModel;
-                vm.IsOpenedFromLibrary = false;
+                var sessionMgr = _sessionManager as SessionManagerService;
+                if (sessionMgr != null)
+                {
+                    var addWindow = App.Current.Services.GetRequiredService<AddVnWindow>();
+                    var vm = addWindow.DataContext as VN2Anki.ViewModels.Hub.AddVnViewModel;
+                    vm.IsOpenedFromLibrary = false;
 
-                if (addWindow.ShowDialog() == true)
-                {
-                    var processToLink = vm.TargetProcessName;
-                    if (!string.IsNullOrEmpty(processToLink))
+                    if (addWindow.ShowDialog() == true)
                     {
-                        // Trigger manual link via session manager
-                        var sessionMgr = _sessionManager as SessionManagerService;
-                        if (sessionMgr != null) await sessionMgr.TryAutoLinkAsync(processToLink);
+                        var processToLink = vm.TargetProcessName;
+                        if (!string.IsNullOrEmpty(processToLink))
+                        {
+                            await sessionMgr.TryAutoLinkAsync(processToLink);
+                        }
                     }
-                }
-                else
-                {
-                    UpdateVisualCurrentVN();
+                    else
+                    {
+                        UpdateVisualCurrentVN();
+                    }
                 }
             }
         }

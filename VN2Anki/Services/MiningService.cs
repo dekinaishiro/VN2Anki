@@ -229,10 +229,7 @@ namespace VN2Anki.Services
                         {
                             _historySlots.Insert(0, newSlot);
 
-                            int maxSlots = 30;
-                            if (int.TryParse(config.Session.MaxSlots, out int parsedMax)) maxSlots = parsedMax;
-
-                            if (_historySlots.Count > maxSlots)
+                            if (_historySlots.Count > config.Session.MaxSlots)
                             {
                                 var oldSlot = _historySlots[_historySlots.Count - 1];
                                 oldSlot.Dispose();
@@ -251,7 +248,7 @@ namespace VN2Anki.Services
                         }
                         else
                         {
-                            if (!double.TryParse(sessionConfig.IdleTime, out finalSeconds)) finalSeconds = 30;
+                            finalSeconds = sessionConfig.IdleTime;
                         }
 
                         _idleTimer.Interval = finalSeconds * 1000;

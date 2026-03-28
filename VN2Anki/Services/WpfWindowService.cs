@@ -1,20 +1,53 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using VN2Anki.Models;
 using VN2Anki.Models.Entities;
 using VN2Anki.Services.Interfaces;
+using VN2Anki.Windows;
 
 namespace VN2Anki.Services
 {
     public class WpfWindowService : IWindowService
     {
         private readonly IConfigurationService _configService;
+        private readonly IServiceProvider _serviceProvider;
 
-        public WpfWindowService(IConfigurationService configService)
+        public WpfWindowService(IConfigurationService configService, IServiceProvider serviceProvider)
         {
             _configService = configService;
+            _serviceProvider = serviceProvider;
+        }
+
+        private void BringToFrontOrOpen<T>(Action onCreated = null) where T : Window
+        {
+            var existingWin = Application.Current.Windows.OfType<T>().FirstOrDefault();
+            if (existingWin != null)
+            {
+                if (existingWin.WindowState == WindowState.Minimized) existingWin.WindowState = WindowState.Normal;
+                existingWin.Activate();
+            }
+            else
+            {
+                var newWin = _serviceProvider.GetRequiredService<T>();
+                onCreated?.Invoke();
+                newWin.Show();
+            }
+        }
+
+        public void OpenUserHub() => BringToFrontOrOpen<UserHubWindow>();
+
+        public void OpenSettings() => BringToFrontOrOpen<SettingsWindow>();
+
+        public void OpenOverlay() => BringToFrontOrOpen<OverlayWindow>();
+
+        public void OpenMiningHistory(System.Collections.IEnumerable history, Action<MiningSlot> onDelete)
+        {
+            MiningWindow.ShowWindow(history as System.Collections.ObjectModel.ObservableCollection<MiningSlot>, onDelete);
         }
 
         public void CloseWindow(object viewModel, bool dialogResult)
@@ -23,7 +56,7 @@ namespace VN2Anki.Services
             {
                 if (window.DataContext == viewModel)
                 {
-                    window.DialogResult = dialogResult;
+                    try { window.DialogResult = dialogResult; } catch { /* Ignore if not a dialog */ }
                     window.Close();
                     break;
                 }
@@ -61,6 +94,8 @@ namespace VN2Anki.Services
             return selectedVn;
         }
 
+
+        // Talvez deveria ser movido para um ExtensionWindowViewModel ou algo do tipo
         public void OpenExtensionSettingsWindow(string extensionPath, object? owner = null)
         {
             if (string.IsNullOrEmpty(extensionPath) || !System.IO.Directory.Exists(extensionPath))
@@ -75,7 +110,7 @@ namespace VN2Anki.Services
                 Width = 900, 
                 Height = 700, 
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                Topmost = true // Force above everything including Overlay
+                Topmost = true
             };
 
             if (owner is Window ownerWin)
@@ -86,7 +121,6 @@ namespace VN2Anki.Services
             var settingsWebView = new Microsoft.Web.WebView2.Wpf.WebView2();
             settingsWin.Content = settingsWebView;
 
-            // Ensure WebView2 is disposed when the window closes to release file locks
             settingsWin.Closed += (s, e) =>
             {
                 settingsWebView.Dispose();
@@ -111,7 +145,7 @@ namespace VN2Anki.Services
                         else if (doc.RootElement.TryGetProperty("options_page", out System.Text.Json.JsonElement optPage)) optionsHtmlPage = optPage.GetString();
                     }
                     var loadedExtensions = await settingsWebView.CoreWebView2.Profile.GetBrowserExtensionsAsync();
-                    var existingExt = System.Linq.Enumerable.FirstOrDefault(loadedExtensions, ext => ext.Name == targetExtName || (ext.Name != null && ext.Name.Contains(targetExtName)) || (ext.Name != null && ext.Name.Contains("Yomitan")));
+                    var existingExt = loadedExtensions.FirstOrDefault(ext => ext.Name == targetExtName || (ext.Name != null && ext.Name.Contains(targetExtName)) || (ext.Name != null && ext.Name.Contains("Yomitan")));
                     if (existingExt != null) settingsWebView.CoreWebView2.Navigate($"chrome-extension://{existingExt.Id}/{optionsHtmlPage}");
                     else
                     {
@@ -119,17 +153,16 @@ namespace VN2Anki.Services
                         settingsWebView.CoreWebView2.Navigate($"chrome-extension://{newExtension.Id}/{optionsHtmlPage}");
                     }
                 }
-                catch (System.Exception ex) { MessageBox.Show($"Could not load extension settings:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
+                catch (Exception ex) { MessageBox.Show($"Could not load extension settings:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
             };
             
-            // Using ShowDialog to prevent multiple instances and force focus
             settingsWin.ShowDialog();
         }
 
-        public void OpenExtensionsManager(object owner = null)
+        public void OpenExtensionsManager(object? owner = null)
         {
-            var manager = new ExtensionsWindow(_configService, this);
-            manager.Topmost = true; // Force above everything including Overlay
+            var manager = _serviceProvider.GetRequiredService<ExtensionsWindow>();
+            manager.Topmost = true;
 
             if (owner is Window ownerWin)
             {
@@ -141,23 +174,7 @@ namespace VN2Anki.Services
                 manager.WindowStartupLocation = WindowStartupLocation.CenterScreen;
             }
 
-            // Using ShowDialog to prevent multiple instances and force focus
             manager.ShowDialog();
-        }
-
-        public void OpenUserHub()
-        {
-            var existingWin = Application.Current.Windows.OfType<UserHubWindow>().FirstOrDefault();
-            if (existingWin != null)
-            {
-                if (existingWin.WindowState == WindowState.Minimized) existingWin.WindowState = WindowState.Normal;
-                existingWin.Activate();
-            }
-            else
-            {
-                var hubWin = App.Current.Services.GetRequiredService<UserHubWindow>();
-                hubWin.Show();
-            }
         }
 
         public bool ShowConfirmation(string message, string title, bool isWarning = false)

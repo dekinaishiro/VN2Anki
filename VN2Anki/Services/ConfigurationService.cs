@@ -3,6 +3,8 @@ using System.IO;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using VN2Anki.Models;
+using CommunityToolkit.Mvvm.Messaging;
+using VN2Anki.Messages;
 
 namespace VN2Anki.Services
 {
@@ -77,6 +79,9 @@ namespace VN2Anki.Services
                 string json = JsonSerializer.Serialize(CurrentConfig, options);
                 File.WriteAllText(_configFilePath, json);
                 _logger.LogInformation("Configuration saved successfully.");
+
+                // Ponto 3 do plano: Notificar sistema da mudança de configuração
+                WeakReferenceMessenger.Default.Send(new AppConfigChangedMessage(CurrentConfig));
             }
             catch (Exception ex)
             {

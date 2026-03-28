@@ -28,28 +28,34 @@ namespace VN2Anki.Services
             IExternalToolService externalToolService)
         {
             _configService = configService;
-            _videoEngine = videoEngine;
             _vnDatabaseService = vnDatabaseService;
             _dispatcherService = dispatcherService;
             _windowService = windowService;
             _externalToolService = externalToolService;
+
+            // duvidoso
+            _videoEngine = videoEngine;
         }
 
         private async Task<VisualNovel?> AutoSyncRunningVnAsync(string? specificProcessName = null)
         {
-            // Note: Validation if we SHOULD sync (HasUnsavedProgress) moved to caller (SessionManager)
+            // declares list to hold matched VNs based on running processes
+            var matchedVns = new List<VisualNovel>();
             
+            // gets list of all VNs and their associated process info from the database
             var vnsDb = await _vnDatabaseService.GetAllVisualNovelsAsync();
-
             if (vnsDb.Count == 0) return null;
 
+            // gets list of currently running windows with process info from the video engine
             var runningWindows = _videoEngine.GetWindows();
-            var matchedVns = new List<VisualNovel>();
 
+            // filters running windows based on specific process name if provided
             var windowsToCheck = string.IsNullOrEmpty(specificProcessName)
                 ? runningWindows
                 : runningWindows.Where(w => w.ProcessName == specificProcessName).ToList();
 
+            // checks for each running window if it matches any VN in the
+            // database based on executable path or process name
             foreach (var win in windowsToCheck)
             {
                 var match = vnsDb.FirstOrDefault(v =>
@@ -70,7 +76,11 @@ namespace VN2Anki.Services
             VisualNovel? selectedVn = null;
             var silentSync = _configService.CurrentConfig.Session.SilentSync;
 
-            // the UI prompts must happen in the UI thread. IDispatcherService allows safe invocation.
+            // probably should not be here
+            // basically prompts the user if they want add the detected vn to the current session
+            // maybe a centralized prompt service would be better for this kind of thing in the since it
+            // organizes all messages in one place, can be reused across the app, makes it easier to manage different types of prompts
+            // and makes the rsx variables easier to manage, etc
             _dispatcherService.Invoke(() =>
             {
                 if (matchedVns.Count == 1)
@@ -96,8 +106,10 @@ namespace VN2Anki.Services
 
             if (selectedVn != null)
             {
+                // finds the target window that matches the selected VN based on executable path or process name
                 var targetWin = runningWindows.FirstOrDefault(w => w.ExecutablePath == selectedVn.ExecutablePath || w.ProcessName == selectedVn.ProcessName);
 
+                // updates video window config
                 var config = _configService.CurrentConfig;
                 config.Media.VideoWindow = targetWin?.ProcessName ?? selectedVn.ProcessName;
 

@@ -1,10 +1,8 @@
-using System;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
-using System.Windows.Media;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Windows;
+using System.Windows.Input;
 using VN2Anki.Locales;
 using VN2Anki.Messages;
 using VN2Anki.Services;
@@ -15,22 +13,16 @@ namespace VN2Anki
 {
     public partial class MainWindow : Window, IRecipient<ShowFlashMessage>
     {
-        private readonly IConfigurationService _configService;
         private readonly MainWindowViewModel _viewModel;
-        private readonly MiningService _miningService;
         private readonly ISessionManagerService _sessionManager;
+        private readonly IConfigurationService _configService;
 
-        private SettingsWindow? _settingsWindowInstance;
-        private OverlayWindow? _overlayWindowInstance;
-        private UserHubWindow? _hubWindowInstance;
-
-        public MainWindow(MainWindowViewModel viewModel, IConfigurationService configService, MiningService miningService, ISessionManagerService sessionManager)
+        public MainWindow(MainWindowViewModel viewModel, ISessionManagerService sessionManager, IConfigurationService configService)
         {
             InitializeComponent();
             _viewModel = viewModel;
-            _configService = configService;
-            _miningService = miningService;
             _sessionManager = sessionManager;
+            _configService = configService;
 
             this.DataContext = _viewModel;
             WeakReferenceMessenger.Default.Register(this);
@@ -63,50 +55,45 @@ namespace VN2Anki
 
                 if (result == MessageBoxResult.Yes)
                 {
-                    // Fire and forget since we can't await in Window_Closing natively
                     _ = _viewModel.EndSessionAsync();
                 }
                 else if (result == MessageBoxResult.Cancel)
                 {
                     e.Cancel = true;
                 }
-                // If No, let it close and discard.
             }
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            _viewModel.ApplyConfigToServices();
 
             var config = _configService.CurrentConfig.General;
             if (!double.IsNaN(config.MainWindowTop) && !double.IsNaN(config.MainWindowLeft))
             {
-                this.Top = config.MainWindowTop;                this.Left = config.MainWindowLeft;
+                this.Top = config.MainWindowTop;
+                this.Left = config.MainWindowLeft;
             }
             else
             {
                 this.WindowStartupLocation = WindowStartupLocation.CenterScreen;
             }
 
-            if (config.OpenSettingsOnStartup)
-            {
-                await Application.Current.Dispatcher.InvokeAsync(() =>
-                {
-                    BtnOpenSettings_Click(this, new RoutedEventArgs());
-                }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
-            }
-
             await _sessionManager.InitializeAsync();
+            _viewModel.UpdateVisualCurrentVN();
         }
 
         private void SaveWindowPosition()
         {
-            _configService.CurrentConfig.General.MainWindowTop = this.Top;
-            _configService.CurrentConfig.General.MainWindowLeft = this.Left;
+            var config = _configService.CurrentConfig.General;
+            config.MainWindowTop = this.Top;
+            config.MainWindowLeft = this.Left;
             _configService.Save();
         }
 
-        private void DragBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) { if (e.ChangedButton == MouseButton.Left) this.DragMove(); }
+        private void DragBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) 
+        { 
+            if (e.ChangedButton == MouseButton.Left) this.DragMove(); 
+        }
 
         private async void BtnEndSession_Click(object sender, RoutedEventArgs e)
         {
@@ -115,48 +102,6 @@ namespace VN2Anki
                 await _viewModel.EndSessionAsync();
             }
         }
-
-        private void BtnOpenHistory_Click(object sender, RoutedEventArgs e)
-            => MiningWindow.ShowWindow(_viewModel.MiningHistory,
-                slot => _miningService.DeleteSlot(slot));
-        private void OpenOrActivateWindow<T>(Func<T?> getInstance, Action<T?> setInstance, Action? onClosed = null, Action<T>? onCreated = null) where T : Window
-        {
-            var windowInstance = getInstance();
-            if (windowInstance != null)
-            {
-                if (windowInstance.WindowState == WindowState.Minimized) windowInstance.WindowState = WindowState.Normal;
-                windowInstance.Activate();
-                return;
-            }
-
-            windowInstance = App.Current.Services.GetRequiredService<T>();
-            setInstance(windowInstance);
-            onCreated?.Invoke(windowInstance);
-            
-            windowInstance.Closed += (s, args) =>
-            {
-                setInstance(null);
-                onClosed?.Invoke();
-            };
-            windowInstance.Show();
-        }
-
-        private void BtnOpenSettings_Click(object sender, RoutedEventArgs e) =>
-            OpenOrActivateWindow(
-                () => _settingsWindowInstance,
-                win => _settingsWindowInstance = win,
-                onClosed: async () => 
-                { 
-                    _configService.Load(); 
-                    _viewModel.ApplyConfigToServices(); 
-                },
-                onCreated: win => win.Owner = this);
-
-        private void BtnOpenOverlay_Click(object sender, RoutedEventArgs e) =>
-            OpenOrActivateWindow(() => _overlayWindowInstance, win => _overlayWindowInstance = win);
-
-        private void BtnOpenHub_Click(object sender, RoutedEventArgs e) =>
-            OpenOrActivateWindow(() => _hubWindowInstance, win => _hubWindowInstance = win);
 
         public void Receive(ShowFlashMessage message)
         {
