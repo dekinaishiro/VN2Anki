@@ -73,6 +73,13 @@ namespace VN2Anki.Services
                             {
                                 _activeVns[process.Id] = vn;
                                 _logger.LogInformation($"Detected already running VN during startup: {vn.Title} (PID: {process.Id})");
+                                
+                                VnProcessStarted?.Invoke(this, new VnProcessEventArgs
+                                {
+                                    VisualNovel = vn,
+                                    Process = process,
+                                    ProcessId = process.Id
+                                });
                             }
                         }
                     }

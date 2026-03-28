@@ -62,11 +62,6 @@ namespace VN2Anki.Services
             WeakReferenceMessenger.Default.RegisterAll(this);
         }
 
-        public async Task InitializeAsync()
-        {
-            await TryAutoLinkAsync(null);
-        }
-
         public async Task TryAutoLinkAsync(string? specificProcessName = null, bool suppressConfirmation = false)
         {
             if (HasUnsavedProgress) return;

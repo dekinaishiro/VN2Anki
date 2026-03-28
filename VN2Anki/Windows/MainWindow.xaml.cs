@@ -64,7 +64,7 @@ namespace VN2Anki
             }
         }
 
-        private async void Window_Loaded(object sender, RoutedEventArgs e)
+        private void Window_Loaded(object sender, RoutedEventArgs e)
         {
 
             var config = _configService.CurrentConfig.General;
@@ -78,7 +78,6 @@ namespace VN2Anki
                 this.WindowStartupLocation = WindowStartupLocation.CenterScreen;
             }
 
-            await _sessionManager.InitializeAsync();
             _viewModel.UpdateVisualCurrentVN();
         }
 
