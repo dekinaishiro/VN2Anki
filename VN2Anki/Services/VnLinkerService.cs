@@ -1,10 +1,8 @@
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.Messaging;
-using VN2Anki.Messages;
 using VN2Anki.Models.Entities;
 using VN2Anki.Services.Interfaces;
 
@@ -17,45 +15,32 @@ namespace VN2Anki.Services
         private readonly IVnDatabaseService _vnDatabaseService;
         private readonly IDispatcherService _dispatcherService;
         private readonly IWindowService _windowService;
-        private readonly IExternalToolService _externalToolService;
 
         public VnLinkerService(
             IConfigurationService configService,
             VideoEngine videoEngine,
             IVnDatabaseService vnDatabaseService,
             IDispatcherService dispatcherService,
-            IWindowService windowService,
-            IExternalToolService externalToolService)
+            IWindowService windowService)
         {
             _configService = configService;
             _vnDatabaseService = vnDatabaseService;
             _dispatcherService = dispatcherService;
             _windowService = windowService;
-            _externalToolService = externalToolService;
-
-            // duvidoso
             _videoEngine = videoEngine;
         }
 
-        private async Task<VisualNovel?> AutoSyncRunningVnAsync(string? specificProcessName = null)
+        private async Task<LinkResult?> AutoSyncRunningVnAsync(string? specificProcessName = null, bool suppressConfirmation = false)
         {
-            // declares list to hold matched VNs based on running processes
             var matchedVns = new List<VisualNovel>();
-            
-            // gets list of all VNs and their associated process info from the database
             var vnsDb = await _vnDatabaseService.GetAllVisualNovelsAsync();
             if (vnsDb.Count == 0) return null;
 
-            // gets list of currently running windows with process info from the video engine
             var runningWindows = _videoEngine.GetWindows();
-
-            // filters running windows based on specific process name if provided
             var windowsToCheck = string.IsNullOrEmpty(specificProcessName)
                 ? runningWindows
                 : runningWindows.Where(w => w.ProcessName == specificProcessName).ToList();
 
-            // checks for each running window if it matches any VN in the
-            // database based on executable path or process name
             foreach (var win in windowsToCheck)
             {
                 var match = vnsDb.FirstOrDefault(v =>
@@ -76,16 +61,17 @@ namespace VN2Anki.Services
             VisualNovel? selectedVn = null;
             var silentSync = _configService.CurrentConfig.Session.SilentSync;
 
-            // probably should not be here
-            // basically prompts the user if they want add the detected vn to the current session
-            // maybe a centralized prompt service would be better for this kind of thing in the since it
-            // organizes all messages in one place, can be reused across the app, makes it easier to manage different types of prompts
-            // and makes the rsx variables easier to manage, etc
+            if (suppressConfirmation || silentSync || matchedVns.Count == 1)
+            {
+                // If suppressed, or silent sync on, or just one match, we might still want to ask if silentSync is false and not suppressed.
+                // Actually, let's keep the logic close to original but respect suppressConfirmation.
+            }
+
             _dispatcherService.Invoke(() =>
             {
                 if (matchedVns.Count == 1)
                 {
-                    if (!silentSync)
+                    if (!silentSync && !suppressConfirmation)
                     {
                         bool result = _windowService.ShowConfirmation(
                             string.Format(Locales.Strings.MsgConfirmVnDetected, matchedVns[0].Title),
@@ -106,44 +92,34 @@ namespace VN2Anki.Services
 
             if (selectedVn != null)
             {
-                // finds the target window that matches the selected VN based on executable path or process name
                 var targetWin = runningWindows.FirstOrDefault(w => w.ExecutablePath == selectedVn.ExecutablePath || w.ProcessName == selectedVn.ProcessName);
-
-                // updates video window config
-                var config = _configService.CurrentConfig;
-                config.Media.VideoWindow = targetWin?.ProcessName ?? selectedVn.ProcessName;
-
-                if (string.IsNullOrEmpty(specificProcessName) && targetWin != null)
+                if (targetWin != null)
                 {
-                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = string.Format(Locales.Strings.MsgSessionLinked, selectedVn.Title), IsError = false }));
+                    return new LinkResult
+                    {
+                        VisualNovel = selectedVn,
+                        ProcessId = targetWin.ProcessId,
+                        ProcessName = targetWin.ProcessName
+                    };
                 }
-
-                if (targetWin != null && targetWin.ProcessId > 0)
+                
+                return new LinkResult
                 {
-                     _ = _externalToolService.LaunchHookerAsync(selectedVn, targetWin.ProcessId);
-                }
-
-                return selectedVn;
+                    VisualNovel = selectedVn,
+                    ProcessId = 0,
+                    ProcessName = selectedVn.ProcessName
+                };
             }
-            else
-            {
-                var config = _configService.CurrentConfig;
-                var savedProcess = config.Media.VideoWindow;
 
-                if (!string.IsNullOrEmpty(savedProcess) && matchedVns.Any(v => v.ProcessName == savedProcess))
-                {
-                    config.Media.VideoWindow = string.Empty;
-                }
-                return null;
-            }
+            return null;
         }
 
-        public async Task<VisualNovel?> TryAutoLinkAsync(VisualNovel? currentVn, string? specificProcessName = null)
+        public async Task<LinkResult?> TryAutoLinkAsync(VisualNovel? currentVn, string? specificProcessName = null, bool suppressConfirmation = false)
         {
-            var selectedVn = await AutoSyncRunningVnAsync(specificProcessName);
-            if (selectedVn != null)
+            var result = await AutoSyncRunningVnAsync(specificProcessName, suppressConfirmation);
+            if (result != null)
             {
-                return selectedVn;
+                return result;
             }
 
             var config = _configService.CurrentConfig;
@@ -154,14 +130,11 @@ namespace VN2Anki.Services
                 return null;
             }
 
-            // Check if the process in config actually exists
             var windows = _videoEngine.GetWindows();
-            bool exists = windows.Any(w => string.Equals(w.ProcessName, configWin, StringComparison.OrdinalIgnoreCase));
+            var targetWin = windows.FirstOrDefault(w => string.Equals(w.ProcessName, configWin, StringComparison.OrdinalIgnoreCase));
 
-            if (!exists)
+            if (targetWin == null)
             {
-                // empty the config if the specified process doesn't exist to avoid repeated failed attempts in the future
-                config.Media.VideoWindow = string.Empty;
                 return null;
             }
 
@@ -175,9 +148,16 @@ namespace VN2Anki.Services
                         return null;
                     }
                 }
+                
+                return new LinkResult
+                {
+                    VisualNovel = currentVn,
+                    ProcessId = targetWin.ProcessId,
+                    ProcessName = targetWin.ProcessName
+                };
             }
 
-            return currentVn;
+            return null;
         }
     }
 }

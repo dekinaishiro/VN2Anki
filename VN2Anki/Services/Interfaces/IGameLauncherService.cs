@@ -1,4 +1,3 @@
-using System.Threading;
 using System.Threading.Tasks;
 using VN2Anki.Models.Entities;
 
@@ -8,13 +7,11 @@ namespace VN2Anki.Services.Interfaces
     {
         Success,
         ExecutableNotFound,
-        LaunchFailed,
-        Timeout,
-        Cancelled
+        LaunchFailed
     }
 
     public interface IGameLauncherService
     {
-        Task<GameLaunchResult> LaunchAndHookAsync(VisualNovel vn, CancellationToken token);
+        Task<GameLaunchResult> LaunchGameAsync(VisualNovel vn);
     }
 }

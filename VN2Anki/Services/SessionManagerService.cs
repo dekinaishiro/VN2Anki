@@ -19,11 +19,13 @@ namespace VN2Anki.Services
         private readonly IProcessMonitoringService _processMonitor;
         private readonly IVnLinkerService _linkerService;
         private readonly IGameLauncherService _gameLauncher;
+        private readonly IDispatcherService _dispatcherService;
+        private readonly IExternalToolService _externalToolService;
 
         private VisualNovel? _currentVN;
         public VisualNovel? CurrentVN => _currentVN;
-
-        private System.Threading.CancellationTokenSource? _pollingCts;
+        
+        private int? _pendingLaunchVnId = null;
 
         public bool IsBufferActive { get; set; }
 
@@ -38,7 +40,9 @@ namespace VN2Anki.Services
             ISessionLoggerService sessionLogger,
             IProcessMonitoringService processMonitor,
             IVnLinkerService linkerService,
-            IGameLauncherService gameLauncher)
+            IGameLauncherService gameLauncher,
+            IDispatcherService dispatcherService,
+            IExternalToolService externalToolService)
         {
             _tracker = tracker;
             _miningService = miningService;
@@ -49,6 +53,8 @@ namespace VN2Anki.Services
             _processMonitor = processMonitor;
             _linkerService = linkerService;
             _gameLauncher = gameLauncher;
+            _dispatcherService = dispatcherService;
+            _externalToolService = externalToolService;
 
             _processMonitor.VnProcessStarted += OnVnProcessStarted;
             _processMonitor.VnProcessStopped += OnVnProcessStopped;
@@ -61,22 +67,71 @@ namespace VN2Anki.Services
             await TryAutoLinkAsync(null);
         }
 
-        public async Task TryAutoLinkAsync(string? specificProcessName = null)
+        public async Task TryAutoLinkAsync(string? specificProcessName = null, bool suppressConfirmation = false)
         {
             if (HasUnsavedProgress) return;
 
-            var vn = await _linkerService.TryAutoLinkAsync(_currentVN, specificProcessName);
-            SetCurrentVN(vn, forceNotify: true);
+            var linkResult = await _linkerService.TryAutoLinkAsync(_currentVN, specificProcessName, suppressConfirmation);
+            
+            if (linkResult != null)
+            {
+                var vn = linkResult.VisualNovel;
+                var config = _configService.CurrentConfig;
+                config.Media.VideoWindow = linkResult.ProcessName;
+                _configService.Save();
+
+                if (string.IsNullOrEmpty(specificProcessName))
+                {
+                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = string.Format(Locales.Strings.MsgSessionLinked, vn.Title), IsError = false }));
+                }
+
+                if (linkResult.ProcessId > 0)
+                {
+                    _ = _externalToolService.LaunchHookerAsync(vn, linkResult.ProcessId);
+                }
+
+                SetCurrentVN(vn, forceNotify: true);
+            }
+            else
+            {
+                SetCurrentVN(null, forceNotify: true);
+            }
         }
 
-        private void OnVnProcessStarted(object? s, VnProcessEventArgs e)
+        private async void OnVnProcessStarted(object? s, VnProcessEventArgs e)
         {
-            if (_currentVN != null && _currentVN.Id != e.VisualNovel.Id)
+            bool isPending = _pendingLaunchVnId == e.VisualNovel.Id;
+            if (isPending)
+            {
+                _pendingLaunchVnId = null;
+            }
+
+            if (_currentVN != null && _currentVN.Id == e.VisualNovel.Id)
             {
                 return;
             }
 
-            _ = TryAutoLinkAsync(e.VisualNovel.ProcessName);
+            if (_currentVN != null && HasUnsavedProgress)
+            {
+                bool result = false;
+                _dispatcherService.Invoke(() =>
+                {
+                    result = _windowService.ShowConfirmation(
+                        string.Format(Locales.Strings.MsgConfirmChangeSession, _currentVN.Title, e.VisualNovel.Title), 
+                        Locales.Strings.MsgAttention);
+                });
+
+                if (result)
+                {
+                    await EndSessionAsync(_currentVN);
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            await TryAutoLinkAsync(e.VisualNovel.ProcessName, suppressConfirmation: isPending);
         }
 
         private void OnVnProcessStopped(object? s, VnProcessEventArgs e)
@@ -121,72 +176,31 @@ namespace VN2Anki.Services
             try
             {
                 var vn = message.VisualNovel;
+                _pendingLaunchVnId = vn.Id;
 
-                if (_currentVN != null && (HasUnsavedProgress))
-                {
-                    bool result = _windowService.ShowConfirmation(
-                        string.Format(Locales.Strings.MsgConfirmChangeSession, _currentVN.Title, vn.Title), 
-                        Locales.Strings.MsgAttention);
-
-                    if (result)
-                    {
-                        await EndSessionAsync(_currentVN);
-                    }
-                    else
-                    {
-                        return;
-                    }
-                }
-
-                _pollingCts?.Cancel();
-                _pollingCts = new System.Threading.CancellationTokenSource();
-                var token = _pollingCts.Token;
-
-                SetCurrentVN(vn);
-
-                if (IsBufferActive) ToggleBuffer(vn);
-
-                WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = $"Iniciando {vn.Title}...", IsError = false }));
-
-                var launchResult = await _gameLauncher.LaunchAndHookAsync(vn, token);
+                var launchResult = await _gameLauncher.LaunchGameAsync(vn);
 
                 switch (launchResult)
                 {
-                    case GameLaunchResult.Success:
-                        WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = Locales.Strings.StatusVideoConnected, IsError = false }));
-                        break;
-
                     case GameLaunchResult.ExecutableNotFound:
                         WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = Locales.Strings.MsgExeNotFound, IsError = true }));
-                        SetCurrentVN(null);
+                        _pendingLaunchVnId = null;
                         break;
-
                     case GameLaunchResult.LaunchFailed:
                         WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Erro ao abrir o jogo!", IsError = true }));
-                        SetCurrentVN(null);
-                        break;
-
-                    case GameLaunchResult.Timeout:
-                        WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = Locales.Strings.MsgWindowTimeout, IsError = true }));
-                        SetCurrentVN(null);
-                        var config = _configService.CurrentConfig;
-                        config.Media.VideoWindow = string.Empty;
-                        _configService.Save();
-                        break;
-
-                    case GameLaunchResult.Cancelled:
+                        _pendingLaunchVnId = null;
                         break;
                 }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error in SessionManagerService.Receive(PlayVnMessage): {ex}");
+                _pendingLaunchVnId = null;
             }
         }
 
         public bool ToggleBuffer(VisualNovel? currentVN = null)
         {
-            // Use internal currentVN if not provided
             var vn = currentVN ?? _currentVN;
 
             if (!IsBufferActive)
@@ -220,10 +234,14 @@ namespace VN2Anki.Services
 
                 if (vn == null && _tracker.ValidCharacterCount == 0 && _tracker.Elapsed.TotalSeconds == 0)
                 {
-                    bool result = _windowService.ShowConfirmation(
-                        Locales.Strings.MsgConfirmStartTrackingWithoutVn,
-                        Locales.Strings.TitleEmptySessionWarning,
-                        true);
+                    bool result = false;
+                    _dispatcherService.Invoke(() =>
+                    {
+                        result = _windowService.ShowConfirmation(
+                            Locales.Strings.MsgConfirmStartTrackingWithoutVn,
+                            Locales.Strings.TitleEmptySessionWarning,
+                            true);
+                    });
 
                     if (!result) return false;
                 }
@@ -259,9 +277,13 @@ namespace VN2Anki.Services
 
                 if (vn == null)
                 {
-                    bool result = _windowService.ShowConfirmation(
-                        Locales.Strings.MsgConfirmSaveOrphanSession,
-                        Locales.Strings.TitleSaveOrphanSession);
+                    bool result = false;
+                    _dispatcherService.Invoke(() =>
+                    {
+                        result = _windowService.ShowConfirmation(
+                            Locales.Strings.MsgConfirmSaveOrphanSession,
+                            Locales.Strings.TitleSaveOrphanSession);
+                    });
 
                     if (!result)
                     {

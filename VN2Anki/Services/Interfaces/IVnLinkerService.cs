@@ -3,8 +3,15 @@ using VN2Anki.Models.Entities;
 
 namespace VN2Anki.Services.Interfaces
 {
+    public class LinkResult
+    {
+        public VisualNovel VisualNovel { get; set; }
+        public int ProcessId { get; set; }
+        public string ProcessName { get; set; }
+    }
+
     public interface IVnLinkerService
     {
-        Task<VisualNovel?> TryAutoLinkAsync(VisualNovel? currentVn, string? specificProcessName = null);
+        Task<LinkResult?> TryAutoLinkAsync(VisualNovel? currentVn, string? specificProcessName = null, bool suppressConfirmation = false);
     }
 }
