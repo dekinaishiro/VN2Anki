@@ -161,12 +161,15 @@ namespace VN2Anki.Services
                 DateTime? externalStart = null;
                 foreach(var ev in b.Events.Where(e => e.e == "APP_STATE"))
                 {
-                    string focus = ev.d.GetProperty("focus").GetString() ?? "";
-                    if ((focus == "external" || focus == "main") && externalStart == null) externalStart = ev.t;
-                    else if ((focus == "game" || focus == "overlay") && externalStart != null)
+                    if (ev.d.TryGetProperty("focus", out var focusProp))
                     {
-                        externalSeconds += (ev.t - externalStart.Value).TotalSeconds;
-                        externalStart = null;
+                        string focus = focusProp.GetString() ?? "";
+                        if ((focus == "external" || focus == "main") && externalStart == null) externalStart = ev.t;
+                        else if ((focus == "game" || focus == "overlay") && externalStart != null)
+                        {
+                            externalSeconds += (ev.t - externalStart.Value).TotalSeconds;
+                            externalStart = null;
+                        }
                     }
                 }
                 if (externalStart != null) externalSeconds += (b.EndTime - externalStart.Value).TotalSeconds;
