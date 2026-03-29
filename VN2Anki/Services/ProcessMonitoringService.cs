@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Management;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using VN2Anki.Models.Entities;
@@ -12,6 +14,16 @@ namespace VN2Anki.Services
 {
     public class ProcessMonitoringService : IProcessMonitoringService
     {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr OpenProcess(uint processAccess, bool bInheritHandle, int processId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool CloseHandle(IntPtr hObject);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        private static extern bool QueryFullProcessImageName(IntPtr hProcess, uint dwFlags, StringBuilder lpExeName, ref uint lpdwSize);
+
         private readonly IVnDatabaseService _vnDatabaseService;
         private readonly ILogger<ProcessMonitoringService> _logger;
 
@@ -293,6 +305,64 @@ namespace VN2Anki.Services
         public bool IsAnyInstanceRunning(int vnId)
         {
             return _activeVns.Values.Any(v => v.Id == vnId);
+        }
+
+        private string? GetProcessFilename(Process p)
+        {
+            try { return p.MainModule?.FileName; } catch (Exception ex) { _logger.LogDebug(ex, "MainModule fallback for {ProcessName}: {Message}", p.ProcessName, ex.Message); }
+
+            int capacity = 2000;
+            StringBuilder sb = new StringBuilder(capacity);
+            IntPtr ptr = OpenProcess(0x1000, false, p.Id);
+            if (ptr != IntPtr.Zero)
+            {
+                uint size = (uint)capacity;
+                if (QueryFullProcessImageName(ptr, 0, sb, ref size))
+                {
+                    CloseHandle(ptr);
+                    return sb.ToString();
+                }
+                CloseHandle(ptr);
+            }
+            return null;
+        }
+
+        public List<ActiveWindowItem> GetActiveWindows()
+        {
+            var windows = new List<ActiveWindowItem>();
+            var processes = Process.GetProcesses();
+
+            foreach (var p in processes)
+            {
+                if (p.MainWindowHandle != IntPtr.Zero && !string.IsNullOrEmpty(p.MainWindowTitle))
+                {
+                    if (!windows.Exists(w => w.ProcessName == p.ProcessName))
+                    {
+                        string? exePath = GetProcessFilename(p);
+                        windows.Add(new ActiveWindowItem
+                        {
+                            Title = p.MainWindowTitle,
+                            ProcessName = p.ProcessName,
+                            ExecutablePath = exePath,
+                            ProcessId = p.Id
+                        });
+                    }
+                }
+                p.Dispose();
+            }
+            windows.Sort((a, b) => a.DisplayName.CompareTo(b.DisplayName));
+            return windows;
+        }
+
+        public bool IsProcessRunning(string processName)
+        {
+            if (string.IsNullOrEmpty(processName)) return false;
+            
+            var procs = Process.GetProcessesByName(processName);
+            bool isRunning = procs.Any(p => p.MainWindowHandle != IntPtr.Zero);
+            foreach (var p in procs) p.Dispose();
+            
+            return isRunning;
         }
 
         private bool IsSystemProcess(string processName)

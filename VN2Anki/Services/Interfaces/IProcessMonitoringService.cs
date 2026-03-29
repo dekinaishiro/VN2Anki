@@ -13,6 +13,15 @@ namespace VN2Anki.Services.Interfaces
         public int ProcessId { get; set; }
     }
 
+    public class ActiveWindowItem
+    {
+        public string Title { get; set; } = string.Empty;
+        public string ProcessName { get; set; } = string.Empty;
+        public string? ExecutablePath { get; set; }
+        public int ProcessId { get; set; }
+        public string DisplayName => string.IsNullOrWhiteSpace(Title) ? ProcessName : $"{Title} ({ProcessName}.exe)";
+    }
+
     public interface IProcessMonitoringService : IDisposable
     {
         event EventHandler<VnProcessEventArgs> VnProcessStarted;
@@ -20,8 +29,11 @@ namespace VN2Anki.Services.Interfaces
 
         void StartMonitoring();
         void StopMonitoring();
-        
-        Task<List<(VisualNovel Vn, Process Process)>> GetRunningVnsAsync();
+
+        Task<List<(VisualNovel Vn, Process Process)>> GetRunningVnsAsync();     
         bool IsAnyInstanceRunning(int vnId);
+
+        List<ActiveWindowItem> GetActiveWindows();
+        bool IsProcessRunning(string processName);
     }
 }

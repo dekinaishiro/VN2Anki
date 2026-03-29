@@ -17,7 +17,7 @@ namespace VN2Anki.ViewModels.Hub
         private readonly VndbService _vndbService;
         private readonly IWindowService _windowService;
         private readonly IConfigurationService _configService;
-        private readonly VideoEngine _videoEngine;
+        private readonly IProcessMonitoringService _processMonitor;
 
         public bool IsOpenedFromLibrary { get; set; }
 
@@ -57,10 +57,10 @@ namespace VN2Anki.ViewModels.Hub
         [ObservableProperty]
         private string _registeredWarningText = "";
 
-        public AddVnViewModel(IVnDatabaseService dbService, VideoEngine videoEngine, VndbService vndbService, IWindowService windowService, IConfigurationService configService)
+        public AddVnViewModel(IVnDatabaseService dbService, IProcessMonitoringService processMonitor, VndbService vndbService, IWindowService windowService, IConfigurationService configService)
         {
             _dbService = dbService;
-            _videoEngine = videoEngine;
+            _processMonitor = processMonitor;
             _vndbService = vndbService;
             _windowService = windowService;
             _configService = configService;
@@ -118,7 +118,7 @@ namespace VN2Anki.ViewModels.Hub
             }
 
             // try to get more details
-            var window = _videoEngine.GetWindows().FirstOrDefault(w => w.ProcessName == TargetProcessName);
+            var window = _processMonitor.GetActiveWindows().FirstOrDefault(w => w.ProcessName == TargetProcessName);
             if (window != null)
             {
                 TargetDisplayName = window.DisplayName;

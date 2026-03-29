@@ -11,14 +11,14 @@ namespace VN2Anki.Services
     public class VnLinkerService : IVnLinkerService
     {
         private readonly IConfigurationService _configService;
-        private readonly VideoEngine _videoEngine;
+        private readonly IProcessMonitoringService _processMonitor;
         private readonly IVnDatabaseService _vnDatabaseService;
         private readonly IDispatcherService _dispatcherService;
         private readonly IWindowService _windowService;
 
         public VnLinkerService(
             IConfigurationService configService,
-            VideoEngine videoEngine,
+            IProcessMonitoringService processMonitor,
             IVnDatabaseService vnDatabaseService,
             IDispatcherService dispatcherService,
             IWindowService windowService)
@@ -27,7 +27,7 @@ namespace VN2Anki.Services
             _vnDatabaseService = vnDatabaseService;
             _dispatcherService = dispatcherService;
             _windowService = windowService;
-            _videoEngine = videoEngine;
+            _processMonitor = processMonitor;
         }
 
         private async Task<LinkResult?> AutoSyncRunningVnAsync(string? specificProcessName = null, bool suppressConfirmation = false)
@@ -36,7 +36,7 @@ namespace VN2Anki.Services
             var vnsDb = await _vnDatabaseService.GetAllVisualNovelsAsync();
             if (vnsDb.Count == 0) return null;
 
-            var runningWindows = _videoEngine.GetWindows();
+            var runningWindows = _processMonitor.GetActiveWindows();
             var windowsToCheck = string.IsNullOrEmpty(specificProcessName)
                 ? runningWindows
                 : runningWindows.Where(w => w.ProcessName == specificProcessName).ToList();
@@ -130,7 +130,7 @@ namespace VN2Anki.Services
                 return null;
             }
 
-            var windows = _videoEngine.GetWindows();
+            var windows = _processMonitor.GetActiveWindows();
             var targetWin = windows.FirstOrDefault(w => string.Equals(w.ProcessName, configWin, StringComparison.OrdinalIgnoreCase));
 
             if (targetWin == null)

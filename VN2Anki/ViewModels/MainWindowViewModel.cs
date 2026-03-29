@@ -27,6 +27,7 @@ namespace VN2Anki.ViewModels
         private readonly ISessionManagerService _sessionManager;
         private readonly IDispatcherService _dispatcher;
         private readonly MiningService _miningService;
+        private readonly IProcessMonitoringService _processMonitor;
 
         public System.Collections.ObjectModel.ObservableCollection<MiningSlot> MiningHistory { get; } = new();
 
@@ -72,7 +73,7 @@ namespace VN2Anki.ViewModels
         public Brush BufferBtnBackground => IsBufferActive ? Brushes.Green : Brushes.Crimson;
 
 
-        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiHandler ankiHandler, IWindowService windowService, ISessionManagerService sessionManager, IDispatcherService dispatcher)
+        public MainWindowViewModel(SessionTracker tracker, MiningService miningService, IConfigurationService configService, AnkiHandler ankiHandler, IWindowService windowService, ISessionManagerService sessionManager, IDispatcherService dispatcher, IProcessMonitoringService processMonitor)
         {
             Tracker = tracker;
             _miningService = miningService;
@@ -81,6 +82,7 @@ namespace VN2Anki.ViewModels
             _windowService = windowService;
             _sessionManager = sessionManager;
             _dispatcher = dispatcher;
+            _processMonitor = processMonitor;
 
             WeakReferenceMessenger.Default.RegisterAll(this);
             
@@ -208,13 +210,7 @@ namespace VN2Anki.ViewModels
             var config = _configService.CurrentConfig;
             var videoSource = config.Media.VideoWindow;
             
-            bool isProcessRunning = false;
-            if (!string.IsNullOrEmpty(videoSource))
-            {
-                var procs = System.Diagnostics.Process.GetProcessesByName(videoSource);
-                isProcessRunning = procs.Any(p => p.MainWindowHandle != IntPtr.Zero);
-                foreach (var p in procs) p.Dispose();
-            }
+            bool isProcessRunning = _processMonitor.IsProcessRunning(videoSource);
 
             if (CurrentVN != null)
             {

@@ -16,7 +16,7 @@ namespace VN2Anki.ViewModels
         private readonly IConfigurationService _configService;
         private readonly IBridgeService _bridgeService;
         private readonly AudioEngine _audioEngine;
-        private readonly VideoEngine _videoEngine;
+        private readonly IProcessMonitoringService _processMonitor;
         private readonly int _initialBridgePort;
         public SessionTracker Tracker { get; }
 
@@ -27,17 +27,17 @@ namespace VN2Anki.ViewModels
         private ObservableCollection<AudioDeviceItem> _audioDevices = new();
 
         [ObservableProperty]
-        private ObservableCollection<VideoEngine.VideoWindowItem> _videoWindows = new();
+        private ObservableCollection<ActiveWindowItem> _videoWindows = new();
 
         public bool IsVideoSelectionEnabled => !Tracker.IsTracking && Tracker.ValidCharacterCount == 0 && Tracker.Elapsed.TotalSeconds == 0;
         public bool IsAudioSelectionEnabled => !Tracker.IsTracking; // Lock audio device selection if session is tracking/recording
 
-        public SettingsViewModel(IConfigurationService configService, IBridgeService bridgeService, AudioEngine audioEngine, VideoEngine videoEngine, SessionTracker tracker)
+        public SettingsViewModel(IConfigurationService configService, IBridgeService bridgeService, AudioEngine audioEngine, IProcessMonitoringService processMonitor, SessionTracker tracker)
         {
             _configService = configService;
             _bridgeService = bridgeService;
             _audioEngine = audioEngine;
-            _videoEngine = videoEngine;
+            _processMonitor = processMonitor;
             Tracker = tracker;
 
             Config = _configService.CurrentConfig;
@@ -66,7 +66,7 @@ namespace VN2Anki.ViewModels
                 AudioDevices.Add(device);
             }
 
-            var videoList = await Task.Run(() => _videoEngine.GetWindows());
+            var videoList = await Task.Run(() => _processMonitor.GetActiveWindows());
             VideoWindows.Clear();
             foreach (var window in videoList)
             {
