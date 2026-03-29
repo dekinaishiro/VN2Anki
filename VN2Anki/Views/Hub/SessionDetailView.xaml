@@ -133,11 +133,11 @@
 
             <Border Style="{StaticResource StatCard}" Width="Auto">
                 <StackPanel>
-                    <TextBlock Text="Velocidade (SPC)" Style="{StaticResource StatHeader}"/>
+                    <TextBlock Text="Velocidade (Leitura)" Style="{StaticResource StatHeader}"/>
                     <StackPanel Orientation="Horizontal">
                         <iconPacks:PackIconMaterial Kind="Speedometer" Width="18" Height="18" Foreground="#9B59B6" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding Session.CharactersRead}" Style="{StaticResource StatValue}" ToolTip="Total de Caracteres"/>
-                        <TextBlock Text=" chars" Foreground="#666" FontSize="12" VerticalAlignment="Bottom" Margin="4,0,0,4"/>
+                        <TextBlock Text="{Binding AnalyticsResult.CharsPerHour}" Style="{StaticResource StatValue}"/>
+                        <TextBlock Text=" chars/h" Foreground="#666" FontSize="12" VerticalAlignment="Bottom" Margin="4,0,0,4"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -249,10 +249,10 @@
                     <StackPanel>
                         <TextBlock Text="Ritmo de Leitura" Foreground="White" FontWeight="Bold" Margin="0,0,0,12"/>
                         
-                        <!-- Simple Summary of SPC -->
+                        <!-- Simple Summary of Speed -->
                         <Grid Margin="0,0,0,10">
-                            <TextBlock Text="Média de SPC" Foreground="#A0A0A0"/>
-                            <TextBlock Text="-- s/char" Foreground="White" HorizontalAlignment="Right" FontWeight="Bold"/>
+                            <TextBlock Text="Velocidade" Foreground="#A0A0A0"/>
+                            <TextBlock Text="{Binding AnalyticsResult.CharsPerHour, StringFormat='{}{0} chars/h'}" Foreground="White" HorizontalAlignment="Right" FontWeight="Bold"/>
                         </Grid>
                         
                         <Border Height="100" Background="#05000000" BorderBrush="#333" BorderThickness="1" CornerRadius="4">

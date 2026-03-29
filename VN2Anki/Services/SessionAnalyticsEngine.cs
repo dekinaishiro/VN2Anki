@@ -27,6 +27,8 @@ namespace VN2Anki.Services
         public int LatencySeconds { get; set; } // "Gordura" entre clique e texto
         public List<double> SpcDistribution { get; set; } = new();
         public List<string> MinedWords { get; set; } = new();
+
+        public int CharsPerHour => EffectiveDurationSeconds > 0 ? (int)((CharactersRead / (double)EffectiveDurationSeconds) * 3600) : 0;
     }
 
     public interface ISessionAnalyticsEngine
