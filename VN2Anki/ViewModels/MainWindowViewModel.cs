@@ -212,6 +212,14 @@ namespace VN2Anki.ViewModels
             
             bool isProcessRunning = _processMonitor.IsProcessRunning(videoSource);
 
+            // Clean phantom process from config to avoid stale UI state
+            if (!string.IsNullOrEmpty(videoSource) && !isProcessRunning)
+            {
+                config.Media.VideoWindow = string.Empty;
+                _configService.Save();
+                videoSource = string.Empty;
+            }
+
             if (CurrentVN != null)
             {
                 ConnectionState.DisplayVnTitle = CurrentVN.Title;

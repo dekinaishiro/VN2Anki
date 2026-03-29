@@ -129,18 +129,28 @@ namespace VN2Anki.Services
             await TryAutoLinkAsync(e.VisualNovel.ProcessName, suppressConfirmation: isPending);
         }
 
-        private void OnVnProcessStopped(object? s, VnProcessEventArgs e)
+        private async void OnVnProcessStopped(object? s, VnProcessEventArgs e)
         {
+            if (_processMonitor.IsAnyInstanceRunning(e.VisualNovel.Id)) return;
+
             var config = _configService.CurrentConfig;
             if (_currentVN != null && _currentVN.Id == e.VisualNovel.Id)
             {
                 bool isZeroed = _tracker.ValidCharacterCount == 0 && _tracker.Elapsed.TotalSeconds == 0 && !IsBufferActive;
-                if (isZeroed)
+                if (!isZeroed)
                 {
-                    config.Media.VideoWindow = string.Empty;
-                    _configService.Save();
-                    SetCurrentVN(null);
+                    // Força o encerramento da sessão e salva o progresso
+                    await EndSessionAsync(_currentVN);
+                    WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload 
+                    { 
+                        Message = string.Format("Sessão salva! O processo de {0} foi encerrado.", e.VisualNovel.Title), 
+                        IsError = false 
+                    }));
                 }
+                
+                config.Media.VideoWindow = string.Empty;
+                _configService.Save();
+                SetCurrentVN(null);
             }
             else if (string.Equals(e.VisualNovel.ProcessName, config.Media.VideoWindow, StringComparison.OrdinalIgnoreCase))
             {

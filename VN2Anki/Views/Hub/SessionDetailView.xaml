@@ -81,7 +81,7 @@
 
             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Text="Modo Avançado" Foreground="White" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                <ToggleButton IsChecked="{Binding IsAdvancedView}" Style="{StaticResource MahApps.Styles.ToggleButton.Switch}" />
+                <ToggleButton IsChecked="{Binding IsAdvancedView}" />
             </StackPanel>
         </Grid>
 
