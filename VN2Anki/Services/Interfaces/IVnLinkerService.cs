@@ -12,6 +12,6 @@ namespace VN2Anki.Services.Interfaces
 
     public interface IVnLinkerService
     {
-        Task<LinkResult?> TryAutoLinkAsync(VisualNovel? currentVn, string? specificProcessName = null, bool suppressConfirmation = false);
+        Task<LinkResult?> TryAutoLinkAsync(VisualNovel? currentVn, string? specificProcessName = null, bool suppressConfirmation = false, int maxRetries = 0);
     }
 }

@@ -25,6 +25,7 @@ namespace VN2Anki.Services
                     UseShellExecute = true
                 };
                 Process.Start(pInfo);
+
                 return Task.FromResult(GameLaunchResult.Success);
             }
             catch (Exception)

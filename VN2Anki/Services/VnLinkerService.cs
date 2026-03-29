@@ -114,47 +114,51 @@ namespace VN2Anki.Services
             return null;
         }
 
-        public async Task<LinkResult?> TryAutoLinkAsync(VisualNovel? currentVn, string? specificProcessName = null, bool suppressConfirmation = false)
+        public async Task<LinkResult?> TryAutoLinkAsync(VisualNovel? currentVn, string? specificProcessName = null, bool suppressConfirmation = false, int maxRetries = 0)
         {
-            var result = await AutoSyncRunningVnAsync(specificProcessName, suppressConfirmation);
-            if (result != null)
+            for (int attempt = 0; attempt <= maxRetries; attempt++)
             {
-                return result;
-            }
-
-            var config = _configService.CurrentConfig;
-            var configWin = config.Media.VideoWindow;
-
-            if (string.IsNullOrEmpty(configWin))
-            {
-                return null;
-            }
-
-            var windows = _processMonitor.GetActiveWindows();
-            var targetWin = windows.FirstOrDefault(w => string.Equals(w.ProcessName, configWin, StringComparison.OrdinalIgnoreCase));
-
-            if (targetWin == null)
-            {
-                return null;
-            }
-
-            if (currentVn != null)
-            {
-                if (!string.Equals(currentVn.ProcessName, configWin, StringComparison.OrdinalIgnoreCase))
+                var result = await AutoSyncRunningVnAsync(specificProcessName, suppressConfirmation);
+                if (result != null && result.ProcessId > 0)
                 {
-                    string exeName = !string.IsNullOrEmpty(currentVn.ExecutablePath) ? Path.GetFileName(currentVn.ExecutablePath) : "";
-                    if (string.IsNullOrEmpty(exeName) || !string.Equals(exeName, configWin, StringComparison.OrdinalIgnoreCase))
+                    return result;
+                }
+
+                // Also check by config directly
+                var config = _configService.CurrentConfig;
+                var configWin = config.Media.VideoWindow;
+
+                if (!string.IsNullOrEmpty(configWin))
+                {
+                    var windows = _processMonitor.GetActiveWindows();
+                    var targetWin = windows.FirstOrDefault(w => string.Equals(w.ProcessName, configWin, StringComparison.OrdinalIgnoreCase));
+
+                    if (targetWin != null && currentVn != null)
                     {
-                        return null;
+                        bool isMatch = string.Equals(currentVn.ProcessName, configWin, StringComparison.OrdinalIgnoreCase);
+                        if (!isMatch)
+                        {
+                            string exeName = !string.IsNullOrEmpty(currentVn.ExecutablePath) ? Path.GetFileName(currentVn.ExecutablePath) : "";
+                            isMatch = !string.IsNullOrEmpty(exeName) && string.Equals(exeName, configWin, StringComparison.OrdinalIgnoreCase);
+                        }
+
+                        if (isMatch)
+                        {
+                            return new LinkResult
+                            {
+                                VisualNovel = currentVn,
+                                ProcessId = targetWin.ProcessId,
+                                ProcessName = targetWin.ProcessName
+                            };
+                        }
                     }
                 }
-                
-                return new LinkResult
+
+                // If not found and we have retries left, wait and try again
+                if (attempt < maxRetries)
                 {
-                    VisualNovel = currentVn,
-                    ProcessId = targetWin.ProcessId,
-                    ProcessName = targetWin.ProcessName
-                };
+                    await Task.Delay(1000);
+                }
             }
 
             return null;
