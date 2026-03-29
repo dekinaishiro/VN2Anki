@@ -110,6 +110,7 @@ namespace VN2Anki
             services.AddSingleton<ISessionAnalyticsEngine, SessionAnalyticsEngine>();
             services.AddSingleton<IUserActivityService, UserActivityService>();
             services.AddSingleton<IWindowFocusMonitorService, WindowFocusMonitorService>();
+            services.AddSingleton<IInputMonitorService, InputMonitorService>();
 
             services.AddTransient<VN2Anki.ViewModels.MainWindowViewModel>();
             services.AddTransient<ViewModels.SettingsViewModel>();
@@ -200,6 +201,7 @@ namespace VN2Anki
             _ = Services.GetRequiredService<IOverlayProfileService>();
             _ = Services.GetRequiredService<IUserActivityService>();
             _ = Services.GetRequiredService<IWindowFocusMonitorService>();
+            _ = Services.GetRequiredService<IInputMonitorService>();
             _ = Services.GetRequiredService<ISessionAnalyticsEngine>();
             
             var processMonitor = Services.GetRequiredService<IProcessMonitoringService>();

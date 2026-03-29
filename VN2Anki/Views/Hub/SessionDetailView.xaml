@@ -7,30 +7,43 @@
              xmlns:converters="clr-namespace:VN2Anki.Converters"
              xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
              mc:Ignorable="d" 
-             d:DesignHeight="600" d:DesignWidth="800"
+             d:DesignHeight="800" d:DesignWidth="1000"
              Background="Transparent">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <converters:ImagePathConverter x:Key="ImagePathConverter"/>
+        <converters:SecondsToFormattedTimeConverter x:Key="SecondsToTimeConverter"/>
+        <converters:BooleanInverseConverter x:Key="BoolInv"/>
+        <converters:BooleanInverseConverter x:Key="BoolInvToVis"/> <!-- Note: I'll use it with a Style or Visibility -->
+
+        <Style x:Key="InvertedBoolToVis" TargetType="FrameworkElement">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding AnalyticsResult.MinedWords.Count}" Value="0">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
 
         <Style TargetType="TextBlock" x:Key="StatHeader">
             <Setter Property="Foreground" Value="#A0A0A0"/>
-            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontSize" Value="11"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Margin" Value="0,0,0,4"/>
         </Style>
 
         <Style TargetType="TextBlock" x:Key="StatValue">
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontSize" Value="24"/>
+            <Setter Property="FontSize" Value="22"/>
             <Setter Property="FontWeight" Value="Bold"/>
         </Style>
 
         <Style TargetType="Border" x:Key="StatCard">
             <Setter Property="Background" Value="#252525"/>
             <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Padding" Value="16"/>
-            <Setter Property="Margin" Value="0,0,16,0"/>
+            <Setter Property="Padding" Value="16,12"/>
+            <Setter Property="Margin" Value="0,0,12,0"/>
+            <Setter Property="Width" Value="180"/>
             <Setter Property="Effect">
                 <Setter.Value>
                     <DropShadowEffect Color="Black" BlurRadius="5" Opacity="0.3" ShadowDepth="2"/>
@@ -39,7 +52,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid>
+    <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -51,6 +64,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
             <Button Style="{DynamicResource IconButtonStyle}" 
@@ -60,142 +74,194 @@
             </Button>
 
             <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                <TextBlock Text="{Binding Session.StartTime, StringFormat='dd/MM/yyyy HH:mm'}" FontSize="28" FontWeight="Bold" Foreground="White"/>
-                <TextBlock Text="{Binding VisualNovel.Title}" FontSize="16" Foreground="#A0A0A0" Margin="0,4,0,0"
+                <TextBlock Text="{Binding Session.StartTime, StringFormat='dd/MM/yyyy HH:mm'}" FontSize="24" FontWeight="Bold" Foreground="White"/>
+                <TextBlock Text="{Binding VisualNovel.Title}" FontSize="14" Foreground="#A0A0A0" Margin="0,2,0,0"
                            Visibility="{Binding VisualNovel, Converter={StaticResource BoolToVis}}"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="Modo Avançado" Foreground="White" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <ToggleButton IsChecked="{Binding IsAdvancedView}" Style="{StaticResource MahApps.Styles.ToggleButton.Switch}" />
             </StackPanel>
         </Grid>
 
-        <!-- Stats Cards -->
-        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,20">
-            <StackPanel Orientation="Horizontal">
-                <!-- Total Time -->
-                <Border Style="{StaticResource StatCard}" Width="160">
-                    <StackPanel>
-                        <TextBlock Text="Tempo Total" Style="{StaticResource StatHeader}"/>
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom">
-                            <iconPacks:PackIconMaterial Kind="ClockOutline" Width="24" Height="24" Foreground="#4A90E2" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding Session.FormattedDuration}" Style="{StaticResource StatValue}"/>
-                        </StackPanel>
+        <!-- Stats Grid -->
+        <UniformGrid Grid.Row="1" Columns="5" Margin="0,0,0,20">
+            <Border Style="{StaticResource StatCard}" Width="Auto">
+                <StackPanel>
+                    <TextBlock Text="Tempo Total" Style="{StaticResource StatHeader}"/>
+                    <StackPanel Orientation="Horizontal">
+                        <iconPacks:PackIconMaterial Kind="ClockOutline" Width="18" Height="18" Foreground="#4A90E2" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding Session.FormattedDuration}" Style="{StaticResource StatValue}"/>
                     </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource StatCard}" Width="Auto">
+                <StackPanel>
+                    <TextBlock Text="Tempo Efetivo" Style="{StaticResource StatHeader}"/>
+                    <StackPanel Orientation="Horizontal">
+                        <iconPacks:PackIconMaterial Kind="ClockCheckOutline" Width="18" Height="18" Foreground="#2ECC71" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding Session.EffectiveDurationSeconds, Converter={StaticResource SecondsToTimeConverter}}" Style="{StaticResource StatValue}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource StatCard}" Width="Auto">
+                <StackPanel>
+                    <TextBlock Text="Gordura (Delay)" Style="{StaticResource StatHeader}"/>
+                    <StackPanel Orientation="Horizontal">
+                        <iconPacks:PackIconMaterial Kind="TimerSand" Width="18" Height="18" Foreground="#E74C3C" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding AnalyticsResult.LatencySeconds, Converter={StaticResource SecondsToTimeConverter}}" Style="{StaticResource StatValue}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource StatCard}" Width="Auto">
+                <StackPanel>
+                    <TextBlock Text="Consultas / Mined" Style="{StaticResource StatHeader}"/>
+                    <StackPanel Orientation="Horizontal">
+                        <iconPacks:PackIconMaterial Kind="BookSearchOutline" Width="18" Height="18" Foreground="#F39C12" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock Style="{StaticResource StatValue}">
+                            <Run Text="{Binding AnalyticsResult.LookupCount, Mode=OneWay}"/>
+                            <Run Text="/" Foreground="#666"/>
+                            <Run Text="{Binding AnalyticsResult.MinedWords.Count, Mode=OneWay}" Foreground="#2ECC71"/>
+                        </TextBlock>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource StatCard}" Width="Auto">
+                <StackPanel>
+                    <TextBlock Text="Velocidade (SPC)" Style="{StaticResource StatHeader}"/>
+                    <StackPanel Orientation="Horizontal">
+                        <iconPacks:PackIconMaterial Kind="Speedometer" Width="18" Height="18" Foreground="#9B59B6" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding Session.CharactersRead}" Style="{StaticResource StatValue}" ToolTip="Total de Caracteres"/>
+                        <TextBlock Text=" chars" Foreground="#666" FontSize="12" VerticalAlignment="Bottom" Margin="4,0,0,4"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </UniformGrid>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="300"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Log DataGrid -->
+            <Border Grid.Column="0" Background="#1A1A1A" CornerRadius="8" Margin="0,0,16,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" Background="#252525" CornerRadius="8,8,0,0" Padding="12">
+                        <Grid>
+                            <TextBlock Text="Histórico de Frases" Foreground="White" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <Button HorizontalAlignment="Right" Padding="12,4" Background="#E74C3C" Foreground="White" BorderThickness="0"
+                                    Command="{Binding DeleteItemsCommand}" CommandParameter="{Binding SelectedItems, ElementName=LogDataGrid}">
+                                <iconPacks:PackIconMaterial Kind="Delete" Width="14" Height="14"/>
+                            </Button>
+                        </Grid>
+                    </Border>
+
+                    <DataGrid x:Name="LogDataGrid" Grid.Row="1" ItemsSource="{Binding FilteredLogItems}" AutoGenerateColumns="False" 
+                              CanUserAddRows="False" CanUserDeleteRows="False" SelectionMode="Extended"
+                              Background="Transparent" RowBackground="Transparent" AlternatingRowBackground="#12FFFFFF"
+                              Foreground="White" HeadersVisibility="Column" GridLinesVisibility="None"
+                              BorderThickness="0" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+                        <DataGrid.Resources>
+                            <Style TargetType="DataGridColumnHeader">
+                                <Setter Property="Background" Value="#252525"/>
+                                <Setter Property="Foreground" Value="#A0A0A0"/>
+                                <Setter Property="Padding" Value="10,8"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                            </Style>
+                            <Style TargetType="DataGridRow">
+                                <Setter Property="BorderThickness" Value="0"/>
+                            </Style>
+                            <Style TargetType="DataGridCell">
+                                <Setter Property="Padding" Value="10,6"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="DataGridCell">
+                                            <Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}">
+                                                <ContentPresenter VerticalAlignment="Center" />
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </DataGrid.Resources>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Hora" Binding="{Binding Timestamp, StringFormat='HH:mm:ss'}" Width="80" IsReadOnly="True"/>
+                            <DataGridTextColumn Header="Evento" Binding="{Binding EventType}" Width="80" IsReadOnly="True" 
+                                                Visibility="{Binding DataContext.IsAdvancedView, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"/>
+                            <DataGridTextColumn Header="Conteúdo" Binding="{Binding Details}" Width="*" IsReadOnly="True">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="TextWrapping" Value="Wrap"/>
+                                        <Setter Property="FontSize" Value="14"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <ProgressBar Grid.Row="1" IsIndeterminate="True" Height="2" VerticalAlignment="Top" 
+                                 Visibility="{Binding IsLoadingLogs, Converter={StaticResource BoolToVis}}" Background="Transparent" Foreground="#4A90E2" BorderThickness="0"/>
+                </Grid>
+            </Border>
+
+            <!-- Right Sidebar -->
+            <StackPanel Grid.Column="1">
+                <!-- Mined Words -->
+                <Border Background="#1A1A1A" CornerRadius="8" Padding="12" Margin="0,0,0,16" MinHeight="200">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="Palavras Mineradas" Foreground="White" FontWeight="Bold" Margin="0,0,0,12"/>
+                        
+                        <ListBox Grid.Row="1" ItemsSource="{Binding AnalyticsResult.MinedWords}" Background="Transparent" BorderThickness="0">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#252525" CornerRadius="4" Padding="8,4" Margin="0,0,0,4">
+                                        <TextBlock Text="{Binding}" Foreground="#2ECC71" FontSize="13"/>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        
+                        <TextBlock Grid.Row="1" Text="Nenhuma palavra minerada nesta sessão." Foreground="#555" 
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"
+                                   Style="{StaticResource InvertedBoolToVis}"/>
+                    </Grid>
                 </Border>
 
-                <!-- Effective Time -->
-                <Border Style="{StaticResource StatCard}" Width="160">
+                <!-- Speed Info / Placeholder for Gaussian -->
+                <Border Background="#1A1A1A" CornerRadius="8" Padding="12">
                     <StackPanel>
-                        <TextBlock Text="Tempo Efetivo" Style="{StaticResource StatHeader}"/>
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom">
-                            <iconPacks:PackIconMaterial Kind="ClockCheckOutline" Width="24" Height="24" Foreground="#2ECC71" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding Session.EffectiveDurationSeconds}" Style="{StaticResource StatValue}"/>
-                            <!-- Formatter missing for int seconds to timespan string, will just show raw or we can make a property in ViewModel -->
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
-
-                <!-- Characters -->
-                <Border Style="{StaticResource StatCard}" Width="160">
-                    <StackPanel>
-                        <TextBlock Text="Caracteres Lidos" Style="{StaticResource StatHeader}"/>
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom">
-                            <iconPacks:PackIconMaterial Kind="TextShadow" Width="24" Height="24" Foreground="#F39C12" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding Session.CharactersRead}" Style="{StaticResource StatValue}"/>
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
-
-                <!-- Lookups -->
-                <Border Style="{StaticResource StatCard}" Width="160">
-                    <StackPanel>
-                        <TextBlock Text="Consultas (Yomitan)" Style="{StaticResource StatHeader}"/>
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom">
-                            <iconPacks:PackIconMaterial Kind="BookSearchOutline" Width="24" Height="24" Foreground="#E74C3C" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding Session.LookupCount}" Style="{StaticResource StatValue}"/>
-                        </StackPanel>
+                        <TextBlock Text="Ritmo de Leitura" Foreground="White" FontWeight="Bold" Margin="0,0,0,12"/>
+                        
+                        <!-- Simple Summary of SPC -->
+                        <Grid Margin="0,0,0,10">
+                            <TextBlock Text="Média de SPC" Foreground="#A0A0A0"/>
+                            <TextBlock Text="-- s/char" Foreground="White" HorizontalAlignment="Right" FontWeight="Bold"/>
+                        </Grid>
+                        
+                        <Border Height="100" Background="#05000000" BorderBrush="#333" BorderThickness="1" CornerRadius="4">
+                            <TextBlock Text="Gráfico de Distribuição (Gaussiana)" Foreground="#444" 
+                                       VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="10"/>
+                        </Border>
                     </StackPanel>
                 </Border>
             </StackPanel>
-        </ScrollViewer>
-
-        <!-- Log List -->
-        <Border Grid.Row="2" Background="#1A1A1A" CornerRadius="8" Padding="1">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <Grid Grid.Row="0" Background="#252525" Margin="0,0,0,1">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="Histórico de Eventos" Foreground="White" FontSize="14" FontWeight="SemiBold" Margin="12,12"/>
-                    
-                    <Button Grid.Column="1" Margin="8" Padding="12,6" Background="#E74C3C" Foreground="White" BorderThickness="0"
-                            Command="{Binding DeleteItemsCommand}" CommandParameter="{Binding SelectedItems, ElementName=LogDataGrid}">
-                        <StackPanel Orientation="Horizontal">
-                            <iconPacks:PackIconMaterial Kind="Delete" Width="14" Height="14" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="Excluir Selecionados" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-                </Grid>
-
-                <DataGrid x:Name="LogDataGrid" Grid.Row="1" ItemsSource="{Binding LogItems}" AutoGenerateColumns="False" 
-                          CanUserAddRows="False" CanUserDeleteRows="False" SelectionMode="Extended"
-                          Background="Transparent" RowBackground="Transparent" AlternatingRowBackground="#151515"
-                          Foreground="White" HeadersVisibility="Column" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#333333"
-                          BorderThickness="0" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
-                    <DataGrid.Resources>
-                        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#3D3D3D"/>
-                        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#3D3D3D"/>
-                        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="White"/>
-                        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="White"/>
-
-                        <Style TargetType="DataGridColumnHeader">
-                            <Setter Property="Background" Value="#252525"/>
-                            <Setter Property="Foreground" Value="#A0A0A0"/>
-                            <Setter Property="FontWeight" Value="SemiBold"/>
-                            <Setter Property="Padding" Value="12,8"/>
-                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                            <Setter Property="BorderBrush" Value="#333333"/>
-                        </Style>
-                        <Style TargetType="DataGridRow">
-                            <Setter Property="BorderThickness" Value="0"/>
-                            <Setter Property="Background" Value="Transparent"/>
-                        </Style>
-                        <Style TargetType="DataGridCell">
-                            <Setter Property="Padding" Value="12,8"/>
-                            <Setter Property="BorderThickness" Value="0"/>
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="DataGridCell">
-                                        <Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}">
-                                            <ContentPresenter VerticalAlignment="Center" />
-                                        </Border>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                        </Style>
-                    </DataGrid.Resources>
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Linha" Binding="{Binding LineIndex}" Width="Auto" IsReadOnly="True"/>
-                        <DataGridTextColumn Header="Hora" Binding="{Binding Timestamp, StringFormat='HH:mm:ss'}" Width="Auto" IsReadOnly="True"/>
-                        <DataGridTextColumn Header="Evento" Binding="{Binding EventType}" Width="Auto" IsReadOnly="True"/>
-                        <DataGridTextColumn Header="Detalhes / Texto" Binding="{Binding Details}" Width="*" IsReadOnly="True">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="TextWrapping" Value="Wrap"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
-
-                <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" 
-                            Visibility="{Binding IsLoadingLogs, Converter={StaticResource BoolToVis}}">
-                    <TextBlock Text="Carregando Log..." Foreground="#A0A0A0" FontSize="16"/>
-                </StackPanel>
-            </Grid>
-        </Border>
+        </Grid>
     </Grid>
 </UserControl>

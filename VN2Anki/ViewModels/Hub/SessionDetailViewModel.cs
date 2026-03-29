@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -33,10 +34,18 @@ namespace VN2Anki.ViewModels.Hub
         [ObservableProperty]
         private VisualNovel? _visualNovel;
 
+        [ObservableProperty]
+        private SessionAnalyticsResult? _analyticsResult;
+
         public ObservableCollection<SessionDetailItem> LogItems { get; } = new();
 
         [ObservableProperty]
         private bool _isLoadingLogs;
+
+        [ObservableProperty]
+        private bool _isAdvancedView = false;
+
+        public ObservableCollection<SessionDetailItem> FilteredLogItems { get; } = new();
 
         public SessionDetailViewModel(IVnDatabaseService dbService, ISessionAnalyticsEngine analyticsEngine)
         {
@@ -56,6 +65,21 @@ namespace VN2Anki.ViewModels.Hub
             await LoadLogsAsync();
         }
 
+        partial void OnIsAdvancedViewChanged(bool value)
+        {
+            ApplyFilter();
+        }
+
+        private void ApplyFilter()
+        {
+            FilteredLogItems.Clear();
+            var items = IsAdvancedView ? LogItems : LogItems.Where(x => x.EventType == "HOOK");
+            foreach (var item in items)
+            {
+                FilteredLogItems.Add(item);
+            }
+        }
+
         [RelayCommand]
         private async Task LoadLogsAsync()
         {
@@ -67,6 +91,10 @@ namespace VN2Anki.ViewModels.Hub
 
             try
             {
+                // 1. Recalculate full analytics for the detailed view
+                AnalyticsResult = await _analyticsEngine.ProcessSessionLogAsync(Session.LogFilePath, Session.DurationSeconds);
+
+                // 2. Load log items
                 var lines = await File.ReadAllLinesAsync(Session.LogFilePath);
                 for (int i = 0; i < lines.Length; i++)
                 {
@@ -84,26 +112,7 @@ namespace VN2Anki.ViewModels.Hub
 
                         if (root.TryGetProperty("d", out var dataElement))
                         {
-                            if (e == "HOOK" && dataElement.TryGetProperty("text", out var textEl))
-                            {
-                                details = textEl.GetString() ?? "";
-                            }
-                            else if (e == "APP_STATE" && dataElement.TryGetProperty("state", out var stateEl))
-                            {
-                                details = $"Janela Ativa: {stateEl.GetString() ?? ""}";
-                            }
-                            else if (e == "LOOKUP" && dataElement.TryGetProperty("action", out var actionEl))
-                            {
-                                details = $"Consulta no Dicionário ({actionEl.GetString() ?? "desconhecido"})";
-                            }
-                            else if (e == "MINE" && dataElement.TryGetProperty("card", out var cardEl))
-                            {
-                                details = $"Carta Criada: {cardEl.GetString() ?? ""}";
-                            }
-                            else
-                            {
-                                details = dataElement.GetRawText();
-                            }
+                            details = GetDetailsForEvent(e, dataElement);
                         }
 
                         LogItems.Add(new SessionDetailItem
@@ -117,11 +126,26 @@ namespace VN2Anki.ViewModels.Hub
                     }
                     catch { /* ignore */ }
                 }
+
+                ApplyFilter();
             }
             finally
             {
                 IsLoadingLogs = false;
             }
+        }
+
+        private string GetDetailsForEvent(string e, JsonElement dataElement)
+        {
+            return e switch
+            {
+                "HOOK" => dataElement.TryGetProperty("text", out var t) ? t.GetString() ?? "" : "",
+                "APP_STATE" => dataElement.TryGetProperty("focus", out var f) ? $"Foco: {f.GetString()}" : (dataElement.TryGetProperty("state", out var s) ? $"Estado: {s.GetString()}" : ""),
+                "LOOKUP" => $"Consulta: {dataElement.GetRawText()}",
+                "MINE" => $"Minerado: {(dataElement.TryGetProperty("card", out var c) ? c.GetString() : "")}",
+                "CLICK" => $"Clique ({(dataElement.TryGetProperty("source", out var src) ? src.GetString() : "")}): Target={(dataElement.TryGetProperty("target", out var trg) ? trg.GetString() : "")}",
+                _ => dataElement.GetRawText()
+            };
         }
 
         [RelayCommand]
@@ -130,42 +154,20 @@ namespace VN2Anki.ViewModels.Hub
             if (items == null || items.Count == 0 || string.IsNullOrEmpty(Session?.LogFilePath)) return;
 
             var itemsToDelete = items.Cast<SessionDetailItem>().ToList();
-            var indicesToDelete = new System.Collections.Generic.HashSet<int>(itemsToDelete.Select(x => x.LineIndex));
-
-            if (indicesToDelete.Count == 0) return;
+            var indicesToDelete = new HashSet<int>(itemsToDelete.Select(x => x.LineIndex));
 
             string originalFilePath = Session.LogFilePath;
-            string backupFilePath = originalFilePath + ".bak";
-
-            // Create backup on first modification
-            if (!File.Exists(backupFilePath) && File.Exists(originalFilePath))
-            {
-                File.Copy(originalFilePath, backupFilePath);
-            }
 
             try
             {
                 var allLines = await File.ReadAllLinesAsync(originalFilePath);
                 var remainingLines = allLines.Where((line, index) => !indicesToDelete.Contains(index)).ToList();
-
                 await File.WriteAllLinesAsync(originalFilePath, remainingLines);
 
-                // Update UI visually
-                foreach (var item in itemsToDelete)
-                {
-                    LogItems.Remove(item);
-                }
-
-                // Force Engine to Recalculate
+                await LoadLogsAsync(); // Reload everything
+                
+                // Update session in DB via analytics engine call
                 await _analyticsEngine.ProcessAndSaveSessionAsync(Session);
-
-                // Refresh the Session reference to update the UI bindings with new values
-                var allSessions = await _dbService.GetAllSessionsAsync();
-                var updatedSession = allSessions.FirstOrDefault(s => s.Id == Session.Id);
-                if (updatedSession != null)
-                {
-                    Session = updatedSession;
-                }
             }
             catch (Exception ex)
             {
