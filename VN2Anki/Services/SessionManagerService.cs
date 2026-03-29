@@ -62,11 +62,11 @@ namespace VN2Anki.Services
             WeakReferenceMessenger.Default.RegisterAll(this);
         }
 
-        public async Task TryAutoLinkAsync(string? specificProcessName = null, bool suppressConfirmation = false, int maxRetries = 0)
+        public async Task TryAutoLinkAsync(string? specificProcessName = null, bool suppressConfirmation = false)
         {
             if (HasUnsavedProgress) return;
 
-            var linkResult = await _linkerService.TryAutoLinkAsync(_currentVN, specificProcessName, suppressConfirmation, maxRetries);
+            var linkResult = await _linkerService.TryAutoLinkAsync(_currentVN, specificProcessName, suppressConfirmation);
             
             if (linkResult != null)
             {
@@ -126,19 +126,12 @@ namespace VN2Anki.Services
                 }
             }
 
-            await TryAutoLinkAsync(e.VisualNovel.ProcessName, suppressConfirmation: isPending, maxRetries: 10);
+            await TryAutoLinkAsync(e.VisualNovel.ProcessName, suppressConfirmation: isPending);
         }
 
-        private async void OnVnProcessStopped(object? s, VnProcessEventArgs e)
+        private void OnVnProcessStopped(object? s, VnProcessEventArgs e)
         {
-            // If another instance of this same VN is still running, do not end the session.
-            if (_processMonitor.IsAnyInstanceRunning(e.VisualNovel.Id))
-            {
-                return;
-            }
-
             var config = _configService.CurrentConfig;
-            
             if (_currentVN != null && _currentVN.Id == e.VisualNovel.Id)
             {
                 bool isZeroed = _tracker.ValidCharacterCount == 0 && _tracker.Elapsed.TotalSeconds == 0 && !IsBufferActive;
@@ -147,9 +140,6 @@ namespace VN2Anki.Services
                     config.Media.VideoWindow = string.Empty;
                     _configService.Save();
                     SetCurrentVN(null);
-                    
-                    // Try to auto link another running VN now that this one is closed
-                    await TryAutoLinkAsync(null, suppressConfirmation: true);
                 }
             }
             else if (string.Equals(e.VisualNovel.ProcessName, config.Media.VideoWindow, StringComparison.OrdinalIgnoreCase))
@@ -157,9 +147,6 @@ namespace VN2Anki.Services
                 config.Media.VideoWindow = string.Empty;
                 _configService.Save();
                 SetCurrentVN(null);
-                
-                // Try to auto link another running VN
-                await TryAutoLinkAsync(null, suppressConfirmation: true);
             }
         }
 
