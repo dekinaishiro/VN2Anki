@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VN2Anki.Models.Entities;
@@ -36,6 +37,12 @@ namespace VN2Anki.ViewModels.Hub
 
         [ObservableProperty]
         private SessionAnalyticsResult? _analyticsResult;
+
+        [ObservableProperty]
+        private PointCollection? _speedDistributionPoints;
+
+        [ObservableProperty]
+        private bool _hasSpeedDistribution;
 
         public ObservableCollection<SessionDetailItem> LogItems { get; } = new();
 
@@ -73,7 +80,7 @@ namespace VN2Anki.ViewModels.Hub
         private void ApplyFilter()
         {
             FilteredLogItems.Clear();
-            var items = IsAdvancedView ? LogItems : LogItems.Where(x => x.EventType == "HOOK");
+            var items = IsAdvancedView ? LogItems : LogItems.Where(x => x.EventType == "HOOK" && !string.IsNullOrWhiteSpace(x.Details));
             foreach (var item in items)
             {
                 FilteredLogItems.Add(item);
@@ -93,6 +100,7 @@ namespace VN2Anki.ViewModels.Hub
             {
                 // 1. Recalculate full analytics for the detailed view
                 AnalyticsResult = await _analyticsEngine.ProcessSessionLogAsync(Session.LogFilePath, Session.DurationSeconds);
+                GenerateDistributionChart();
 
                 // 2. Load log items
                 var lines = await File.ReadAllLinesAsync(Session.LogFilePath);
@@ -133,6 +141,73 @@ namespace VN2Anki.ViewModels.Hub
             {
                 IsLoadingLogs = false;
             }
+        }
+
+        private void GenerateDistributionChart()
+        {
+            if (AnalyticsResult?.SpcDistribution == null || !AnalyticsResult.SpcDistribution.Any())
+            {
+                SpeedDistributionPoints = null;
+                HasSpeedDistribution = false;
+                return;
+            }
+
+            // Remove extreme outliers (top 5%) instead of a hardcoded threshold to adapt to different reading speeds
+            var sortedSpcs = AnalyticsResult.SpcDistribution.OrderBy(x => x).ToList();
+            int cutoffIndex = (int)(sortedSpcs.Count * 0.95);
+            if (cutoffIndex == 0) cutoffIndex = sortedSpcs.Count;
+            
+            var validSpcs = sortedSpcs.Take(cutoffIndex).ToList();
+            
+            if (!validSpcs.Any()) 
+            {
+                SpeedDistributionPoints = null;
+                HasSpeedDistribution = false;
+                return;
+            }
+
+            double min = validSpcs.Min();
+            double max = validSpcs.Max();
+            if (max - min < 0.05) max = min + 0.1; // avoid division by zero if all values are identical
+
+            int binCount = 20;
+            double binWidth = (max - min) / binCount;
+            int[] bins = new int[binCount];
+
+            foreach (var spc in validSpcs)
+            {
+                int binIndex = (int)((spc - min) / binWidth);
+                if (binIndex >= binCount) binIndex = binCount - 1;
+                if (binIndex < 0) binIndex = 0;
+                bins[binIndex]++;
+            }
+
+            int maxFreq = bins.Max();
+            if (maxFreq == 0) maxFreq = 1;
+
+            var points = new PointCollection();
+            double width = 260; // virtual canvas width
+            double height = 80;  // virtual canvas height
+
+            // Start at bottom left
+            points.Add(new System.Windows.Point(0, height));
+
+            // Create smoothish curve points
+            for (int i = 0; i < binCount; i++)
+            {
+                double x = (i / (double)(binCount - 1)) * width;
+                double normalizedY = bins[i] / (double)maxFreq;
+                
+                // leave top padding (10px) so the peak doesn't touch the very top
+                double y = height - (normalizedY * (height - 10)); 
+                points.Add(new System.Windows.Point(x, y));
+            }
+
+            // Close the shape at bottom right
+            points.Add(new System.Windows.Point(width, height));
+            
+            SpeedDistributionPoints = points;
+            HasSpeedDistribution = true;
         }
 
         private string GetDetailsForEvent(string e, JsonElement dataElement)

@@ -100,7 +100,6 @@ namespace VN2Anki.Services
             if (!blocks.Any()) return result;
 
             // 2. Identify "Pure" blocks for Median calculation
-            // Pure = No lookups, No focus changes, No Mining, reasonable duration
             var pureSpcs = new List<double>();
             foreach (var b in blocks)
             {
@@ -110,10 +109,20 @@ namespace VN2Anki.Services
                 if (!hasLookups && !hasFocusLoss && b.Text.Length > 0)
                 {
                     double duration = (b.EndTime - b.StartTime).TotalSeconds;
-                    if (duration > 0.2 && duration < 30) // Filter out skips and long pauses
+                    if (duration > 0) // Previne apenas divisão por zero
                     {
                         pureSpcs.Add(duration / b.Text.Length);
                     }
+                }
+            }
+
+            // Fallback: se a sessão foi muito fragmentada e não há blocos puros, usamos a média de todos os blocos possíveis
+            if (!pureSpcs.Any())
+            {
+                foreach (var b in blocks.Where(x => x.Text.Length > 0))
+                {
+                    double duration = (b.EndTime - b.StartTime).TotalSeconds;
+                    if (duration > 0) pureSpcs.Add(duration / b.Text.Length);
                 }
             }
 
@@ -188,16 +197,18 @@ namespace VN2Anki.Services
 
                 totalDistraction += b.DistractionSeconds;
                 
-                if (b.Text.Length > 0 && !studyEvents.Any() && b.DistractionSeconds < 1)
-                {
-                    result.SpcDistribution.Add(currentSpc);
-                }
-
                 // Track mined words
                 foreach(var m in b.Events.Where(e => e.e == "MINE"))
                 {
                     string card = m.d.TryGetProperty("card", out var c) ? c.GetString() ?? "" : "";
                     if (!string.IsNullOrEmpty(card)) result.MinedWords.Add(card);
+                }
+
+                // Add to distribution using EFFECTIVE SPC (only for blocks with actual reading time)
+                if (b.Text.Length > 0)
+                {
+                    double effectiveSpc = Math.Max(0, b.ActiveReadingSeconds) / b.Text.Length;
+                    result.SpcDistribution.Add(effectiveSpc);
                 }
             }
 
