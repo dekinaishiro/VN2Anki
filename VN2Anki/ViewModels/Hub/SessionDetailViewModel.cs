@@ -15,13 +15,22 @@ using VN2Anki.Services.Interfaces;
 
 namespace VN2Anki.ViewModels.Hub
 {
-    public class SessionDetailItem : ObservableObject
+    public partial class SessionDetailItem : ObservableObject
     {
         public int LineIndex { get; set; }
         public DateTime Timestamp { get; set; }
         public string EventType { get; set; } = string.Empty;
         public string Details { get; set; } = string.Empty;
         public string RawJson { get; set; } = string.Empty;
+
+        [ObservableProperty]
+        private double _activeSeconds;
+
+        [ObservableProperty]
+        private double _wastedSeconds;
+
+        public bool IsHook => EventType == "HOOK";
+        public bool IsNotHook => EventType != "HOOK";
     }
 
     public partial class SessionDetailViewModel : ObservableObject
@@ -104,6 +113,8 @@ namespace VN2Anki.ViewModels.Hub
 
                 // 2. Load log items
                 var lines = await File.ReadAllLinesAsync(Session.LogFilePath);
+                int blockIndex = 0;
+
                 for (int i = 0; i < lines.Length; i++)
                 {
                     string line = lines[i];
@@ -123,13 +134,26 @@ namespace VN2Anki.ViewModels.Hub
                             details = GetDetailsForEvent(e, dataElement);
                         }
 
+                        DateTime timestamp = DateTime.Parse(t);
+                        double activeSecs = 0;
+                        double wastedSecs = 0;
+
+                        if (e == "HOOK" && AnalyticsResult != null && AnalyticsResult.Blocks != null && blockIndex < AnalyticsResult.Blocks.Count)
+                        {
+                            var block = AnalyticsResult.Blocks[blockIndex++];
+                            activeSecs = block.ActiveReadingSeconds + block.StudySeconds;
+                            wastedSecs = block.LatencySeconds + block.DistractionSeconds;
+                        }
+
                         LogItems.Add(new SessionDetailItem
                         {
                             LineIndex = i,
-                            Timestamp = DateTime.Parse(t),
+                            Timestamp = timestamp,
                             EventType = e,
                             Details = details,
-                            RawJson = line
+                            RawJson = line,
+                            ActiveSeconds = activeSecs,
+                            WastedSeconds = wastedSecs
                         });
                     }
                     catch { /* ignore */ }

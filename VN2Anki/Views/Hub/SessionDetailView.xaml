@@ -5,16 +5,18 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:VN2Anki.Views.Hub"
              xmlns:converters="clr-namespace:VN2Anki.Converters"
+             xmlns:helpers="clr-namespace:VN2Anki.Helpers"
              xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
              mc:Ignorable="d" 
              d:DesignHeight="800" d:DesignWidth="1000"
              Background="Transparent">
     <UserControl.Resources>
+        <helpers:BindingProxy x:Key="DataContextProxy" Data="{Binding}" />
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <converters:ImagePathConverter x:Key="ImagePathConverter"/>
         <converters:SecondsToFormattedTimeConverter x:Key="SecondsToTimeConverter"/>
         <converters:BooleanInverseConverter x:Key="BoolInv"/>
-        <converters:BooleanInverseConverter x:Key="BoolInvToVis"/> <!-- Note: I'll use it with a Style or Visibility -->
+        <converters:BooleanInverseConverter x:Key="BoolInvToVis"/>
 
         <Style x:Key="InvertedBoolToVis" TargetType="FrameworkElement">
             <Setter Property="Visibility" Value="Collapsed"/>
@@ -86,52 +88,62 @@
         </Grid>
 
         <!-- Stats Grid -->
-        <UniformGrid Grid.Row="1" Columns="5" Margin="0,0,0,20">
-            <Border Style="{StaticResource StatCard}" Width="Auto">
+        <WrapPanel Grid.Row="1" Margin="0,0,0,20">
+            <Border Style="{StaticResource StatCard}" Width="190">
                 <StackPanel>
-                    <TextBlock Text="Tempo Total" Style="{StaticResource StatHeader}"/>
-                    <StackPanel Orientation="Horizontal">
-                        <iconPacks:PackIconMaterial Kind="ClockOutline" Width="18" Height="18" Foreground="#4A90E2" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding Session.FormattedDuration}" Style="{StaticResource StatValue}"/>
-                    </StackPanel>
-                </StackPanel>
-            </Border>
-
-            <Border Style="{StaticResource StatCard}" Width="Auto">
-                <StackPanel>
-                    <TextBlock Text="Tempo Efetivo" Style="{StaticResource StatHeader}"/>
-                    <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Tempo Efetivo (Útil)" Style="{StaticResource StatHeader}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                         <iconPacks:PackIconMaterial Kind="ClockCheckOutline" Width="18" Height="18" Foreground="#2ECC71" Margin="0,0,8,0" VerticalAlignment="Center"/>
                         <TextBlock Text="{Binding Session.EffectiveDurationSeconds, Converter={StaticResource SecondsToTimeConverter}}" Style="{StaticResource StatValue}"/>
                     </StackPanel>
+                    <TextBlock Foreground="#888" FontSize="11">
+                        <Run Text="Leitura: "/>
+                        <Run Text="{Binding AnalyticsResult.ReadingDurationSeconds, Mode=OneWay, Converter={StaticResource SecondsToTimeConverter}}" Foreground="#AAA"/>
+                    </TextBlock>
+                    <TextBlock Foreground="#888" FontSize="11">
+                        <Run Text="Lookups: "/>
+                        <Run Text="{Binding AnalyticsResult.LookupDurationSeconds, Mode=OneWay, Converter={StaticResource SecondsToTimeConverter}}" Foreground="#AAA"/>
+                    </TextBlock>
                 </StackPanel>
             </Border>
 
-            <Border Style="{StaticResource StatCard}" Width="Auto">
+            <Border Style="{StaticResource StatCard}" Width="190">
                 <StackPanel>
-                    <TextBlock Text="Gordura (Delay)" Style="{StaticResource StatHeader}"/>
-                    <StackPanel Orientation="Horizontal">
-                        <iconPacks:PackIconMaterial Kind="TimerSand" Width="18" Height="18" Foreground="#E74C3C" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding AnalyticsResult.LatencySeconds, Converter={StaticResource SecondsToTimeConverter}}" Style="{StaticResource StatValue}"/>
+                    <TextBlock Text="Tempo Desperdiçado" Style="{StaticResource StatHeader}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                        <iconPacks:PackIconMaterial Kind="ClockRemoveOutline" Width="18" Height="18" Foreground="#E74C3C" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding AnalyticsResult.AfkDurationSeconds, Converter={StaticResource SecondsToTimeConverter}}" Style="{StaticResource StatValue}"/>
                     </StackPanel>
+                    <TextBlock Foreground="#888" FontSize="11">
+                        <Run Text="Distrações (AFK): "/>
+                        <Run Text="{Binding AnalyticsResult.AfkDurationSeconds, Mode=OneWay, Converter={StaticResource SecondsToTimeConverter}}" Foreground="#AAA"/>
+                    </TextBlock>
+                    <TextBlock Foreground="#888" FontSize="11">
+                        <Run Text="Overhead (Delay): "/>
+                        <Run Text="{Binding AnalyticsResult.LatencySeconds, Mode=OneWay, Converter={StaticResource SecondsToTimeConverter}}" Foreground="#AAA"/>
+                    </TextBlock>
                 </StackPanel>
             </Border>
 
-            <Border Style="{StaticResource StatCard}" Width="Auto">
+            <Border Style="{StaticResource StatCard}" Width="150">
                 <StackPanel>
                     <TextBlock Text="Consultas / Mined" Style="{StaticResource StatHeader}"/>
-                    <StackPanel Orientation="Horizontal">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                         <iconPacks:PackIconMaterial Kind="BookSearchOutline" Width="18" Height="18" Foreground="#F39C12" Margin="0,0,8,0" VerticalAlignment="Center"/>
                         <TextBlock Style="{StaticResource StatValue}">
                             <Run Text="{Binding AnalyticsResult.LookupCount, Mode=OneWay}"/>
                             <Run Text="/" Foreground="#666"/>
-                            <Run Text="{Binding AnalyticsResult.MinedWords.Count, Mode=OneWay}" Foreground="#2ECC71"/>
+                            <Run Text="{Binding AnalyticsResult.MiningCount, Mode=OneWay}" Foreground="#2ECC71"/>
                         </TextBlock>
                     </StackPanel>
+                    <TextBlock Foreground="#888" FontSize="11">
+                        <Run Text="Distrações Totais: "/>
+                        <Run Text="{Binding AnalyticsResult.DistractionCount, Mode=OneWay}" Foreground="#E74C3C" FontWeight="Bold"/>
+                    </TextBlock>
                 </StackPanel>
             </Border>
 
-            <Border Style="{StaticResource StatCard}" Width="Auto">
+            <Border Style="{StaticResource StatCard}" Width="170">
                 <StackPanel>
                     <TextBlock Text="Velocidade (Leitura)" Style="{StaticResource StatHeader}"/>
                     <StackPanel Orientation="Horizontal">
@@ -139,9 +151,14 @@
                         <TextBlock Text="{Binding AnalyticsResult.CharsPerHour}" Style="{StaticResource StatValue}"/>
                         <TextBlock Text=" chars/h" Foreground="#666" FontSize="12" VerticalAlignment="Bottom" Margin="4,0,0,4"/>
                     </StackPanel>
+                    <TextBlock Foreground="#888" FontSize="11" Margin="0,4,0,0">
+                        <Run Text="Total: "/>
+                        <Run Text="{Binding Session.CharactersRead, Mode=OneWay}" Foreground="#AAA"/>
+                        <Run Text=" chars"/>
+                    </TextBlock>
                 </StackPanel>
             </Border>
-        </UniformGrid>
+        </WrapPanel>
 
         <!-- Main Content -->
         <Grid Grid.Row="2">
@@ -200,7 +217,27 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Hora" Binding="{Binding Timestamp, StringFormat='HH:mm:ss'}" Width="80" IsReadOnly="True"/>
                             <DataGridTextColumn Header="Evento" Binding="{Binding EventType}" Width="80" IsReadOnly="True" 
-                                                Visibility="{Binding DataContext.IsAdvancedView, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"/>
+                                                Visibility="{Binding Data.IsAdvancedView, Source={StaticResource DataContextProxy}, Converter={StaticResource BoolToVis}}"/>
+                            
+                            <DataGridTextColumn Header="Tempo Útil" Binding="{Binding ActiveSeconds, StringFormat='{}{0:F1}s'}" Width="90" IsReadOnly="True"
+                                                Visibility="{Binding Data.IsAdvancedView, Source={StaticResource DataContextProxy}, Converter={StaticResource BoolInvToVis}}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="#2ECC71"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
+                            <DataGridTextColumn Header="Descontado" Binding="{Binding WastedSeconds, StringFormat='{}{0:F1}s'}" Width="90" IsReadOnly="True"
+                                                Visibility="{Binding Data.IsAdvancedView, Source={StaticResource DataContextProxy}, Converter={StaticResource BoolInvToVis}}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="#E74C3C"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
                             <DataGridTextColumn Header="Conteúdo" Binding="{Binding Details}" Width="*" IsReadOnly="True">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">

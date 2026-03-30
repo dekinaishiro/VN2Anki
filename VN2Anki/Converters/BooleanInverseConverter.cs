@@ -9,9 +9,19 @@ namespace VN2Anki.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is bool b) return !b;
-            if (value is int i) return i == 0;
-            return false;
+            bool isTrue = false;
+            
+            if (value is bool b) isTrue = b;
+            else if (value is int i) isTrue = i > 0;
+
+            bool inverted = !isTrue;
+
+            if (targetType == typeof(Visibility))
+            {
+                return inverted ? Visibility.Visible : Visibility.Collapsed;
+            }
+
+            return inverted;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

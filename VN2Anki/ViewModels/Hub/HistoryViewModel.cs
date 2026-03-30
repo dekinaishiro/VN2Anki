@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using VN2Anki.Extensions;
 using VN2Anki.Messages;
 using VN2Anki.Models.Entities;
+using VN2Anki.Services;
 using VN2Anki.Services.Interfaces;
 
 namespace VN2Anki.ViewModels.Hub
@@ -13,15 +14,17 @@ namespace VN2Anki.ViewModels.Hub
     public partial class HistoryViewModel : ObservableObject, IRecipient<SessionSavedMessage>
     {
         private readonly IVnDatabaseService _dbService;
+        private readonly ISessionAnalyticsEngine _analyticsEngine;
         public INavigationService Navigation { get; }
 
         [ObservableProperty]
         private ObservableCollection<SessionRecord> _sessionHistory = new();
 
-        public HistoryViewModel(IVnDatabaseService dbService, INavigationService navigation)
+        public HistoryViewModel(IVnDatabaseService dbService, INavigationService navigation, ISessionAnalyticsEngine analyticsEngine)
         {
             _dbService = dbService;
             Navigation = navigation;
+            _analyticsEngine = analyticsEngine;
             _ = LoadHistoryAsync();
             WeakReferenceMessenger.Default.Register(this);
         }
@@ -33,6 +36,14 @@ namespace VN2Anki.ViewModels.Hub
         }
 
         public void Receive(SessionSavedMessage message) => _ = LoadHistoryAsync();
+
+        [RelayCommand]
+        private async Task ReapplyAllAnalyticsAsync()
+        {
+            await _analyticsEngine.ReprocessAllSessionsAsync();
+            await LoadHistoryAsync();
+            WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Estatísticas recalculadas com sucesso!", IsError = false }));
+        }
 
         [RelayCommand]
         private async Task DeleteSessionAsync(SessionRecord session)

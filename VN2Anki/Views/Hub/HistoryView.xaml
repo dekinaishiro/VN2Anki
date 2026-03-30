@@ -4,7 +4,17 @@
              xmlns:loc="clr-namespace:VN2Anki.Locales"
              Background="Transparent">
     <Grid Margin="10">
-        <ListView ItemsSource="{Binding SessionHistory}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <Grid Grid.Row="0" Margin="0,0,0,10">
+            <Button Content="Recalcular Estatísticas" Command="{Binding ReapplyAllAnalyticsCommand}" 
+                    HorizontalAlignment="Right" Padding="15,8" Background="#007ACC" Foreground="White" BorderThickness="0" Cursor="Hand" />
+        </Grid>
+
+        <ListView Grid.Row="1" ItemsSource="{Binding SessionHistory}" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
             <ListView.ItemContainerStyle>
                 <Style TargetType="ListViewItem">
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
