@@ -3,9 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vms="clr-namespace:VN2Anki.ViewModels.Hub"
         xmlns:views="clr-namespace:VN2Anki.Views.Hub"
+        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         Title="VN2Anki - User Hub" Height="700" Width="1050"
         Background="#1E1E1E" Foreground="White" WindowStartupLocation="CenterScreen"
-        Topmost="True">
+        Topmost="True" SizeChanged="UserHubWindow_SizeChanged">
 
     <Window.Resources>
         <DataTemplate DataType="{x:Type vms:LibraryViewModel}">
@@ -20,24 +21,85 @@
         <DataTemplate DataType="{x:Type vms:SessionDetailViewModel}">
             <views:SessionDetailView />
         </DataTemplate>
+
+        <Style x:Key="SidebarButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#EAEAEA"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#3E3E42"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
-    <Grid>
+    <Grid x:Name="RootGrid">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="SidebarStates">
+                <VisualState x:Name="Expanded">
+                    <Storyboard>
+                        <DoubleAnimation Storyboard.TargetName="SidebarBorder" Storyboard.TargetProperty="Width" To="200" Duration="0:0:0.2"/>
+                    </Storyboard>
+                </VisualState>
+                <VisualState x:Name="Compact">
+                    <Storyboard>
+                        <DoubleAnimation Storyboard.TargetName="SidebarBorder" Storyboard.TargetProperty="Width" To="60" Duration="0:0:0.2"/>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="LogoText" Storyboard.TargetProperty="Visibility">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Collapsed}"/>
+                        </ObjectAnimationUsingKeyFrames>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="LibraryText" Storyboard.TargetProperty="Visibility">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Collapsed}"/>
+                        </ObjectAnimationUsingKeyFrames>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HistoryText" Storyboard.TargetProperty="Visibility">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Collapsed}"/>
+                        </ObjectAnimationUsingKeyFrames>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SidebarButtons" Storyboard.TargetProperty="HorizontalAlignment">
+                            <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static HorizontalAlignment.Center}"/>
+                        </ObjectAnimationUsingKeyFrames>
+                    </Storyboard>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200" />
+            <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <Border Grid.Column="0" Background="#252526" BorderBrush="#3E3E42" BorderThickness="0,0,1,0">
-            <StackPanel Margin="10,20,10,10">
-                <TextBlock Text="VN2ANKI" Foreground="#007ACC" FontWeight="Black" FontSize="20" Margin="10,0,0,20"/>
-                <Button Content="📚 Library" Command="{Binding GoToLibraryCommand}" 
-                        Background="Transparent" Foreground="#EAEAEA" FontWeight="SemiBold" FontSize="14" 
-                        BorderThickness="0" Padding="10" HorizontalContentAlignment="Left" Cursor="Hand" Margin="0,0,0,5"/>
+        <Border x:Name="SidebarBorder" Grid.Column="0" Width="200" Background="#252526" BorderBrush="#3E3E42" BorderThickness="0,0,1,0">
+            <StackPanel x:Name="SidebarButtons" Margin="10,20,10,10">
+                <TextBlock x:Name="LogoText" Text="VN2ANKI" Foreground="#007ACC" FontWeight="Black" FontSize="20" Margin="10,0,0,20"/>
+                
+                <Button Style="{StaticResource SidebarButtonStyle}" Command="{Binding GoToLibraryCommand}" ToolTip="Library">
+                    <StackPanel Orientation="Horizontal">
+                        <iconPacks:PackIconMaterial Kind="Library" Width="20" Height="20" VerticalAlignment="Center" Margin="5,0,10,0"/>
+                        <TextBlock x:Name="LibraryText" Text="Library" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
 
-                <Button Content="⏱️ Sessions History" Command="{Binding GoToHistoryCommand}" 
-                        Background="Transparent" Foreground="#EAEAEA" FontWeight="SemiBold" FontSize="14" 
-                        BorderThickness="0" Padding="10" HorizontalContentAlignment="Left" Cursor="Hand" Margin="0,0,0,5"/>
+                <Button Style="{StaticResource SidebarButtonStyle}" Command="{Binding GoToHistoryCommand}" ToolTip="Sessions History">
+                    <StackPanel Orientation="Horizontal">
+                        <iconPacks:PackIconMaterial Kind="History" Width="20" Height="20" VerticalAlignment="Center" Margin="5,0,10,0"/>
+                        <TextBlock x:Name="HistoryText" Text="Sessions History" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
             </StackPanel>
         </Border>
 
