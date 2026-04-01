@@ -62,11 +62,12 @@ namespace VN2Anki.Services
             WeakReferenceMessenger.Default.RegisterAll(this);
         }
 
-        public async Task TryAutoLinkAsync(string? specificProcessName = null, bool suppressConfirmation = false)
+        public async Task TryAutoLinkAsync(string? specificProcessName = null, bool suppressConfirmation = false, int maxRetries = 0, VisualNovel? expectedVn = null)
         {
             if (HasUnsavedProgress) return;
 
-            var linkResult = await _linkerService.TryAutoLinkAsync(_currentVN, specificProcessName, suppressConfirmation);
+            var vnToPass = expectedVn ?? _currentVN;
+            var linkResult = await _linkerService.TryAutoLinkAsync(vnToPass, specificProcessName, suppressConfirmation, maxRetries);
             
             if (linkResult != null)
             {
@@ -126,7 +127,7 @@ namespace VN2Anki.Services
                 }
             }
 
-            await TryAutoLinkAsync(e.VisualNovel.ProcessName, suppressConfirmation: isPending);
+            await TryAutoLinkAsync(e.VisualNovel.ProcessName, suppressConfirmation: isPending, maxRetries: 10, expectedVn: e.VisualNovel);
         }
 
         private async void OnVnProcessStopped(object? s, VnProcessEventArgs e)
