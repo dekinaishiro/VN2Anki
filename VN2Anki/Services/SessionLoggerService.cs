@@ -115,11 +115,13 @@ namespace VN2Anki.Services
                 if (_writer != null)
                 {
                     await LogEventInternalAsync("SESSION_END", new { discarded = discard });
+                    
+                    string pathToDelete = _currentLogPath;
                     CloseCurrentSession();
 
-                    if (discard && File.Exists(_currentLogPath))
+                    if (discard && !string.IsNullOrEmpty(pathToDelete) && File.Exists(pathToDelete))
                     {
-                        try { File.Delete(_currentLogPath); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Failed to delete session log: {ex.Message}"); }
+                        try { File.Delete(pathToDelete); } catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Failed to delete session log: {ex.Message}"); }
                     }
                 }
             }
@@ -135,6 +137,8 @@ namespace VN2Anki.Services
             {
                 _writer.Dispose();
                 _writer = null;
+                _currentLogPath = string.Empty;
+                _sessionId = string.Empty;
             }
         }
 

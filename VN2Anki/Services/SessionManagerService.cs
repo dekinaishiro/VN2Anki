@@ -252,7 +252,12 @@ namespace VN2Anki.Services
                     if (!result) return false;
                 }
 
-                _ = _sessionLogger.StartNewSessionAsync();
+                // Only start a new log if no session is currently active (allows resuming after pause)
+                if (string.IsNullOrEmpty(_sessionLogger.CurrentLogPath))
+                {
+                    _ = _sessionLogger.StartNewSessionAsync();
+                }
+
                 _miningService.StartBuffer(deviceId);
                 IsBufferActive = true;
 
