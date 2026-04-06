@@ -275,7 +275,11 @@ namespace VN2Anki
                 if (Directory.Exists(pathToLoad))
                 {
                     var info = VN2Anki.Helpers.BrowserExtensionHelper.GetExtensionsFromPath(pathToLoad).FirstOrDefault();
-                    if (info != null) targetExtensions.Add((pathToLoad, info.Name));
+                    if (info != null) 
+                    {
+                        string cachedPath = VN2Anki.Helpers.BrowserExtensionHelper.GetOrCreateExtensionCache(pathToLoad);
+                        targetExtensions.Add((cachedPath, info.Name));
+                    }
                 }
             }
 

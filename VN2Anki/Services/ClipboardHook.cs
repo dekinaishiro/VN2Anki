@@ -53,6 +53,8 @@ namespace VN2Anki.Services
 
             if (!string.IsNullOrWhiteSpace(text))
             {
+                text = text.Replace(" ", "");
+
                 if (text == _lastText && (DateTime.Now - _lastTime).TotalMilliseconds < 1000) return;
 
                 _lastText = text;

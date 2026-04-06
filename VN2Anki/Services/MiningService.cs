@@ -205,6 +205,27 @@ namespace VN2Anki.Services
                     try
                     {
                         DebugLogger.Log($"[5-BACKGROUND] Starting Mining Slot creation | Text: {message.Text}");
+
+                        var sessionConfig = config.Session;
+                        if (sessionConfig.FilterSimilarPhrases)
+                        {
+                            MiningSlot? lastSlot;
+                            lock (_slotsLock)
+                            {
+                                lastSlot = _historySlots.FirstOrDefault();
+                            }
+
+                            if (lastSlot != null)
+                            {
+                                double similarity = Helpers.TextHelper.CalculateSimilarity(lastSlot.Text, message.Text);
+                                if (similarity >= sessionConfig.SimilarityThreshold)
+                                {
+                                    DebugLogger.Log($"[MINING-SVC] Skipping slot creation. Similarity: {similarity:P0} (Threshold: {sessionConfig.SimilarityThreshold:P0})");
+                                    return;
+                                }
+                            }
+                        }
+
                         _idleTimer.Stop();
                         SealAllOpenSlots(DateTime.Now);
 
@@ -238,7 +259,6 @@ namespace VN2Anki.Services
                         }
 
                         double finalSeconds;
-                        var sessionConfig = config.Session;
 
                         if (sessionConfig.UseDynamicTimeout)
                         {

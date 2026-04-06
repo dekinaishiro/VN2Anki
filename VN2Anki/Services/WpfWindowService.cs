@@ -133,6 +133,8 @@ namespace VN2Anki.Services
                     var environment = await VN2Anki.Helpers.BrowserExtensionHelper.GetSharedEnvironmentAsync();
                     await settingsWebView.EnsureCoreWebView2Async(environment);
                     
+                    extensionPath = VN2Anki.Helpers.BrowserExtensionHelper.GetOrCreateExtensionCache(extensionPath);
+                    
                     string manifestPath = System.IO.Path.Combine(extensionPath, "manifest.json");
                     string optionsHtmlPage = "options.html";
                     string targetExtName = "";

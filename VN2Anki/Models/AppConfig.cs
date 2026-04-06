@@ -51,6 +51,8 @@ namespace VN2Anki.Models
         public double DynamicMinSeconds { get; set; } = 2.0;
         public double AudioPaddingSeconds { get; set; } = 0.5;
         public double AudioFallbackSeconds { get; set; } = 5.0;
+        public bool FilterSimilarPhrases { get; set; } = false;
+        public double SimilarityThreshold { get; set; } = 0.9;
     }
 
     public class HookConfig

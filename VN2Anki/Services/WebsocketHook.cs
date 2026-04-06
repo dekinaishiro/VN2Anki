@@ -108,7 +108,7 @@ namespace VN2Anki.Services
 
                         try
                         {
-                            string message = rawMessage.Trim(); // Substitua pela sua lógica
+                            string message = rawMessage.Trim().Replace(" ", ""); // Substitua pela sua lógica
 
                             if (string.IsNullOrWhiteSpace(message)) continue;
 

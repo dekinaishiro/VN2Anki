@@ -191,6 +191,74 @@ namespace VN2Anki.Helpers
             return null;
         }
 
+        private static void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
+        {
+            var dir = new DirectoryInfo(sourceDir);
+            if (!dir.Exists) throw new DirectoryNotFoundException($"Source directory not found: {dir.FullName}");
+
+            DirectoryInfo[] dirs = dir.GetDirectories();
+            Directory.CreateDirectory(destinationDir);
+
+            foreach (FileInfo file in dir.GetFiles())
+            {
+                string targetFilePath = Path.Combine(destinationDir, file.Name);
+                file.CopyTo(targetFilePath, true);
+            }
+
+            if (recursive)
+            {
+                foreach (DirectoryInfo subDir in dirs)
+                {
+                    string newDestinationDir = Path.Combine(destinationDir, subDir.Name);
+                    CopyDirectory(subDir.FullName, newDestinationDir, true);
+                }
+            }
+        }
+
+        public static string GetOrCreateExtensionCache(string originalPath)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(originalPath) || !Directory.Exists(originalPath)) return originalPath;
+
+                string? extensionId = Path.GetFileName(Path.GetDirectoryName(originalPath));
+                if (string.IsNullOrEmpty(extensionId)) extensionId = Path.GetFileName(originalPath);
+
+                string cacheBaseFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VN2Anki", "ExtensionsCache");
+                string cachePath = Path.Combine(cacheBaseFolder, extensionId);
+
+                var originalInfo = ParseManifest(originalPath);
+                if (originalInfo == null) return originalPath; // If not a valid extension, return original
+
+                bool needsCopy = true;
+
+                if (Directory.Exists(cachePath))
+                {
+                    var cacheInfo = ParseManifest(cachePath);
+                    if (cacheInfo != null && cacheInfo.Version == originalInfo.Version)
+                    {
+                        needsCopy = false;
+                    }
+                    else
+                    {
+                        Directory.Delete(cachePath, true);
+                    }
+                }
+
+                if (needsCopy)
+                {
+                    CopyDirectory(originalPath, cachePath, true);
+                }
+
+                return cachePath;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error caching extension {originalPath}: {ex.Message}");
+                return originalPath; // Fallback to original
+            }
+        }
+
         public static async Task SyncProfileExtensionsAsync(Microsoft.Web.WebView2.Core.CoreWebView2Profile profile, IEnumerable<string> enabledPaths)
         {
             var loadedExtensions = await profile.GetBrowserExtensionsAsync();
@@ -219,7 +287,11 @@ namespace VN2Anki.Helpers
                 if (Directory.Exists(pathToLoad))
                 {
                     var info = GetExtensionsFromPath(pathToLoad).FirstOrDefault();
-                    if (info != null) targetExtensions.Add((pathToLoad, info.Name));
+                    if (info != null)
+                    {
+                        string cachedPath = GetOrCreateExtensionCache(pathToLoad);
+                        targetExtensions.Add((cachedPath, info.Name));
+                    }
                 }
             }
 
