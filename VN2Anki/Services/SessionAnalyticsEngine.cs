@@ -54,7 +54,8 @@ namespace VN2Anki.Services
         public double LatencySeconds { get; set; }
         public double StudySeconds { get; set; }
         public double DistractionSeconds { get; set; }
-        public double ActiveReadingSeconds => Math.Max(0, (EndTime - StartTime).TotalSeconds - LatencySeconds - StudySeconds - DistractionSeconds);
+        public double PausedSeconds { get; set; }
+        public double ActiveReadingSeconds => Math.Max(0, (EndTime - StartTime).TotalSeconds - LatencySeconds - StudySeconds - DistractionSeconds - PausedSeconds);
     }
 
     public class SessionAnalyticsEngine : ISessionAnalyticsEngine, CommunityToolkit.Mvvm.Messaging.IRecipient<VN2Anki.Messages.SessionEndedMessage>
@@ -125,13 +126,15 @@ namespace VN2Anki.Services
             {
                 bool hasLookups = b.Events.Any(e => e.e == "LOOKUP" || e.e == "MINE");
                 bool hasFocusLoss = b.Events.Any(e => e.e == "APP_STATE" && e.d.TryGetProperty("focus", out var f) && (f.GetString() == "external" || f.GetString() == "main"));
+                bool hasPause = b.Events.Any(e => e.e == "APP_STATE" && e.d.TryGetProperty("state", out var s) && s.GetString() == "BUFFER_STOPPED");
                 
-                if (!hasLookups && !hasFocusLoss && b.Text.Length > 0 && JapaneseRegex.IsMatch(b.Text))
+                int validChars = JapaneseRegex.Matches(b.Text).Count;
+                if (!hasLookups && !hasFocusLoss && !hasPause && validChars > 0)
                 {
                     double duration = (b.EndTime - b.StartTime).TotalSeconds;
                     if (duration > 0) // Previne apenas divisão por zero
                     {
-                        pureSpcs.Add(duration / b.Text.Length);
+                        pureSpcs.Add(duration / validChars);
                     }
                 }
             }
@@ -139,10 +142,25 @@ namespace VN2Anki.Services
             // Fallback: se a sessão foi muito fragmentada e não há blocos puros, usamos a média de todos os blocos possíveis
             if (!pureSpcs.Any())
             {
-                foreach (var b in blocks.Where(x => x.Text.Length > 0 && JapaneseRegex.IsMatch(x.Text)))
+                foreach (var b in blocks)
                 {
-                    double duration = (b.EndTime - b.StartTime).TotalSeconds;
-                    if (duration > 0) pureSpcs.Add(duration / b.Text.Length);
+                    int validChars = JapaneseRegex.Matches(b.Text).Count;
+                    if (validChars > 0)
+                    {
+                        double paused = 0;
+                        DateTime? pStart = null;
+                        foreach(var ev in b.Events.Where(e => e.e == "APP_STATE")) {
+                            if (ev.d.TryGetProperty("state", out var s)) {
+                                string state = s.GetString() ?? "";
+                                if (state == "BUFFER_STOPPED" && pStart == null) pStart = ev.t;
+                                else if (state == "BUFFER_STARTED" && pStart != null) { paused += (ev.t - pStart.Value).TotalSeconds; pStart = null; }
+                            }
+                        }
+                        if (pStart != null) paused += (b.EndTime - pStart.Value).TotalSeconds;
+
+                        double duration = Math.Max(0, (b.EndTime - b.StartTime).TotalSeconds - paused);
+                        if (duration > 0) pureSpcs.Add(duration / validChars);
+                    }
                 }
             }
 
@@ -162,16 +180,39 @@ namespace VN2Anki.Services
 
             foreach (var b in blocks)
             {
-                bool hasJapanese = JapaneseRegex.IsMatch(b.Text);
+                // Calculate PausedSeconds
+                double pausedSeconds = 0;
+                DateTime? pausedStart = null;
+                foreach(var ev in b.Events.Where(e => e.e == "APP_STATE"))
+                {
+                    if (ev.d.TryGetProperty("state", out var stateProp))
+                    {
+                        string state = stateProp.GetString() ?? "";
+                        if (state == "BUFFER_STOPPED" && pausedStart == null) 
+                        {
+                            pausedStart = ev.t;
+                        }
+                        else if (state == "BUFFER_STARTED" && pausedStart != null)
+                        {
+                            pausedSeconds += (ev.t - pausedStart.Value).TotalSeconds;
+                            pausedStart = null;
+                        }
+                    }
+                }
+                if (pausedStart != null) pausedSeconds += (b.EndTime - pausedStart.Value).TotalSeconds;
+                b.PausedSeconds = pausedSeconds;
+                
+                int validChars = JapaneseRegex.Matches(b.Text).Count;
+                bool hasJapanese = validChars > 0;
                 
                 if (hasJapanese)
                 {
-                    charsRead += b.Text.Length;
+                    charsRead += validChars;
                 }
                 else
                 {
                     // Non-Japanese sentences (punctuation only, etc) are treated as pure overhead
-                    b.LatencySeconds += (b.EndTime - b.StartTime).TotalSeconds;
+                    b.LatencySeconds += Math.Max(0, (b.EndTime - b.StartTime).TotalSeconds - b.PausedSeconds);
                 }
                 
                 // A. Latency (Click -> Hook)
@@ -188,19 +229,19 @@ namespace VN2Anki.Services
                 lookupCount += b.Events.Count(e => e.e == "LOOKUP");
                 miningCount += b.Events.Count(e => e.e == "MINE");
                 
+                double activeBlockSeconds = Math.Max(0, (b.EndTime - b.StartTime).TotalSeconds - b.PausedSeconds);
+
                 if (studyEvents.Any())
                 {
                     // If studying, we assume the time spent beyond normal reading is StudyTime
-                    double totalBlockSeconds = (b.EndTime - b.StartTime).TotalSeconds;
-                    double expectedReadingTime = b.Text.Length * medianSpc;
-                    b.StudySeconds = Math.Max(0, totalBlockSeconds - expectedReadingTime);
+                    double expectedReadingTime = validChars * medianSpc;
+                    b.StudySeconds = Math.Max(0, activeBlockSeconds - expectedReadingTime);
                     totalStudy += b.StudySeconds;
                 }
 
                 // C. Distractions & AFK
-                double currentBlockSeconds = (b.EndTime - b.StartTime).TotalSeconds;
-                double currentSpc = b.Text.Length > 0 ? currentBlockSeconds / b.Text.Length : 0;
-                double zScore = 0.6745 * (currentSpc - medianSpc) / mad;
+                double currentSpc = validChars > 0 ? activeBlockSeconds / validChars : 0;
+                double zScore = mad > 0 ? 0.6745 * (currentSpc - medianSpc) / mad : 0;
 
                 // Time in external focus
                 double externalSeconds = 0;
@@ -227,13 +268,13 @@ namespace VN2Anki.Services
                 
                 if (focusLostInBlock) distractionCount++;
 
-                b.DistractionSeconds = externalSeconds;
+                b.DistractionSeconds = Math.Min(externalSeconds, activeBlockSeconds);
 
                 // Statistical AFK (if block is too long without study events)
                 if (!studyEvents.Any() && zScore > 3.5)
                 {
-                    double acceptableSeconds = (medianSpc + 2 * mad) * b.Text.Length;
-                    double afkSeconds = Math.Max(0, currentBlockSeconds - acceptableSeconds - b.DistractionSeconds);
+                    double acceptableSeconds = (medianSpc + 2 * mad) * validChars;
+                    double afkSeconds = Math.Max(0, activeBlockSeconds - acceptableSeconds - b.DistractionSeconds);
                     b.DistractionSeconds += afkSeconds;
                     
                     if (afkSeconds > 5 && !focusLostInBlock) distractionCount++; // Count long pure AFKs as distractions too
@@ -250,9 +291,9 @@ namespace VN2Anki.Services
                 }
 
                 // Add to distribution using EFFECTIVE SPC (only for blocks with Japanese reading time)
-                if (hasJapanese && b.Text.Length > 0)
+                if (hasJapanese && validChars > 0)
                 {
-                    double effectiveSpc = Math.Max(0, b.ActiveReadingSeconds) / b.Text.Length;
+                    double effectiveSpc = Math.Max(0, b.ActiveReadingSeconds) / validChars;
                     result.SpcDistribution.Add(effectiveSpc);
                 }
             }
