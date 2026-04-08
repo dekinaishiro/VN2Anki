@@ -29,6 +29,9 @@ namespace VN2Anki.ViewModels.Hub
         [ObservableProperty]
         private double _wastedSeconds;
 
+        [ObservableProperty]
+        private int _charsPerHour;
+
         public bool IsHook => EventType == "HOOK";
         public bool IsNotHook => EventType != "HOOK";
     }
@@ -37,6 +40,7 @@ namespace VN2Anki.ViewModels.Hub
     {
         private readonly IVnDatabaseService _dbService;
         private readonly ISessionAnalyticsEngine _analyticsEngine;
+        private static readonly System.Text.RegularExpressions.Regex JapaneseRegex = new(@"[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]", System.Text.RegularExpressions.RegexOptions.Compiled);
 
         [ObservableProperty]
         private SessionRecord _session = null!;
@@ -49,6 +53,9 @@ namespace VN2Anki.ViewModels.Hub
 
         [ObservableProperty]
         private PointCollection? _speedDistributionPoints;
+
+        [ObservableProperty]
+        private ObservableCollection<double>? _speedDistributionBars;
 
         [ObservableProperty]
         private bool _hasSpeedDistribution;
@@ -137,12 +144,19 @@ namespace VN2Anki.ViewModels.Hub
                         DateTime timestamp = DateTime.Parse(t);
                         double activeSecs = 0;
                         double wastedSecs = 0;
+                        int charsPerHour = 0;
 
                         if (e == "HOOK" && AnalyticsResult != null && AnalyticsResult.Blocks != null && blockIndex < AnalyticsResult.Blocks.Count)
                         {
                             var block = AnalyticsResult.Blocks[blockIndex++];
                             activeSecs = block.ActiveReadingSeconds + block.StudySeconds;
                             wastedSecs = block.LatencySeconds + block.DistractionSeconds;
+
+                            int validChars = JapaneseRegex.Matches(block.Text).Count;
+                            if (validChars > 0 && activeSecs > 0)
+                            {
+                                charsPerHour = (int)((validChars / activeSecs) * 3600);
+                            }
                         }
 
                         LogItems.Add(new SessionDetailItem
@@ -153,7 +167,8 @@ namespace VN2Anki.ViewModels.Hub
                             Details = details,
                             RawJson = line,
                             ActiveSeconds = activeSecs,
-                            WastedSeconds = wastedSecs
+                            WastedSeconds = wastedSecs,
+                            CharsPerHour = charsPerHour
                         });
                     }
                     catch { /* ignore */ }
@@ -172,6 +187,7 @@ namespace VN2Anki.ViewModels.Hub
             if (AnalyticsResult?.SpcDistribution == null || !AnalyticsResult.SpcDistribution.Any())
             {
                 SpeedDistributionPoints = null;
+                SpeedDistributionBars = null;
                 HasSpeedDistribution = false;
                 return;
             }
@@ -186,6 +202,7 @@ namespace VN2Anki.ViewModels.Hub
             if (!validSpcs.Any()) 
             {
                 SpeedDistributionPoints = null;
+                SpeedDistributionBars = null;
                 HasSpeedDistribution = false;
                 return;
             }
@@ -209,28 +226,17 @@ namespace VN2Anki.ViewModels.Hub
             int maxFreq = bins.Max();
             if (maxFreq == 0) maxFreq = 1;
 
-            var points = new PointCollection();
-            double width = 260; // virtual canvas width
+            var bars = new ObservableCollection<double>();
             double height = 80;  // virtual canvas height
 
-            // Start at bottom left
-            points.Add(new System.Windows.Point(0, height));
-
-            // Create smoothish curve points
             for (int i = 0; i < binCount; i++)
             {
-                double x = (i / (double)(binCount - 1)) * width;
                 double normalizedY = bins[i] / (double)maxFreq;
-                
-                // leave top padding (10px) so the peak doesn't touch the very top
-                double y = height - (normalizedY * (height - 10)); 
-                points.Add(new System.Windows.Point(x, y));
+                double barHeight = Math.Max(2, normalizedY * height); // Minimum height of 2px
+                bars.Add(barHeight);
             }
-
-            // Close the shape at bottom right
-            points.Add(new System.Windows.Point(width, height));
             
-            SpeedDistributionPoints = points;
+            SpeedDistributionBars = bars;
             HasSpeedDistribution = true;
         }
 
