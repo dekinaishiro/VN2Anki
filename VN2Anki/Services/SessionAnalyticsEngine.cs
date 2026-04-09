@@ -199,7 +199,10 @@ namespace VN2Anki.Services
                         }
                     }
                 }
-                if (pausedStart != null) pausedSeconds += (b.EndTime - pausedStart.Value).TotalSeconds;
+                if (pausedStart != null && pausedStart.Value < b.EndTime) 
+                {
+                    pausedSeconds += (b.EndTime - pausedStart.Value).TotalSeconds;
+                }
                 b.PausedSeconds = pausedSeconds;
                 
                 int validChars = JapaneseRegex.Matches(b.Text).Count;
@@ -215,13 +218,24 @@ namespace VN2Anki.Services
                     b.LatencySeconds += Math.Max(0, (b.EndTime - b.StartTime).TotalSeconds - b.PausedSeconds);
                 }
                 
-                // A. Latency (Click -> Hook)
-                var lastClick = b.Events.LastOrDefault(e => e.e == "CLICK" && e.t < b.StartTime);
-                if (lastClick != null)
+                // A. Latency (Post-Reading Wait Time)
+                if (hasJapanese)
                 {
-                    double clickLatency = (b.StartTime - lastClick.t).TotalSeconds;
-                    b.LatencySeconds += clickLatency;
+                    var nextClick = b.Events.FirstOrDefault(e => e.e == "CLICK" && e.t >= b.StartTime);
+                    if (nextClick != null && nextClick.t < b.EndTime)
+                    {
+                        double postClickLatency = (b.EndTime - nextClick.t).TotalSeconds;
+                        b.LatencySeconds += Math.Max(0, postClickLatency);
+                    }
                 }
+
+                // Add the pre-first-hook latency to total latency (not to the block to avoid subtracting it from block duration)
+                var lastClick = b.Events.LastOrDefault(e => e.e == "CLICK" && e.t < b.StartTime);
+                if (lastClick != null && b == blocks.First())
+                {
+                    totalLatency += (b.StartTime - lastClick.t).TotalSeconds;
+                }
+
                 totalLatency += b.LatencySeconds;
 
                 // B. Study Time
@@ -229,15 +243,17 @@ namespace VN2Anki.Services
                 lookupCount += b.Events.Count(e => e.e == "LOOKUP");
                 miningCount += b.Events.Count(e => e.e == "MINE");
                 
-                double activeBlockSeconds = Math.Max(0, (b.EndTime - b.StartTime).TotalSeconds - b.PausedSeconds);
+                double activeBlockSeconds = Math.Max(0, (b.EndTime - b.StartTime).TotalSeconds - b.PausedSeconds - b.LatencySeconds);
 
-                if (studyEvents.Any())
+                if (hasJapanese && studyEvents.Any())
                 {
                     // If studying, we assume the time spent beyond normal reading is StudyTime
                     double expectedReadingTime = validChars * medianSpc;
                     b.StudySeconds = Math.Max(0, activeBlockSeconds - expectedReadingTime);
                     totalStudy += b.StudySeconds;
                 }
+
+                activeBlockSeconds = Math.Max(0, activeBlockSeconds - b.StudySeconds);
 
                 // C. Distractions & AFK
                 double currentSpc = validChars > 0 ? activeBlockSeconds / validChars : 0;
@@ -264,20 +280,26 @@ namespace VN2Anki.Services
                         }
                     }
                 }
-                if (externalStart != null) externalSeconds += (b.EndTime - externalStart.Value).TotalSeconds;
+                if (externalStart != null && externalStart.Value < b.EndTime) 
+                {
+                    externalSeconds += (b.EndTime - externalStart.Value).TotalSeconds;
+                }
                 
                 if (focusLostInBlock) distractionCount++;
 
-                b.DistractionSeconds = Math.Min(externalSeconds, activeBlockSeconds);
-
-                // Statistical AFK (if block is too long without study events)
-                if (!studyEvents.Any() && zScore > 3.5)
+                if (hasJapanese)
                 {
-                    double acceptableSeconds = (medianSpc + 2 * mad) * validChars;
-                    double afkSeconds = Math.Max(0, activeBlockSeconds - acceptableSeconds - b.DistractionSeconds);
-                    b.DistractionSeconds += afkSeconds;
-                    
-                    if (afkSeconds > 5 && !focusLostInBlock) distractionCount++; // Count long pure AFKs as distractions too
+                    b.DistractionSeconds = Math.Min(externalSeconds, activeBlockSeconds);
+
+                    // Statistical AFK (if block is too long without study events)
+                    if (!studyEvents.Any() && zScore > 3.5)
+                    {
+                        double acceptableSeconds = (medianSpc + 2 * mad) * validChars;
+                        double afkSeconds = Math.Max(0, activeBlockSeconds - acceptableSeconds - b.DistractionSeconds);
+                        b.DistractionSeconds += afkSeconds;
+                        
+                        if (afkSeconds > 5 && !focusLostInBlock) distractionCount++; // Count long pure AFKs as distractions too
+                    }
                 }
 
                 totalDistraction += b.DistractionSeconds;
@@ -291,9 +313,9 @@ namespace VN2Anki.Services
                 }
 
                 // Add to distribution using EFFECTIVE SPC (only for blocks with Japanese reading time)
-                if (hasJapanese && validChars > 0)
+                if (hasJapanese && validChars > 0 && b.ActiveReadingSeconds > 0)
                 {
-                    double effectiveSpc = Math.Max(0, b.ActiveReadingSeconds) / validChars;
+                    double effectiveSpc = b.ActiveReadingSeconds / validChars;
                     result.SpcDistribution.Add(effectiveSpc);
                 }
             }
@@ -351,9 +373,21 @@ namespace VN2Anki.Services
                     Text = currentHook.d.GetProperty("text").GetString() ?? ""
                 };
 
-                // Find events belonging to this block (including the leading clicks)
-                DateTime windowStart = (i > 0) ? hookEvents[i - 1].t : events.First().t;
-                block.Events = events.Where(e => e.t >= windowStart && e.t <= block.EndTime).ToList();
+                // Find events strictly belonging to this block's timeframe
+                block.Events = events.Where(e => e.t >= currentHook.t && e.t < block.EndTime).ToList();
+                
+                // Only the very last block gets events up to <= EndTime (inclusive)
+                if (nextHook == null)
+                {
+                    block.Events = events.Where(e => e.t >= currentHook.t && e.t <= block.EndTime).ToList();
+                }
+
+                // Keep preceding clicks specifically for the first block's pre-latency
+                if (i == 0)
+                {
+                    var precedingClicks = events.Where(e => e.e == "CLICK" && e.t < currentHook.t).ToList();
+                    block.Events.InsertRange(0, precedingClicks);
+                }
 
                 blocks.Add(block);
             }

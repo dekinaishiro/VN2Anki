@@ -129,6 +129,8 @@ namespace VN2Anki
             services.AddTransient<ViewModels.Hub.AddVnViewModel>();
             services.AddTransient<AddVnWindow>();
 
+            services.AddTransient<ExtensionsWindow>();
+
             services.AddSingleton<IDispatcherService, WpfDispatcherService>();
             services.AddSingleton<IWindowService, WpfWindowService>();
 
