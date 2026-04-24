@@ -48,8 +48,17 @@ namespace VN2Anki.Services
                 foreach (var win in windowsToCheck)
                 {
                     var match = vnsDb.FirstOrDefault(v =>
-                        (!string.IsNullOrEmpty(v.ExecutablePath) && !string.IsNullOrEmpty(win.ExecutablePath) && string.Equals(v.ExecutablePath, win.ExecutablePath, StringComparison.OrdinalIgnoreCase)) ||
-                        (!string.IsNullOrEmpty(v.ProcessName) && string.Equals(v.ProcessName, win.ProcessName, StringComparison.OrdinalIgnoreCase)));
+                    {
+                        bool hasPath = !string.IsNullOrEmpty(v.ExecutablePath);
+                        bool hasWinPath = !string.IsNullOrEmpty(win.ExecutablePath);
+
+                        if (hasPath && hasWinPath)
+                        {
+                            return string.Equals(v.ExecutablePath, win.ExecutablePath, StringComparison.OrdinalIgnoreCase);
+                        }
+
+                        return !string.IsNullOrEmpty(v.ProcessName) && string.Equals(v.ProcessName, win.ProcessName, StringComparison.OrdinalIgnoreCase);
+                    });
 
                     if (match != null && !matchedVns.Any(v => v.Id == match.Id))
                     {

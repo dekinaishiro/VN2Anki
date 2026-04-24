@@ -180,14 +180,19 @@ namespace VN2Anki.Services
 
                 var vns = await _vnDatabaseService.GetAllVisualNovelsAsync();
                 
-                VisualNovel? matchingVn = vns.FirstOrDefault(v =>
-                    string.Equals(v.ProcessName, processNameWithoutExt, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(v.ProcessName, processName, StringComparison.OrdinalIgnoreCase));
+                VisualNovel? matchingVn = null;
 
-                if (matchingVn == null && !string.IsNullOrEmpty(executablePath))
+                if (!string.IsNullOrEmpty(executablePath))
+                {
+                    matchingVn = vns.FirstOrDefault(v => string.Equals(v.ExecutablePath, executablePath, StringComparison.OrdinalIgnoreCase));
+                }
+
+                if (matchingVn == null)
                 {
                     matchingVn = vns.FirstOrDefault(v =>
-                        string.Equals(v.ExecutablePath, executablePath, StringComparison.OrdinalIgnoreCase));
+                        string.IsNullOrEmpty(v.ExecutablePath) &&
+                        (string.Equals(v.ProcessName, processNameWithoutExt, StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(v.ProcessName, processName, StringComparison.OrdinalIgnoreCase)));
                 }
 
                 if (matchingVn != null)
@@ -336,9 +341,9 @@ namespace VN2Anki.Services
             {
                 if (p.MainWindowHandle != IntPtr.Zero && !string.IsNullOrEmpty(p.MainWindowTitle))
                 {
-                    if (!windows.Exists(w => w.ProcessName == p.ProcessName))
+                    string? exePath = GetProcessFilename(p);
+                    if (!windows.Exists(w => (!string.IsNullOrEmpty(exePath) && string.Equals(w.ExecutablePath, exePath, StringComparison.OrdinalIgnoreCase)) || (string.IsNullOrEmpty(exePath) && w.ProcessName == p.ProcessName)))
                     {
-                        string? exePath = GetProcessFilename(p);
                         windows.Add(new ActiveWindowItem
                         {
                             Title = p.MainWindowTitle,

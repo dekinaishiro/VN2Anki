@@ -133,8 +133,17 @@ namespace VN2Anki.ViewModels.Hub
 
             var vns = await _dbService.GetAllVisualNovelsAsync();
             var match = vns.FirstOrDefault(v =>
-                (!string.IsNullOrEmpty(v.ExecutablePath) && !string.IsNullOrEmpty(TargetExecutablePath) && v.ExecutablePath == TargetExecutablePath) ||
-                (!string.IsNullOrEmpty(v.ProcessName) && v.ProcessName == TargetProcessName));
+            {
+                bool hasPath = !string.IsNullOrEmpty(v.ExecutablePath);
+                bool hasTargetPath = !string.IsNullOrEmpty(TargetExecutablePath);
+
+                if (hasPath && hasTargetPath)
+                {
+                    return string.Equals(v.ExecutablePath, TargetExecutablePath, System.StringComparison.OrdinalIgnoreCase);
+                }
+
+                return !string.IsNullOrEmpty(v.ProcessName) && string.Equals(v.ProcessName, TargetProcessName, System.StringComparison.OrdinalIgnoreCase);
+            });
 
             IsProcessAlreadyRegistered = match != null;
 
