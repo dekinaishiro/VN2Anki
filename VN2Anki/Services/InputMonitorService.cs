@@ -84,7 +84,13 @@ namespace VN2Anki.Services
         {
             if (nCode >= 0 && (wParam == (IntPtr)Win32InteropService.WM_LBUTTONDOWN || wParam == (IntPtr)Win32InteropService.WM_RBUTTONDOWN))
             {
-                string target = GetInputTarget();
+                IntPtr? targetHwnd = null;
+                if (Win32InteropService.GetCursorPos(out POINT pt))
+                {
+                    targetHwnd = Win32InteropService.WindowFromPoint(pt);
+                }
+
+                string target = GetInputTarget(targetHwnd);
                 if (target != "external")
                 {
                     string btn = wParam == (IntPtr)Win32InteropService.WM_LBUTTONDOWN ? "left" : "right";
@@ -112,10 +118,13 @@ namespace VN2Anki.Services
             return Win32InteropService.CallNextHookEx(_keyboardHookId, nCode, wParam, lParam);
         }
 
-        private string GetInputTarget()
+        private string GetInputTarget(IntPtr? hwndOverride = null)
         {
-            IntPtr hwnd = Win32InteropService.GetForegroundWindow();
+            IntPtr hwnd = hwndOverride ?? Win32InteropService.GetForegroundWindow();
             if (hwnd == IntPtr.Zero) return "external";
+
+            IntPtr rootHwnd = Win32InteropService.GetAncestor(hwnd, Win32InteropService.GA_ROOT);
+            if (rootHwnd != IntPtr.Zero) hwnd = rootHwnd;
 
             // 1. Is it our App?
             string appWindowState = null;

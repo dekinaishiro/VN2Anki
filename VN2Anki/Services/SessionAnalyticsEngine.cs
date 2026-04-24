@@ -221,8 +221,8 @@ namespace VN2Anki.Services
                 // A. Latency (Post-Reading Wait Time)
                 if (hasJapanese)
                 {
-                    var nextClick = b.Events.FirstOrDefault(e => e.e == "CLICK" && e.t >= b.StartTime);
-                    if (nextClick != null && nextClick.t < b.EndTime)
+                    var nextClick = b.Events.LastOrDefault(e => e.e == "CLICK" && e.t >= b.StartTime && e.t < b.EndTime);
+                    if (nextClick != null)
                     {
                         double postClickLatency = (b.EndTime - nextClick.t).TotalSeconds;
                         b.LatencySeconds += Math.Max(0, postClickLatency);

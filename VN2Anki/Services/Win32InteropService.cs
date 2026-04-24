@@ -77,6 +77,10 @@ namespace VN2Anki.Services
         [DllImport("user32.dll")]
         public static extern IntPtr WindowFromPoint(POINT Point);
 
+        [DllImport("user32.dll", ExactSpelling = true)]
+        public static extern IntPtr GetAncestor(IntPtr hwnd, uint flags);
+        public const uint GA_ROOT = 2;
+
         [DllImport("user32.dll")]
         public static extern IntPtr GetForegroundWindow();
 
