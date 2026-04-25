@@ -40,12 +40,17 @@ namespace VN2Anki.Services
             _ = SwitchProfileAsync(null);
         }
 
-        public void Receive(SaveOverlayStateMessage message)
+        public async void Receive(SaveOverlayStateMessage message)
         {
             if (_activeVn != null)
             {
-                _activeVn.OverlayConfigJson = JsonSerializer.Serialize(_configService.CurrentConfig.Overlay);
-                _ = _vnDatabaseService.UpdateVisualNovelAsync(_activeVn);
+                var vns = await _vnDatabaseService.GetAllVisualNovelsAsync();
+                var latestVn = System.Linq.Enumerable.FirstOrDefault(vns, v => v.Id == _activeVn.Id);
+                if (latestVn != null)
+                {
+                    latestVn.OverlayConfigJson = JsonSerializer.Serialize(_configService.CurrentConfig.Overlay);
+                    await _vnDatabaseService.UpdateVisualNovelAsync(latestVn);
+                }
             }
         }
 
@@ -54,8 +59,13 @@ namespace VN2Anki.Services
             // 1. Save current state to the previous VN before switching
             if (_activeVn != null)
             {
-                _activeVn.OverlayConfigJson = JsonSerializer.Serialize(_configService.CurrentConfig.Overlay);
-                await _vnDatabaseService.UpdateVisualNovelAsync(_activeVn);
+                var vns = await _vnDatabaseService.GetAllVisualNovelsAsync();
+                var latestVn = System.Linq.Enumerable.FirstOrDefault(vns, v => v.Id == _activeVn.Id);
+                if (latestVn != null)
+                {
+                    latestVn.OverlayConfigJson = JsonSerializer.Serialize(_configService.CurrentConfig.Overlay);
+                    await _vnDatabaseService.UpdateVisualNovelAsync(latestVn);
+                }
             }
 
             // 2. Load the state for the new VN
