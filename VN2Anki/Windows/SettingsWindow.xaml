@@ -326,7 +326,7 @@
                         <TextBox Grid.Row="6" Grid.Column="1" Margin="5" Padding="5" Text="{Binding Config.Overlay.TextBoxMinHeight, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Config.Overlay.UseTextBoxMode}"/>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="Box Width (%):" Grid.Row="7" Grid.Column="0" VerticalAlignment="Center"/>
-                        <TextBox Grid.Row="7" Grid.Column="1" Margin="5" Padding="5" Text="{Binding Config.Overlay.TextBoxWidthPercentage, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Config.Overlay.UseTextBoxMode}"/>
+                        <TextBox Grid.Row="7" Grid.Column="1" Margin="5" Padding="5" Text="{Binding Config.Overlay.TextBoxWidthPercentage, UpdateSourceTrigger=PropertyChanged}"/>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="Displacement &amp; Margins:" Grid.Row="8" Grid.Column="0" VerticalAlignment="Center"/>
                         <StackPanel Grid.Row="8" Grid.Column="1" Orientation="Horizontal" Margin="5">

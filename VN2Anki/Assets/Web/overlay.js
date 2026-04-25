@@ -89,6 +89,7 @@ function applyStyles(data) {
         `;
     } else {
         boxStyles = `
+            max-width: ${data.textBoxWidthPercentage}vw;
             width: auto;
             min-height: auto;
             display: inline-block;
