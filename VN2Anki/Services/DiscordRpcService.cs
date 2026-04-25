@@ -92,13 +92,13 @@ namespace VN2Anki.Services
             if (_isBufferActive)
             {
                 DateTime startTime = DateTime.UtcNow.Subtract(_tracker.Elapsed);
-                _ = UpdatePresenceAsync(vnTitle, "Reading", $"{_tracker.ValidCharacterCount} chars", startTime, imageUrl);
+                _ = UpdatePresenceAsync(vnTitle, "Reading", $"{(int)(1.0 * _tracker.ValidCharacterCount)} chars", startTime, imageUrl);
             }
             else
             {
                 string elapsedStr = _tracker.Elapsed.ToString(@"hh\:mm\:ss");
                 string state = _currentVn != null ? "Paused" : "No Session";
-                string details = _currentVn != null ? $"{_tracker.ValidCharacterCount} chars | {elapsedStr}" : "Waiting...";
+                string details = _currentVn != null ? $"{(int)(1.0 * _tracker.ValidCharacterCount)} chars | {elapsedStr}" : "Waiting...";
                 _ = UpdatePresenceAsync(vnTitle, state, details, null, imageUrl);
             }
         }

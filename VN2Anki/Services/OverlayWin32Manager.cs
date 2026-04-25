@@ -61,7 +61,7 @@ namespace VN2Anki.Services
             }
         }
 
-        public void ForwardClick(int screenX, int screenY, int button)
+        public void ForwardClick(int screenX, int screenY, int button, bool isDown)
         {
             POINT p = new POINT { X = screenX, Y = screenY };
 
@@ -74,17 +74,22 @@ namespace VN2Anki.Services
 
             if (target != IntPtr.Zero && target != _windowHandle)
             {
-                uint downMsg = button == 2 ? WM_RBUTTONDOWN : WM_LBUTTONDOWN;
-                uint upMsg   = button == 2 ? WM_RBUTTONUP   : WM_LBUTTONUP;
+                uint msg = 0;
+                if (isDown)
+                    msg = button == 2 ? WM_RBUTTONDOWN : WM_LBUTTONDOWN;
+                else
+                    msg = button == 2 ? WM_RBUTTONUP : WM_LBUTTONUP;
                 
-                SetForegroundWindow(target);
+                if (isDown)
+                {
+                    SetForegroundWindow(target);
+                }
                 
                 POINT clientP = p;
                 ScreenToClient(target, ref clientP);
                 
                 IntPtr lParam = MakeLParam(clientP.X, clientP.Y);
-                PostMessage(target, downMsg, IntPtr.Zero, lParam);
-                PostMessage(target, upMsg,   IntPtr.Zero, lParam);
+                PostMessage(target, msg, IntPtr.Zero, lParam);
             }
         }
 

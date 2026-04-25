@@ -1,4 +1,4 @@
-document.addEventListener('mousedown', (e) => {
+function handleMouseEvent(e, isDown) {
     let textBox = document.getElementById('text-box');
     let insideTextBox = false;
     if (textBox) {
@@ -11,6 +11,7 @@ document.addEventListener('mousedown', (e) => {
         if (window.chrome && window.chrome.webview) {
             window.chrome.webview.postMessage(JSON.stringify({
                 forwardClick: true,
+                isDown: isDown,
                 x: e.screenX,
                 y: e.screenY,
                 button: e.button
@@ -19,7 +20,10 @@ document.addEventListener('mousedown', (e) => {
         e.preventDefault();
         e.stopPropagation();
     }
-});
+}
+
+document.addEventListener('mousedown', (e) => handleMouseEvent(e, true));
+document.addEventListener('mouseup', (e) => handleMouseEvent(e, false));
 
 if (window.chrome && window.chrome.webview) {
     window.chrome.webview.addEventListener('message', event => {

@@ -154,13 +154,17 @@ namespace VN2Anki
                         var root = doc.RootElement;
                         if (root.TryGetProperty("forwardClick", out JsonElement fwd) && fwd.GetBoolean())
                         {
+                            bool isDown = true;
+                            if (root.TryGetProperty("isDown", out JsonElement isDownElem)) {
+                                isDown = isDownElem.GetBoolean();
+                            }
                             int sx = (int)root.GetProperty("x").GetDouble();
                             int sy = (int)root.GetProperty("y").GetDouble();
                             int btn = (int)root.GetProperty("button").GetDouble();
 
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                _win32Manager?.ForwardClick(sx, sy, btn);
+                                _win32Manager?.ForwardClick(sx, sy, btn, isDown);
                             });
                         }
                         else if (root.TryGetProperty("action", out JsonElement action) && action.GetString() == "hover")
