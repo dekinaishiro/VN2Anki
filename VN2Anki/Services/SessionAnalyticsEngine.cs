@@ -131,7 +131,12 @@ namespace VN2Anki.Services
                 int validChars = JapaneseRegex.Matches(b.Text).Count;
                 if (!hasLookups && !hasFocusLoss && !hasPause && validChars > 0)
                 {
+                    var nextClickInPure = b.Events.LastOrDefault(e => e.e == "CLICK" && e.t >= b.StartTime && e.t < b.EndTime);
                     double duration = (b.EndTime - b.StartTime).TotalSeconds;
+
+                    if (nextClickInPure != null)
+                        duration = (nextClickInPure.t - b.StartTime).TotalSeconds; // Tempo real de leitura apenas
+
                     if (duration > 0) // Previne apenas divisão por zero
                     {
                         pureSpcs.Add(duration / validChars);
@@ -173,10 +178,17 @@ namespace VN2Anki.Services
             double totalStudy = 0;
             double totalDistraction = 0;
             double totalReading = 0;
+            double totalPaused = 0;
             int charsRead = 0;
             int lookupCount = 0;
             int miningCount = 0;
             int distractionCount = 0;
+
+            if (blocks.Any() && events.Any())
+            {
+                double startupFat = (blocks.First().StartTime - events.First().t).TotalSeconds;
+                totalLatency += Math.Max(0, startupFat);
+            }
 
             foreach (var b in blocks)
             {
@@ -204,6 +216,7 @@ namespace VN2Anki.Services
                     pausedSeconds += (b.EndTime - pausedStart.Value).TotalSeconds;
                 }
                 b.PausedSeconds = pausedSeconds;
+                totalPaused += pausedSeconds;
                 
                 int validChars = JapaneseRegex.Matches(b.Text).Count;
                 bool hasJapanese = validChars > 0;
@@ -225,15 +238,9 @@ namespace VN2Anki.Services
                     if (nextClick != null)
                     {
                         double postClickLatency = (b.EndTime - nextClick.t).TotalSeconds;
-                        b.LatencySeconds += Math.Max(0, postClickLatency);
+                        double maxPossibleLatency = (b.EndTime - b.StartTime).TotalSeconds - b.PausedSeconds;
+                        b.LatencySeconds += Math.Max(0, Math.Min(postClickLatency, maxPossibleLatency));
                     }
-                }
-
-                // Add the pre-first-hook latency to total latency (not to the block to avoid subtracting it from block duration)
-                var lastClick = b.Events.LastOrDefault(e => e.e == "CLICK" && e.t < b.StartTime);
-                if (lastClick != null && b == blocks.First())
-                {
-                    totalLatency += (b.StartTime - lastClick.t).TotalSeconds;
                 }
 
                 totalLatency += b.LatencySeconds;
@@ -330,8 +337,8 @@ namespace VN2Anki.Services
             result.AfkDurationSeconds = (int)totalDistraction;
             result.ReadingDurationSeconds = (int)totalReading;
             
-            double totalFat = totalLatency + totalDistraction;
-            result.EffectiveDurationSeconds = Math.Max(0, totalDurationSeconds - (int)totalFat);
+            double totalFat = totalLatency + totalDistraction + totalPaused;
+            result.EffectiveDurationSeconds = (int)(totalReading + totalStudy);
 
             return result;
         }

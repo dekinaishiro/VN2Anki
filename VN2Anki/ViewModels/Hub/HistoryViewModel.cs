@@ -15,16 +15,18 @@ namespace VN2Anki.ViewModels.Hub
     {
         private readonly IVnDatabaseService _dbService;
         private readonly ISessionAnalyticsEngine _analyticsEngine;
+        private readonly IWindowService _windowService;
         public INavigationService Navigation { get; }
 
         [ObservableProperty]
         private ObservableCollection<SessionRecord> _sessionHistory = new();
 
-        public HistoryViewModel(IVnDatabaseService dbService, INavigationService navigation, ISessionAnalyticsEngine analyticsEngine)
+        public HistoryViewModel(IVnDatabaseService dbService, INavigationService navigation, ISessionAnalyticsEngine analyticsEngine, IWindowService windowService)
         {
             _dbService = dbService;
             Navigation = navigation;
             _analyticsEngine = analyticsEngine;
+            _windowService = windowService;
             _ = LoadHistoryAsync();
             WeakReferenceMessenger.Default.Register(this);
         }
@@ -49,6 +51,10 @@ namespace VN2Anki.ViewModels.Hub
         private async Task DeleteSessionAsync(SessionRecord session)
         {
             if (session == null) return;
+            
+            bool confirm = _windowService.ShowConfirmation(Locales.Strings.MsgConfirmVnDelete != null ? "Are you sure you want to delete this session?" : "Are you sure you want to delete this session?", Locales.Strings.MsgAttention ?? "Attention", true);
+            if (!confirm) return;
+
             await _dbService.DeleteSessionAsync(session);
             SessionHistory.RemoveFromUIThread(session);
         }
