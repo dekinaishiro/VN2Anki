@@ -151,7 +151,7 @@ namespace VN2Anki.ViewModels
             UpdateVisualCurrentVN();
 
             StatusText = Strings.StatusSessionEnded;
-            StatusVisibility = Visibility.Visible;
+            StatusVisibility = (!IsStatusMessageEnabled || string.IsNullOrEmpty(StatusText)) ? Visibility.Collapsed : Visibility.Visible;
         }
 
         public void Receive(SessionEndedMessage message)
@@ -173,12 +173,22 @@ namespace VN2Anki.ViewModels
             }
         }
 
+        [ObservableProperty]
+        private bool _isStatusMessageEnabled = false;
+
+        [RelayCommand]
+        public void ToggleStatusMessage()
+        {
+            IsStatusMessageEnabled = !IsStatusMessageEnabled;
+            StatusVisibility = (!IsStatusMessageEnabled || string.IsNullOrEmpty(StatusText)) ? Visibility.Collapsed : Visibility.Visible;
+        }
+
         public void Receive(StatusMessage message)
         {
             _dispatcher.Invoke(() =>
             {
                 StatusText = message.Value;
-                StatusVisibility = string.IsNullOrEmpty(message.Value) ? Visibility.Collapsed : Visibility.Visible;
+                StatusVisibility = (!IsStatusMessageEnabled || string.IsNullOrEmpty(message.Value)) ? Visibility.Collapsed : Visibility.Visible;
             });
         }
 

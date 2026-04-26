@@ -39,6 +39,10 @@ namespace VN2Anki
                 var debugWin = App.Current.Services.GetRequiredService<VN2Anki.Windows.SessionLogDebugWindow>();
                 debugWin.Show();
             }
+            else if (e.Key == Key.F9)
+            {
+                _viewModel.ToggleStatusMessage();
+            }
         }
 
         private void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
