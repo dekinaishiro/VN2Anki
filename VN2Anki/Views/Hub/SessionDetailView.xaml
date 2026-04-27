@@ -70,7 +70,7 @@
             </Grid.ColumnDefinitions>
 
             <Button Style="{DynamicResource IconButtonStyle}" 
-                    Command="{Binding DataContext.NavigateBackCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                    Command="{Binding GoBackCommand}"
                     Width="40" Height="40" Margin="0,0,16,0" VerticalAlignment="Center">
                 <iconPacks:PackIconMaterial Kind="ArrowLeft" Width="20" Height="20" Foreground="White"/>
             </Button>
@@ -79,11 +79,6 @@
                 <TextBlock Text="{Binding Session.StartTime, StringFormat='dd/MM/yyyy HH:mm'}" FontSize="24" FontWeight="Bold" Foreground="White"/>
                 <TextBlock Text="{Binding VisualNovel.Title}" FontSize="14" Foreground="#A0A0A0" Margin="0,2,0,0"
                            Visibility="{Binding VisualNovel, Converter={StaticResource BoolToVis}}"/>
-            </StackPanel>
-
-            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="Modo Avançado" Foreground="White" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                <ToggleButton IsChecked="{Binding IsAdvancedView}" />
             </StackPanel>
         </Grid>
 

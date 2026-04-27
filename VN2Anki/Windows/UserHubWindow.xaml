@@ -6,7 +6,7 @@
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         Title="VN2Anki - User Hub" Height="700" Width="1050"
         Background="#1E1E1E" Foreground="White" WindowStartupLocation="CenterScreen"
-        Topmost="True" SizeChanged="UserHubWindow_SizeChanged">
+        Topmost="True" SizeChanged="UserHubWindow_SizeChanged" PreviewKeyDown="Window_PreviewKeyDown">
 
     <Window.Resources>
         <DataTemplate DataType="{x:Type vms:LibraryViewModel}">

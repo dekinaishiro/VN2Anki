@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using System.Windows.Input;
 using VN2Anki.ViewModels.Hub;
 
 namespace VN2Anki
@@ -20,6 +21,17 @@ namespace VN2Anki
             else
             {
                 VisualStateManager.GoToElementState(RootGrid, "Expanded", true);
+            }
+        }
+
+        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.F8)
+            {
+                if (this.DataContext is UserHubViewModel vm && vm.Navigation.CurrentViewModel is SessionDetailViewModel sessionVm)
+                {
+                    sessionVm.ToggleAdvancedView();
+                }
             }
         }
     }

@@ -40,6 +40,7 @@ namespace VN2Anki.ViewModels.Hub
     {
         private readonly IVnDatabaseService _dbService;
         private readonly ISessionAnalyticsEngine _analyticsEngine;
+        private readonly INavigationService _navigation;
         private static readonly System.Text.RegularExpressions.Regex JapaneseRegex = new(@"[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]", System.Text.RegularExpressions.RegexOptions.Compiled);
 
         [ObservableProperty]
@@ -70,10 +71,20 @@ namespace VN2Anki.ViewModels.Hub
 
         public ObservableCollection<SessionDetailItem> FilteredLogItems { get; } = new();
 
-        public SessionDetailViewModel(IVnDatabaseService dbService, ISessionAnalyticsEngine analyticsEngine)
+        public SessionDetailViewModel(IVnDatabaseService dbService, ISessionAnalyticsEngine analyticsEngine, INavigationService navigation)
         {
             _dbService = dbService;
             _analyticsEngine = analyticsEngine;
+            _navigation = navigation;
+        }
+
+        [RelayCommand]
+        private void GoBack() => _navigation.Pop();
+
+        [RelayCommand]
+        public void ToggleAdvancedView()
+        {
+            IsAdvancedView = !IsAdvancedView;
         }
 
         public async Task InitializeAsync(SessionRecord session)
