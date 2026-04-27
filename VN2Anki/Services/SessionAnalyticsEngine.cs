@@ -120,210 +120,140 @@ namespace VN2Anki.Services
             var blocks = CreateSentenceBlocks(events);
             if (!blocks.Any()) return result;
 
-            // 2. Identify "Pure" blocks for Median calculation
+            // 2. State Tracking Initialization
+            bool isPaused = false;
+            bool isExternal = false;
+            
+            // Determine initial state by scanning events before the first block
+            foreach (var ev in events.Where(e => e.t < blocks.First().StartTime))
+            {
+                UpdateState(ev, ref isPaused, ref isExternal);
+            }
+
+            // 3. Identify "Pure" blocks for Median calculation
             var pureSpcs = new List<double>();
             foreach (var b in blocks)
             {
+                var dist = GetBlockTimeDistribution(b, isPaused, isExternal);
+                isPaused = dist.EndPaused;
+                isExternal = dist.EndExternal;
+
                 bool hasLookups = b.Events.Any(e => e.e == "LOOKUP" || e.e == "MINE");
-                bool hasFocusLoss = b.Events.Any(e => e.e == "APP_STATE" && e.d.TryGetProperty("focus", out var f) && (f.GetString() == "external" || f.GetString() == "main"));
-                bool hasPause = b.Events.Any(e => e.e == "APP_STATE" && e.d.TryGetProperty("state", out var s) && s.GetString() == "BUFFER_STOPPED");
-                
                 int validChars = JapaneseRegex.Matches(b.Text).Count;
-                if (!hasLookups && !hasFocusLoss && !hasPause && validChars > 0)
+
+                if (!hasLookups && dist.DistractionSeconds == 0 && dist.PausedSeconds == 0 && validChars > 0)
                 {
-                    var nextClickInPure = b.Events.LastOrDefault(e => e.e == "CLICK" && e.t >= b.StartTime && e.t < b.EndTime);
-                    double duration = (b.EndTime - b.StartTime).TotalSeconds;
-
-                    if (nextClickInPure != null)
-                        duration = (nextClickInPure.t - b.StartTime).TotalSeconds; // Tempo real de leitura apenas
-
-                    if (duration > 0) // Previne apenas divisão por zero
+                    // For pure blocks, duration is ActiveSeconds minus the trailing latency (active time after last click)
+                    double readingActiveTime = Math.Max(0, dist.ActiveSeconds - dist.ActiveSecondsAfterLastClick);
+                    if (readingActiveTime > 0)
                     {
-                        pureSpcs.Add(duration / validChars);
+                        pureSpcs.Add(readingActiveTime / validChars);
                     }
                 }
             }
 
-            // Fallback: se a sessão foi muito fragmentada e não há blocos puros, usamos a média de todos os blocos possíveis
+            // Fallback for Median
             if (!pureSpcs.Any())
             {
+                isPaused = false; isExternal = false;
+                foreach (var ev in events.Where(e => e.t < blocks.First().StartTime)) UpdateState(ev, ref isPaused, ref isExternal);
+
                 foreach (var b in blocks)
                 {
-                    int validChars = JapaneseRegex.Matches(b.Text).Count;
-                    if (validChars > 0)
-                    {
-                        double paused = 0;
-                        DateTime? pStart = null;
-                        foreach(var ev in b.Events.Where(e => e.e == "APP_STATE")) {
-                            if (ev.d.TryGetProperty("state", out var s)) {
-                                string state = s.GetString() ?? "";
-                                if (state == "BUFFER_STOPPED" && pStart == null) pStart = ev.t;
-                                else if (state == "BUFFER_STARTED" && pStart != null) { paused += (ev.t - pStart.Value).TotalSeconds; pStart = null; }
-                            }
-                        }
-                        if (pStart != null) paused += (b.EndTime - pStart.Value).TotalSeconds;
+                    var dist = GetBlockTimeDistribution(b, isPaused, isExternal);
+                    isPaused = dist.EndPaused; isExternal = dist.EndExternal;
 
-                        double duration = Math.Max(0, (b.EndTime - b.StartTime).TotalSeconds - paused);
-                        if (duration > 0) pureSpcs.Add(duration / validChars);
-                    }
+                    int validChars = JapaneseRegex.Matches(b.Text).Count;
+                    double readingActiveTime = Math.Max(0, dist.ActiveSeconds - dist.ActiveSecondsAfterLastClick);
+                    if (validChars > 0 && readingActiveTime > 0) 
+                        pureSpcs.Add(readingActiveTime / validChars);
                 }
             }
 
             double medianSpc = GetMedian(pureSpcs);
             double mad = GetMad(pureSpcs, medianSpc);
-            if (mad == 0) mad = 0.05;
+            if (mad <= 0) mad = 0.05;
 
-            // 3. Detailed block processing
-            double totalLatency = 0;
-            double totalStudy = 0;
-            double totalDistraction = 0;
-            double totalReading = 0;
-            double totalPaused = 0;
-            int charsRead = 0;
-            int lookupCount = 0;
-            int miningCount = 0;
-            int distractionCount = 0;
+            // 4. Detailed block processing (Final Pass)
+            double totalLatency = 0, totalStudy = 0, totalDistraction = 0, totalReading = 0, totalPaused = 0;
+            int charsRead = 0, lookupCount = 0, miningCount = 0, distractionCount = 0;
 
-            if (blocks.Any() && events.Any())
-            {
-                double startupFat = (blocks.First().StartTime - events.First().t).TotalSeconds;
-                totalLatency += Math.Max(0, startupFat);
-            }
+            isPaused = false; isExternal = false;
+            foreach (var ev in events.Where(e => e.t < blocks.First().StartTime)) UpdateState(ev, ref isPaused, ref isExternal);
 
             foreach (var b in blocks)
             {
-                // Calculate PausedSeconds
-                double pausedSeconds = 0;
-                DateTime? pausedStart = null;
-                foreach(var ev in b.Events.Where(e => e.e == "APP_STATE"))
-                {
-                    if (ev.d.TryGetProperty("state", out var stateProp))
-                    {
-                        string state = stateProp.GetString() ?? "";
-                        if (state == "BUFFER_STOPPED" && pausedStart == null) 
-                        {
-                            pausedStart = ev.t;
-                        }
-                        else if (state == "BUFFER_STARTED" && pausedStart != null)
-                        {
-                            pausedSeconds += (ev.t - pausedStart.Value).TotalSeconds;
-                            pausedStart = null;
-                        }
-                    }
-                }
-                if (pausedStart != null && pausedStart.Value < b.EndTime) 
-                {
-                    pausedSeconds += (b.EndTime - pausedStart.Value).TotalSeconds;
-                }
-                b.PausedSeconds = pausedSeconds;
-                totalPaused += pausedSeconds;
+                var dist = GetBlockTimeDistribution(b, isPaused, isExternal);
+                isPaused = dist.EndPaused;
+                isExternal = dist.EndExternal;
+
+                b.PausedSeconds = dist.PausedSeconds;
+                totalPaused += dist.PausedSeconds;
                 
                 int validChars = JapaneseRegex.Matches(b.Text).Count;
                 bool hasJapanese = validChars > 0;
                 
-                if (hasJapanese)
-                {
-                    charsRead += validChars;
-                }
-                else
-                {
-                    // Non-Japanese sentences (punctuation only, etc) are treated as pure overhead
-                    b.LatencySeconds += Math.Max(0, (b.EndTime - b.StartTime).TotalSeconds - b.PausedSeconds);
-                }
+                if (hasJapanese) charsRead += validChars;
+                else b.LatencySeconds += dist.ActiveSeconds; 
                 
                 // A. Latency (Post-Reading Wait Time)
+                // Use only the active time that occurred AFTER the last click
+                double activeTime = dist.ActiveSeconds;
                 if (hasJapanese)
                 {
-                    var nextClick = b.Events.LastOrDefault(e => e.e == "CLICK" && e.t >= b.StartTime && e.t < b.EndTime);
-                    if (nextClick != null)
-                    {
-                        double postClickLatency = (b.EndTime - nextClick.t).TotalSeconds;
-                        double maxPossibleLatency = (b.EndTime - b.StartTime).TotalSeconds - b.PausedSeconds;
-                        b.LatencySeconds += Math.Max(0, Math.Min(postClickLatency, maxPossibleLatency));
-                    }
+                    double latency = Math.Max(0, Math.Min(dist.ActiveSecondsAfterLastClick, activeTime));
+                    b.LatencySeconds += latency;
+                    activeTime -= latency;
                 }
-
                 totalLatency += b.LatencySeconds;
 
                 // B. Study Time
                 var studyEvents = b.Events.Where(e => e.e == "LOOKUP" || e.e == "MINE").ToList();
                 lookupCount += b.Events.Count(e => e.e == "LOOKUP");
                 miningCount += b.Events.Count(e => e.e == "MINE");
-                
-                double activeBlockSeconds = Math.Max(0, (b.EndTime - b.StartTime).TotalSeconds - b.PausedSeconds - b.LatencySeconds);
 
                 if (hasJapanese && studyEvents.Any())
                 {
-                    // If studying, we assume the time spent beyond normal reading is StudyTime
-                    double expectedReadingTime = validChars * medianSpc;
-                    b.StudySeconds = Math.Max(0, activeBlockSeconds - expectedReadingTime);
+                    // Use a more lenient threshold for study (Median + 1 MAD) 
+                    // to avoid overestimating small reading speed variations as study time
+                    double readingThreshold = validChars * (medianSpc + mad);
+                    b.StudySeconds = Math.Max(0, activeTime - readingThreshold);
                     totalStudy += b.StudySeconds;
+                    activeTime -= b.StudySeconds;
                 }
-
-                activeBlockSeconds = Math.Max(0, activeBlockSeconds - b.StudySeconds);
 
                 // C. Distractions & AFK
-                double currentSpc = validChars > 0 ? activeBlockSeconds / validChars : 0;
-                double zScore = mad > 0 ? 0.6745 * (currentSpc - medianSpc) / mad : 0;
-
-                // Time in external focus
-                double externalSeconds = 0;
-                DateTime? externalStart = null;
-                bool focusLostInBlock = false;
-                foreach(var ev in b.Events.Where(e => e.e == "APP_STATE"))
-                {
-                    if (ev.d.TryGetProperty("focus", out var focusProp))
-                    {
-                        string focus = focusProp.GetString() ?? "";
-                        if ((focus == "external" || focus == "main") && externalStart == null) 
-                        {
-                            externalStart = ev.t;
-                            focusLostInBlock = true;
-                        }
-                        else if ((focus == "game" || focus == "overlay") && externalStart != null)
-                        {
-                            externalSeconds += (ev.t - externalStart.Value).TotalSeconds;
-                            externalStart = null;
-                        }
-                    }
-                }
-                if (externalStart != null && externalStart.Value < b.EndTime) 
-                {
-                    externalSeconds += (b.EndTime - externalStart.Value).TotalSeconds;
-                }
-                
-                if (focusLostInBlock) distractionCount++;
+                if (dist.FocusLostInBlock) distractionCount++;
+                b.DistractionSeconds = dist.DistractionSeconds;
 
                 if (hasJapanese)
                 {
-                    b.DistractionSeconds = Math.Min(externalSeconds, activeBlockSeconds);
-
-                    // Statistical AFK (if block is too long without study events)
+                    double zScore = mad > 0 ? 0.6745 * (activeTime / validChars - medianSpc) / mad : 0;
                     if (!studyEvents.Any() && zScore > 3.5)
                     {
                         double acceptableSeconds = (medianSpc + 2 * mad) * validChars;
-                        double afkSeconds = Math.Max(0, activeBlockSeconds - acceptableSeconds - b.DistractionSeconds);
+                        double afkSeconds = Math.Max(0, activeTime - acceptableSeconds);
                         b.DistractionSeconds += afkSeconds;
+                        activeTime -= afkSeconds;
                         
-                        if (afkSeconds > 5 && !focusLostInBlock) distractionCount++; // Count long pure AFKs as distractions too
+                        if (afkSeconds > 5 && !dist.FocusLostInBlock) distractionCount++;
                     }
                 }
 
                 totalDistraction += b.DistractionSeconds;
-                totalReading += b.ActiveReadingSeconds;
+                totalReading += activeTime;
                 
-                // Track mined words
                 foreach(var m in b.Events.Where(e => e.e == "MINE"))
                 {
                     string card = m.d.TryGetProperty("card", out var c) ? c.GetString() ?? "" : "";
                     if (!string.IsNullOrEmpty(card)) result.MinedWords.Add(card);
                 }
 
-                // Add to distribution using EFFECTIVE SPC (only for blocks with Japanese reading time)
-                if (hasJapanese && validChars > 0 && b.ActiveReadingSeconds > 0)
+                // SPC Distribution: To avoid the "median spike", only include blocks WITHOUT lookups.
+                // This shows the user's natural reading speed variance (the Gaussian).
+                if (hasJapanese && validChars > 0 && activeTime > 0 && !studyEvents.Any())
                 {
-                    double effectiveSpc = b.ActiveReadingSeconds / validChars;
-                    result.SpcDistribution.Add(effectiveSpc);
+                    result.SpcDistribution.Add(activeTime / JapaneseRegex.Matches(b.Text).Count);
                 }
             }
 
@@ -336,11 +266,115 @@ namespace VN2Anki.Services
             result.LatencySeconds = (int)totalLatency;
             result.AfkDurationSeconds = (int)totalDistraction;
             result.ReadingDurationSeconds = (int)totalReading;
-            
-            double totalFat = totalLatency + totalDistraction + totalPaused;
             result.EffectiveDurationSeconds = (int)(totalReading + totalStudy);
 
             return result;
+        }
+
+        private void UpdateState(SessionLogEvent ev, ref bool isPaused, ref bool isExternal)
+        {
+            if (ev.e == "APP_STATE")
+            {
+                if (ev.d.TryGetProperty("state", out var s))
+                    isPaused = s.GetString() == "BUFFER_STOPPED";
+                
+                if (ev.d.TryGetProperty("focus", out var f))
+                {
+                    string focus = f.GetString() ?? "";
+                    isExternal = (focus == "external" || focus == "main");
+                }
+            }
+        }
+
+        private class TimeDistribution
+        {
+            public double PausedSeconds { get; set; }
+            public double DistractionSeconds { get; set; }
+            public double ActiveSeconds { get; set; }
+            public double ActiveSecondsAfterLastClick { get; set; }
+            public bool EndPaused { get; set; }
+            public bool EndExternal { get; set; }
+            public bool FocusLostInBlock { get; set; }
+        }
+
+        private TimeDistribution GetBlockTimeDistribution(SentenceBlock b, bool startPaused, bool startExternal)
+        {
+            var dist = new TimeDistribution { EndPaused = startPaused, EndExternal = startExternal };
+            bool currentPaused = startPaused;
+            bool currentExternal = startExternal;
+            DateTime lastT = b.StartTime;
+
+            // Track when the last click happened to calculate post-click active time
+            var lastClick = b.Events.LastOrDefault(e => e.e == "CLICK" && e.t >= b.StartTime && e.t < b.EndTime);
+            DateTime? lastClickTime = lastClick?.t;
+
+            var sortedEvents = b.Events.OrderBy(e => e.t).ToList();
+            
+            foreach (var ev in sortedEvents)
+            {
+                if (ev.t < b.StartTime) continue;
+                if (ev.t > b.EndTime) break;
+
+                double delta = (ev.t - lastT).TotalSeconds;
+                if (delta > 0)
+                {
+                    if (currentPaused) dist.PausedSeconds += delta;
+                    else if (currentExternal) dist.DistractionSeconds += delta;
+                    else
+                    {
+                        dist.ActiveSeconds += delta;
+                        // If this segment is after the last click, it counts as trailing latency
+                        if (lastClickTime != null && lastT >= lastClickTime.Value)
+                        {
+                            dist.ActiveSecondsAfterLastClick += delta;
+                        }
+                        else if (lastClickTime != null && ev.t > lastClickTime.Value)
+                        {
+                            // Segment straddles the click time
+                            dist.ActiveSecondsAfterLastClick += (ev.t - lastClickTime.Value).TotalSeconds;
+                        }
+                    }
+                }
+
+                if (ev.e == "APP_STATE")
+                {
+                    if (ev.d.TryGetProperty("state", out var s))
+                        currentPaused = s.GetString() == "BUFFER_STOPPED";
+                    
+                    if (ev.d.TryGetProperty("focus", out var f))
+                    {
+                        string focus = f.GetString() ?? "";
+                        bool wasExternal = currentExternal;
+                        currentExternal = (focus == "external" || focus == "main");
+                        if (!wasExternal && currentExternal) dist.FocusLostInBlock = true;
+                    }
+                }
+                lastT = ev.t;
+            }
+
+            // Final segment until EndTime
+            double finalDelta = (b.EndTime - lastT).TotalSeconds;
+            if (finalDelta > 0)
+            {
+                if (currentPaused) dist.PausedSeconds += finalDelta;
+                else if (currentExternal) dist.DistractionSeconds += finalDelta;
+                else
+                {
+                    dist.ActiveSeconds += finalDelta;
+                    if (lastClickTime != null && lastT >= lastClickTime.Value)
+                    {
+                        dist.ActiveSecondsAfterLastClick += finalDelta;
+                    }
+                    else if (lastClickTime != null && b.EndTime > lastClickTime.Value)
+                    {
+                        dist.ActiveSecondsAfterLastClick += (b.EndTime - lastClickTime.Value).TotalSeconds;
+                    }
+                }
+            }
+
+            dist.EndPaused = currentPaused;
+            dist.EndExternal = currentExternal;
+            return dist;
         }
 
         private async Task<List<SessionLogEvent>> LoadEventsAsync(string logFilePath)
