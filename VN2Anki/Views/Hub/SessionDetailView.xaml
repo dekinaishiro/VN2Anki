@@ -44,8 +44,8 @@
             <Setter Property="Background" Value="#252525"/>
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="Padding" Value="16,12"/>
-            <Setter Property="Margin" Value="0,0,12,0"/>
-            <Setter Property="Width" Value="180"/>
+            <Setter Property="Margin" Value="0,0,12,12"/>
+            <Setter Property="Width" Value="160"/>
             <Setter Property="Effect">
                 <Setter.Value>
                     <DropShadowEffect Color="Black" BlurRadius="5" Opacity="0.3" ShadowDepth="2"/>
@@ -56,7 +56,6 @@
 
     <Grid Margin="20">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
@@ -80,90 +79,192 @@
                 <TextBlock Text="{Binding VisualNovel.Title}" FontSize="14" Foreground="#A0A0A0" Margin="0,2,0,0"
                            Visibility="{Binding VisualNovel, Converter={StaticResource BoolToVis}}"/>
             </StackPanel>
+
+            <!-- Toggle View Buttons -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                <RadioButton Content="Resumo" IsChecked="{Binding IsInfoView}" 
+                             Style="{DynamicResource {x:Type ToggleButton}}" 
+                             Padding="16,8" Margin="0,0,8,0" Background="#252525" Foreground="White" BorderThickness="0"/>
+                <RadioButton Content="Frases" IsChecked="{Binding IsInfoView, Converter={StaticResource BoolInv}}" 
+                             Style="{DynamicResource {x:Type ToggleButton}}" 
+                             Padding="16,8" Background="#252525" Foreground="White" BorderThickness="0"/>
+            </StackPanel>
         </Grid>
 
-        <!-- Stats Grid -->
-        <WrapPanel Grid.Row="1" Margin="0,0,0,20">
-            <Border Style="{StaticResource StatCard}" Width="190">
-                <StackPanel>
-                    <TextBlock Text="Tempo Efetivo (Útil)" Style="{StaticResource StatHeader}"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                        <iconPacks:PackIconMaterial Kind="ClockCheckOutline" Width="18" Height="18" Foreground="#2ECC71" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding Session.EffectiveDurationSeconds, Converter={StaticResource SecondsToTimeConverter}}" Style="{StaticResource StatValue}"/>
-                    </StackPanel>
-                    <TextBlock Foreground="#888" FontSize="11">
-                        <Run Text="Leitura: "/>
-                        <Run Text="{Binding AnalyticsResult.ReadingDurationSeconds, Mode=OneWay, Converter={StaticResource SecondsToTimeConverter}}" Foreground="#AAA"/>
-                    </TextBlock>
-                    <TextBlock Foreground="#888" FontSize="11">
-                        <Run Text="Lookups: "/>
-                        <Run Text="{Binding AnalyticsResult.LookupDurationSeconds, Mode=OneWay, Converter={StaticResource SecondsToTimeConverter}}" Foreground="#AAA"/>
-                    </TextBlock>
-                </StackPanel>
-            </Border>
+        <!-- MAIN CONTENT AREA -->
+        <Grid Grid.Row="1">
+            <!-- INFO VIEW -->
+            <Grid Visibility="{Binding IsInfoView, Converter={StaticResource BoolToVis}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-            <Border Style="{StaticResource StatCard}" Width="190">
-                <StackPanel>
-                    <TextBlock Text="Tempo Desperdiçado" Style="{StaticResource StatHeader}"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                        <iconPacks:PackIconMaterial Kind="ClockRemoveOutline" Width="18" Height="18" Foreground="#E74C3C" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding AnalyticsResult.AfkDurationSeconds, Converter={StaticResource SecondsToTimeConverter}}" Style="{StaticResource StatValue}"/>
-                    </StackPanel>
-                    <TextBlock Foreground="#888" FontSize="11">
-                        <Run Text="Distrações (AFK): "/>
-                        <Run Text="{Binding AnalyticsResult.AfkDurationSeconds, Mode=OneWay, Converter={StaticResource SecondsToTimeConverter}}" Foreground="#AAA"/>
-                    </TextBlock>
-                    <TextBlock Foreground="#888" FontSize="11">
-                        <Run Text="Overhead (Delay): "/>
-                        <Run Text="{Binding AnalyticsResult.LatencySeconds, Mode=OneWay, Converter={StaticResource SecondsToTimeConverter}}" Foreground="#AAA"/>
-                    </TextBlock>
-                </StackPanel>
-            </Border>
+                <!-- Stats WrapPanel -->
+                <WrapPanel Grid.Row="0" Margin="0,0,0,10">
+                    <Border Style="{StaticResource StatCard}">
+                        <StackPanel>
+                            <TextBlock Text="Tempo Total" Style="{StaticResource StatHeader}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial Kind="ClockOutline" Width="18" Height="18" Foreground="#3498DB" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Session.DurationSeconds, Converter={StaticResource SecondsToTimeConverter}}" Style="{StaticResource StatValue}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    
+                    <Border Style="{StaticResource StatCard}">
+                        <StackPanel>
+                            <TextBlock Text="Caracteres" Style="{StaticResource StatHeader}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial Kind="SyllabaryHiragana" Width="18" Height="18" Foreground="#2ECC71" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Session.CharactersRead}" Style="{StaticResource StatValue}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
 
-            <Border Style="{StaticResource StatCard}" Width="150">
-                <StackPanel>
-                    <TextBlock Text="Consultas / Mined" Style="{StaticResource StatHeader}"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                        <iconPacks:PackIconMaterial Kind="BookSearchOutline" Width="18" Height="18" Foreground="#F39C12" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                        <TextBlock Style="{StaticResource StatValue}">
-                            <Run Text="{Binding AnalyticsResult.LookupCount, Mode=OneWay}"/>
-                            <Run Text="/" Foreground="#666"/>
-                            <Run Text="{Binding AnalyticsResult.MiningCount, Mode=OneWay}" Foreground="#2ECC71"/>
-                        </TextBlock>
-                    </StackPanel>
-                    <TextBlock Foreground="#888" FontSize="11">
-                        <Run Text="Distrações Totais: "/>
-                        <Run Text="{Binding AnalyticsResult.DistractionCount, Mode=OneWay}" Foreground="#E74C3C" FontWeight="Bold"/>
-                    </TextBlock>
-                </StackPanel>
-            </Border>
+                    <Border Style="{StaticResource StatCard}">
+                        <StackPanel>
+                            <TextBlock Text="Nº de Frases" Style="{StaticResource StatHeader}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial Kind="FormatListBulleted" Width="18" Height="18" Foreground="#F1C40F" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding AnalyticsResult.Blocks.Count}" Style="{StaticResource StatValue}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
 
-            <Border Style="{StaticResource StatCard}" Width="170">
-                <StackPanel>
-                    <TextBlock Text="Velocidade (Leitura)" Style="{StaticResource StatHeader}"/>
-                    <StackPanel Orientation="Horizontal">
-                        <iconPacks:PackIconMaterial Kind="Speedometer" Width="18" Height="18" Foreground="#9B59B6" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding AnalyticsResult.CharsPerHour}" Style="{StaticResource StatValue}"/>
-                        <TextBlock Text=" chars/h" Foreground="#666" FontSize="12" VerticalAlignment="Bottom" Margin="4,0,0,4"/>
-                    </StackPanel>
-                    <TextBlock Foreground="#888" FontSize="11" Margin="0,4,0,0">
-                        <Run Text="Total: "/>
-                        <Run Text="{Binding Session.CharactersRead, Mode=OneWay}" Foreground="#AAA"/>
-                        <Run Text=" chars"/>
-                    </TextBlock>
-                </StackPanel>
-            </Border>
-        </WrapPanel>
+                    <Border Style="{StaticResource StatCard}">
+                        <StackPanel>
+                            <TextBlock Text="Velocidade" Style="{StaticResource StatHeader}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial Kind="Speedometer" Width="18" Height="18" Foreground="#9B59B6" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding AnalyticsResult.RawCharsPerHour}" Style="{StaticResource StatValue}"/>
+                                <TextBlock Text=" c/h" Foreground="#666" FontSize="12" VerticalAlignment="Bottom" Margin="4,0,0,4"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
 
-        <!-- Main Content -->
-        <Grid Grid.Row="2">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="300"/>
-            </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource StatCard}">
+                        <StackPanel>
+                            <TextBlock Text="Tempo AFK" Style="{StaticResource StatHeader}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial Kind="CoffeeOutline" Width="18" Height="18" Foreground="#E74C3C" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding AnalyticsResult.AfkDurationSeconds, Converter={StaticResource SecondsToTimeConverter}}" Style="{StaticResource StatValue}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
 
-            <!-- Log DataGrid -->
-            <Border Grid.Column="0" Background="#1A1A1A" CornerRadius="8" Margin="0,0,16,0">
+                    <Border Style="{StaticResource StatCard}">
+                        <StackPanel>
+                            <TextBlock Text="Overhead" Style="{StaticResource StatHeader}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial Kind="TimerSand" Width="18" Height="18" Foreground="#E67E22" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding AnalyticsResult.LatencySeconds, Converter={StaticResource SecondsToTimeConverter}}" Style="{StaticResource StatValue}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource StatCard}">
+                        <StackPanel>
+                            <TextBlock Text="Consultas" Style="{StaticResource StatHeader}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial Kind="BookSearchOutline" Width="18" Height="18" Foreground="#1ABC9C" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding AnalyticsResult.LookupCount}" Style="{StaticResource StatValue}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource StatCard}">
+                        <StackPanel>
+                            <TextBlock Text="Mineradas" Style="{StaticResource StatHeader}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial Kind="CardsOutline" Width="18" Height="18" Foreground="#E84393" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding AnalyticsResult.MiningCount}" Style="{StaticResource StatValue}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </WrapPanel>
+
+                <!-- Bottom Info Area (Graphs / Words) -->
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="300"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Speed Info / Placeholder for Gaussian -->
+                    <Border Grid.Column="0" Background="#1A1A1A" CornerRadius="8" Padding="20" Margin="0,0,16,0" VerticalAlignment="Top">
+                        <StackPanel>
+                            <TextBlock Text="Ritmo de Leitura (Gaussiana)" Foreground="White" FontSize="16" FontWeight="Bold" Margin="0,0,0,20"/>
+                            
+                            <Border Height="200" Background="#05000000" BorderBrush="#333" BorderThickness="1" CornerRadius="4" ClipToBounds="True">
+                                <Grid>
+                                    <ItemsControl ItemsSource="{Binding SpeedDistributionBars}" 
+                                                  Visibility="{Binding HasSpeedDistribution, Converter={StaticResource BoolToVis}}"
+                                                  VerticalAlignment="Bottom" HorizontalAlignment="Center">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Rows="1" Margin="4,0"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="#9B59B6" Width="15" Height="{Binding}" VerticalAlignment="Bottom" Margin="2,0">
+                                                    <Border.ToolTip>
+                                                        <ToolTip Content="Frequência" />
+                                                    </Border.ToolTip>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock Text="Dados insuficientes para o gráfico." Foreground="#444" 
+                                               VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="14">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasSpeedDistribution}" Value="False">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Mined Words -->
+                    <Border Grid.Column="1" Background="#1A1A1A" CornerRadius="8" Padding="16">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text="Palavras Mineradas" Foreground="White" FontSize="16" FontWeight="Bold" Margin="0,0,0,16"/>
+                            
+                            <ListBox Grid.Row="1" ItemsSource="{Binding AnalyticsResult.MinedWords}" Background="Transparent" BorderThickness="0"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="#252525" CornerRadius="4" Padding="12,8" Margin="0,0,0,6">
+                                            <TextBlock Text="{Binding}" Foreground="#2ECC71" FontSize="14" TextWrapping="Wrap"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            
+                            <TextBlock Grid.Row="1" Text="Nenhuma palavra minerada nesta sessão." Foreground="#555" 
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"
+                                       Style="{StaticResource InvertedBoolToVis}"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Grid>
+
+            <!-- FRASES VIEW -->
+            <Border Visibility="{Binding IsInfoView, Converter={StaticResource BoolInvToVis}}" 
+                    Background="#1A1A1A" CornerRadius="8">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -258,79 +359,6 @@
                                  Visibility="{Binding IsLoadingLogs, Converter={StaticResource BoolToVis}}" Background="Transparent" Foreground="#4A90E2" BorderThickness="0"/>
                 </Grid>
             </Border>
-
-            <!-- Right Sidebar -->
-            <StackPanel Grid.Column="1">
-                <!-- Mined Words -->
-                <Border Background="#1A1A1A" CornerRadius="8" Padding="12" Margin="0,0,0,16" MinHeight="200">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-                        <TextBlock Grid.Row="0" Text="Palavras Mineradas" Foreground="White" FontWeight="Bold" Margin="0,0,0,12"/>
-                        
-                        <ListBox Grid.Row="1" ItemsSource="{Binding AnalyticsResult.MinedWords}" Background="Transparent" BorderThickness="0">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Background="#252525" CornerRadius="4" Padding="8,4" Margin="0,0,0,4">
-                                        <TextBlock Text="{Binding}" Foreground="#2ECC71" FontSize="13"/>
-                                    </Border>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                        
-                        <TextBlock Grid.Row="1" Text="Nenhuma palavra minerada nesta sessão." Foreground="#555" 
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"
-                                   Style="{StaticResource InvertedBoolToVis}"/>
-                    </Grid>
-                </Border>
-
-                <!-- Speed Info / Placeholder for Gaussian -->
-                <Border Background="#1A1A1A" CornerRadius="8" Padding="12">
-                    <StackPanel>
-                        <TextBlock Text="Ritmo de Leitura" Foreground="White" FontWeight="Bold" Margin="0,0,0,12"/>
-                        
-                        <!-- Simple Summary of Speed -->
-                        <Grid Margin="0,0,0,10">
-                            <TextBlock Text="Velocidade" Foreground="#A0A0A0"/>
-                            <TextBlock Text="{Binding AnalyticsResult.CharsPerHour, StringFormat='{}{0} chars/h'}" Foreground="White" HorizontalAlignment="Right" FontWeight="Bold"/>
-                        </Grid>
-                        
-                        <Border Height="100" Background="#05000000" BorderBrush="#333" BorderThickness="1" CornerRadius="4" ClipToBounds="True">
-                            <Grid>
-                                <ItemsControl ItemsSource="{Binding SpeedDistributionBars}" 
-                                              Visibility="{Binding HasSpeedDistribution, Converter={StaticResource BoolToVis}}"
-                                              VerticalAlignment="Bottom">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <UniformGrid Rows="1" Margin="2,0"/>
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border Background="#9B59B6" Height="{Binding}" VerticalAlignment="Bottom" Margin="1,0"/>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                                <TextBlock Text="Dados insuficientes para o gráfico." Foreground="#444" 
-                                           VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="10">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding HasSpeedDistribution}" Value="False">
-                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                            </Grid>
-                        </Border>
-                    </StackPanel>
-                </Border>
-            </StackPanel>
         </Grid>
     </Grid>
 </UserControl>

@@ -69,6 +69,9 @@ namespace VN2Anki.ViewModels.Hub
         [ObservableProperty]
         private bool _isAdvancedView = false;
 
+        [ObservableProperty]
+        private bool _isInfoView = true;
+
         public ObservableCollection<SessionDetailItem> FilteredLogItems { get; } = new();
 
         public SessionDetailViewModel(IVnDatabaseService dbService, ISessionAnalyticsEngine analyticsEngine, INavigationService navigation)
@@ -85,6 +88,12 @@ namespace VN2Anki.ViewModels.Hub
         public void ToggleAdvancedView()
         {
             IsAdvancedView = !IsAdvancedView;
+        }
+
+        [RelayCommand]
+        public void ToggleInfoView()
+        {
+            IsInfoView = !IsInfoView;
         }
 
         public async Task InitializeAsync(SessionRecord session)

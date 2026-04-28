@@ -35,6 +35,7 @@ namespace VN2Anki.Services
         public List<SentenceBlock> Blocks { get; set; } = new();
 
         public int CharsPerHour => EffectiveDurationSeconds > 0 ? (int)((CharactersRead / (double)EffectiveDurationSeconds) * 3600) : 0;
+        public int RawCharsPerHour => TotalDurationSeconds > 0 ? (int)((CharactersRead / (double)TotalDurationSeconds) * 3600) : 0;
     }
 
     public interface ISessionAnalyticsEngine
