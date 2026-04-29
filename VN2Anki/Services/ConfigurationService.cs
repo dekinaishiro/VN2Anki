@@ -80,7 +80,6 @@ namespace VN2Anki.Services
                 File.WriteAllText(_configFilePath, json);
                 _logger.LogInformation("Configuration saved successfully.");
 
-                // Ponto 3 do plano: Notificar sistema da mudança de configuração
                 WeakReferenceMessenger.Default.Send(new AppConfigChangedMessage(CurrentConfig));
             }
             catch (Exception ex)
