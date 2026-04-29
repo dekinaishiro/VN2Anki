@@ -58,13 +58,27 @@ namespace VN2Anki.ViewModels
         // loads the device lists when the window opens
         public async Task LoadDevicesAsync()
         {
-            // loads the audio devices asynchronously to avoid freezing the UI
+            await LoadAudioDevicesAsync();
+            await LoadVideoWindowsAsync();
+        }
+
+        [RelayCommand]
+        public async Task LoadAudioDevicesAsync()
+        {
+            if (!IsAudioSelectionEnabled) return;
+
             var audioList = await Task.Run(() => _audioEngine.GetDevices());
             AudioDevices.Clear();
             foreach (var device in audioList)
             {
                 AudioDevices.Add(device);
             }
+        }
+
+        [RelayCommand]
+        public async Task LoadVideoWindowsAsync()
+        {
+            if (!IsVideoSelectionEnabled) return;
 
             var videoList = await Task.Run(() => _processMonitor.GetActiveWindows());
             VideoWindows.Clear();

@@ -73,8 +73,8 @@ namespace VN2Anki
             }
         }
         private void BtnRefreshAnki_Click(object sender, RoutedEventArgs e) => _ = LoadAnkiDataAsync();
-        private void BtnRefreshAudio_Click(object sender, RoutedEventArgs e) => _ = _viewModel.LoadDevicesAsync();
-        private void BtnRefreshVideo_Click(object sender, RoutedEventArgs e) => _ = _viewModel.LoadDevicesAsync();
+        private void BtnRefreshAudio_Click(object sender, RoutedEventArgs e) => _ = _viewModel.LoadAudioDevicesAsync();
+        private void BtnRefreshVideo_Click(object sender, RoutedEventArgs e) => _ = _viewModel.LoadVideoWindowsAsync();
 
         private async void ComboModel_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
