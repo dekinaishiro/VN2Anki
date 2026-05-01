@@ -8,7 +8,7 @@ using VN2Anki.Services.Interfaces;
 
 namespace VN2Anki.Services
 {
-    public class SessionManagerService : ISessionManagerService, IRecipient<PlayVnMessage>
+    public class SessionManagerService : ISessionManagerService, IRecipient<PlayVnMessage>, IRecipient<AppConfigChangedMessage>
     {
         private readonly MiningService _miningService;
         private readonly IConfigurationService _configService;
@@ -26,6 +26,7 @@ namespace VN2Anki.Services
         public VisualNovel? CurrentVN => _currentVN;
         
         private int? _pendingLaunchVnId = null;
+        private string? _lastVideoSource;
 
         public bool IsBufferActive { get; set; }
 
@@ -59,7 +60,46 @@ namespace VN2Anki.Services
             _processMonitor.VnProcessStarted += OnVnProcessStarted;
             _processMonitor.VnProcessStopped += OnVnProcessStopped;
 
+            _lastVideoSource = _configService.CurrentConfig.Media.VideoWindow;
             WeakReferenceMessenger.Default.RegisterAll(this);
+
+            // Clean phantom process on startup to avoid stale UI state
+            if (!string.IsNullOrEmpty(_lastVideoSource) && !_processMonitor.IsProcessRunning(_lastVideoSource))
+            {
+                _configService.CurrentConfig.Media.VideoWindow = string.Empty;
+                _configService.Save();
+                _lastVideoSource = string.Empty;
+            }
+        }
+
+        public async void Receive(AppConfigChangedMessage message)
+        {
+            var config = message.Config;
+            var videoSource = config.Media.VideoWindow;
+
+            if (_lastVideoSource != videoSource)
+            {
+                _lastVideoSource = videoSource;
+
+                if (string.IsNullOrEmpty(videoSource))
+                {
+                    SetCurrentVN(null);
+                }
+                else
+                {
+                    // If the user manually changed the video window in settings, we should try to link it.
+                    // But we must be careful not to trigger it if we are already linked to the correct VN.
+                    bool alreadyLinked = _currentVN != null && (
+                        string.Equals(_currentVN.ProcessName, videoSource, StringComparison.OrdinalIgnoreCase) ||
+                        (!string.IsNullOrEmpty(_currentVN.ExecutablePath) && string.Equals(System.IO.Path.GetFileName(_currentVN.ExecutablePath), videoSource, StringComparison.OrdinalIgnoreCase))
+                    );
+
+                    if (!alreadyLinked)
+                    {
+                        await TryAutoLinkAsync(videoSource);
+                    }
+                }
+            }
         }
 
         public async Task TryAutoLinkAsync(string? specificProcessName = null, bool suppressConfirmation = false, int maxRetries = 0, VisualNovel? expectedVn = null)

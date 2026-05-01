@@ -65,8 +65,6 @@ namespace VN2Anki.ViewModels
         [RelayCommand]
         public async Task LoadAudioDevicesAsync()
         {
-            if (!IsAudioSelectionEnabled) return;
-
             var audioList = await Task.Run(() => _audioEngine.GetDevices());
             AudioDevices.Clear();
             foreach (var device in audioList)
@@ -78,8 +76,6 @@ namespace VN2Anki.ViewModels
         [RelayCommand]
         public async Task LoadVideoWindowsAsync()
         {
-            if (!IsVideoSelectionEnabled) return;
-
             var videoList = await Task.Run(() => _processMonitor.GetActiveWindows());
             VideoWindows.Clear();
             foreach (var window in videoList)
