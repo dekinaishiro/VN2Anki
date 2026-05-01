@@ -163,20 +163,19 @@ namespace VN2Anki.Services
 
         public void OpenExtensionsManager(object? owner = null)
         {
-            var manager = _serviceProvider.GetRequiredService<ExtensionsWindow>();
-            manager.Topmost = true;
-
-            if (owner is Window ownerWin)
+            var existingWin = Application.Current.Windows.OfType<SettingsWindow>().FirstOrDefault();
+            if (existingWin != null)
             {
-                manager.Owner = ownerWin;
-                manager.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                if (existingWin.WindowState == WindowState.Minimized) existingWin.WindowState = WindowState.Normal;
+                existingWin.Activate();
+                existingWin.SwitchToExtensionsTab();
             }
             else
             {
-                manager.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                var newWin = _serviceProvider.GetRequiredService<SettingsWindow>();
+                newWin.Show();
+                newWin.SwitchToExtensionsTab();
             }
-
-            manager.ShowDialog();
         }
 
         public bool ShowConfirmation(string message, string title, bool isWarning = false)

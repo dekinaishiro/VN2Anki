@@ -51,7 +51,7 @@
                                 <Button Command="{Binding DataContext.PlayVnCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
                                         CommandParameter="{Binding}"
                                         HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10"
-                                        Width="36" Height="36" Background="#007ACC" BorderThickness="0" Cursor="Hand">
+                                        Width="36" Height="36" Background="#28A745" BorderThickness="0" Cursor="Hand">
                                     <Button.Template>
                                         <ControlTemplate TargetType="Button">
                                             <Border Background="{TemplateBinding Background}" CornerRadius="18">

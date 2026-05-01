@@ -4,7 +4,7 @@
         xmlns:vms="clr-namespace:VN2Anki.ViewModels.Hub"
         xmlns:views="clr-namespace:VN2Anki.Views.Hub"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
-        Title="VN2Anki - User Hub" Height="700" Width="1050"
+        Title="VN2Anki - User Hub" Height="700" Width="1150"
         Background="#1E1E1E" Foreground="White" WindowStartupLocation="CenterScreen"
         Topmost="True" SizeChanged="UserHubWindow_SizeChanged" PreviewKeyDown="Window_PreviewKeyDown">
 

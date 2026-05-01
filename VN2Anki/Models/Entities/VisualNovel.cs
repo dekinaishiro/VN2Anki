@@ -17,7 +17,7 @@ namespace VN2Anki.Models.Entities
 
         // time & stats
         public int TotalTimePlayedSeconds { get; set; }
-        public int EffectiveTimePlayedSeconds { get; set; } // Tempo corrigido (futuro)
+        public int EffectiveTimePlayedSeconds { get; set; }
         public int TotalCharactersRead { get; set; }
         public int TotalCardsMined { get; set; }
 
