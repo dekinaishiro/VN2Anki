@@ -41,9 +41,7 @@ namespace VN2Anki.Models
 
     public class SessionConfig
     {
-        public double IdleTime { get; set; } = 20;
         public int MaxSlots { get; set; } = 30;
-        public bool UseDynamicTimeout { get; set; } = true;
         public bool SilentSync { get; set; } = true;
         public double DynamicBaseSeconds { get; set; } = 0.75;
         public double DynamicPerCharSeconds { get; set; } = 0.25;

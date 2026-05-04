@@ -258,18 +258,9 @@ namespace VN2Anki.Services
                             }
                         }
 
-                        double finalSeconds;
-
-                        if (sessionConfig.UseDynamicTimeout)
-                        {
-                            char[] pauseChars = new[] { '。', '、', '？', '！', '…', '　' };
-                            int pauseCount = safeText.Count(c => pauseChars.Contains(c));
-                            finalSeconds = Math.Max(sessionConfig.DynamicMinSeconds, sessionConfig.DynamicBaseSeconds + (spokenCharCount * sessionConfig.DynamicPerCharSeconds) + (pauseCount * sessionConfig.DynamicPerPauseSeconds));
-                        }
-                        else
-                        {
-                            finalSeconds = sessionConfig.IdleTime;
-                        }
+                        char[] pauseChars = new[] { '。', '、', '？', '！', '…', '　' };
+                        int pauseCount = safeText.Count(c => pauseChars.Contains(c));
+                        double finalSeconds = Math.Max(sessionConfig.DynamicMinSeconds, sessionConfig.DynamicBaseSeconds + (spokenCharCount * sessionConfig.DynamicPerCharSeconds) + (pauseCount * sessionConfig.DynamicPerPauseSeconds));
 
                         _idleTimer.Interval = finalSeconds * 1000;
                         _idleTimer.Start();
