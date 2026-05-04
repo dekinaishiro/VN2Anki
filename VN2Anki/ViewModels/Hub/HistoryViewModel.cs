@@ -44,7 +44,7 @@ namespace VN2Anki.ViewModels.Hub
         {
             await _analyticsEngine.ReprocessAllSessionsAsync();
             await LoadHistoryAsync();
-            WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = "Estatísticas recalculadas com sucesso!", IsError = false }));
+            WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload { Message = Locales.Strings.MsgStatsRecalculatedSuccess, IsError = false }));
         }
 
         [RelayCommand]
@@ -52,7 +52,7 @@ namespace VN2Anki.ViewModels.Hub
         {
             if (session == null) return;
             
-            bool confirm = _windowService.ShowConfirmation(Locales.Strings.MsgConfirmVnDelete != null ? "Are you sure you want to delete this session?" : "Are you sure you want to delete this session?", Locales.Strings.MsgAttention ?? "Attention", true);
+            bool confirm = _windowService.ShowConfirmation(Locales.Strings.MsgConfirmSessionDelete, Locales.Strings.MsgAttention, true);
             if (!confirm) return;
 
             await _dbService.DeleteSessionAsync(session);

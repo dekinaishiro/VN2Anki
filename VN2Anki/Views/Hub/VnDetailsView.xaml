@@ -43,17 +43,17 @@
 
         <!-- 0: NAVEGAÇÃO E AÇÕES -->
         <Grid Grid.Row="0" Margin="0,0,0,30" VerticalAlignment="Top">
-            <Button Command="{Binding GoBackCommand}" Content="← Back" Background="Transparent" Foreground="#888888" BorderThickness="0" 
+            <Button Command="{Binding GoBackCommand}" Content="{x:Static loc:Strings.LabelBack}" Background="Transparent" Foreground="#888888" BorderThickness="0" 
                     HorizontalAlignment="Left" FontSize="14" Cursor="Hand" VerticalAlignment="Center"/>
             
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                <Button Command="{Binding PlayVnCommand}" Content="▶ Play" Background="#007ACC" Foreground="White" FontWeight="Bold" BorderThickness="0" Padding="15,6" Margin="0,0,10,0" Cursor="Hand">
+                <Button Command="{Binding PlayVnCommand}" Content="{x:Static loc:Strings.LabelPlay}" Background="#007ACC" Foreground="White" FontWeight="Bold" BorderThickness="0" Padding="15,6" Margin="0,0,10,0" Cursor="Hand">
                     <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
                 </Button>
-                <Button Command="{Binding OpenEditModalCommand}" Content="⚙️ Edit" Background="#3F3F46" Foreground="White" BorderThickness="0" Padding="12,6" Margin="0,0,10,0" Cursor="Hand">
+                <Button Command="{Binding OpenEditModalCommand}" Content="{x:Static loc:Strings.LabelEdit}" Background="#3F3F46" Foreground="White" BorderThickness="0" Padding="12,6" Margin="0,0,10,0" Cursor="Hand">
                     <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
                 </Button>
-                <Button Command="{Binding DeleteVnCommand}" Content="🗑️ Delete" Background="#DC3545" Foreground="White" BorderThickness="0" Padding="12,6" Cursor="Hand">
+                <Button Command="{Binding DeleteVnCommand}" Content="{x:Static loc:Strings.LabelDelete}" Background="#DC3545" Foreground="White" BorderThickness="0" Padding="12,6" Cursor="Hand">
                     <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
                 </Button>
             </StackPanel>
@@ -103,22 +103,22 @@
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
                     <Border Style="{StaticResource StatTileStyle}" VerticalAlignment="Top">
                         <StackPanel>
-                            <TextBlock Text="⏱ HOURS" Foreground="#888888" FontWeight="Bold" FontSize="11"/>
+                            <TextBlock Text="{x:Static loc:Strings.LabelHours}" Foreground="#888888" FontWeight="Bold" FontSize="11"/>
                             <TextBlock Text="{Binding Vn.FormattedTotalTime}" Foreground="#007ACC" FontWeight="Black" FontSize="28" Margin="0,5,0,0"/>
                         </StackPanel>
                     </Border>
                     <Border Style="{StaticResource StatTileStyle}" VerticalAlignment="Top">
                         <StackPanel>
-                            <TextBlock Text="🅰 CHARS" Foreground="#888888" FontWeight="Bold" FontSize="11"/>
+                            <TextBlock Text="{x:Static loc:Strings.LabelChars}" Foreground="#888888" FontWeight="Bold" FontSize="11"/>
                             <TextBlock Text="{Binding Vn.TotalCharactersRead}" Foreground="#28A745" FontWeight="Black" FontSize="28" Margin="0,5,0,0"/>
                         </StackPanel>
                     </Border>
                     <Border Style="{StaticResource StatTileStyle}" VerticalAlignment="Top">
                         <StackPanel>
-                            <TextBlock Text="🚀 SPEED" Foreground="#888888" FontWeight="Bold" FontSize="11"/>
+                            <TextBlock Text="{x:Static loc:Strings.LabelSpeed}" Foreground="#888888" FontWeight="Bold" FontSize="11"/>
                             <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
                                 <TextBlock Text="{Binding AverageSpeed, StringFormat={}{0:F0}}" Foreground="#FFC107" FontWeight="Black" FontSize="28"/>
-                                <TextBlock Text=" c/h" Foreground="#666666" FontSize="12" VerticalAlignment="Bottom" Margin="4,0,0,4"/>
+                                <TextBlock Text="{x:Static loc:Strings.LabelCharsPerHourSuffix}" Foreground="#666666" FontSize="12" VerticalAlignment="Bottom" Margin="4,0,0,4"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -136,7 +136,7 @@
             <!-- Histórico -->
             <Border Grid.Column="0" Background="#252526" CornerRadius="8" Padding="15" Margin="0,0,20,0">
                 <DockPanel LastChildFill="True">
-                    <TextBlock DockPanel.Dock="Top" Text="RECENT SESSIONS" Foreground="#888888" FontSize="14" FontWeight="Bold" Margin="0,0,0,15"/>
+                    <TextBlock DockPanel.Dock="Top" Text="{x:Static loc:Strings.LabelRecentSessions}" Foreground="#888888" FontSize="14" FontWeight="Bold" Margin="0,0,0,15"/>
                     <ItemsControl ItemsSource="{Binding RecentSessions}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
@@ -167,13 +167,13 @@
                 </Grid.RowDefinitions>
 
                 <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
-                    <Button Style="{StaticResource GraphButtonStyle}" Command="{Binding SetGraphTypeCommand}" CommandParameter="HeatMap" ToolTip="Session HeatMap">
+                    <Button Style="{StaticResource GraphButtonStyle}" Command="{Binding SetGraphTypeCommand}" CommandParameter="HeatMap" ToolTip="{x:Static loc:Strings.ToolTipHeatMap}">
                         <iconPacks:PackIconMaterial Kind="CalendarMonth" Width="18" Height="18"/>
                     </Button>
-                    <Button Style="{StaticResource GraphButtonStyle}" Command="{Binding SetGraphTypeCommand}" CommandParameter="CharsProgress" ToolTip="Characters Progress">
+                    <Button Style="{StaticResource GraphButtonStyle}" Command="{Binding SetGraphTypeCommand}" CommandParameter="CharsProgress" ToolTip="{x:Static loc:Strings.ToolTipCharsProgress}">
                         <iconPacks:PackIconMaterial Kind="ChartTimelineVariant" Width="18" Height="18"/>
                     </Button>
-                    <Button Style="{StaticResource GraphButtonStyle}" Command="{Binding SetGraphTypeCommand}" CommandParameter="TimeProgress" ToolTip="Hours Played Progress">
+                    <Button Style="{StaticResource GraphButtonStyle}" Command="{Binding SetGraphTypeCommand}" CommandParameter="TimeProgress" ToolTip="{x:Static loc:Strings.ToolTipTimeProgress}">
                         <iconPacks:PackIconMaterial Kind="ChartLine" Width="18" Height="18"/>
                     </Button>
                 </StackPanel>
@@ -190,15 +190,15 @@
         <Grid Grid.RowSpan="3" Background="#CC000000" Visibility="{Binding IsEditModalOpen, Converter={StaticResource BoolToVis}}" Panel.ZIndex="100" Margin="-20">
             <Border Background="#1E1E1E" BorderBrush="#3E3E42" BorderThickness="1" CornerRadius="8" Width="400" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20">
                 <StackPanel>
-                    <TextBlock Text="Edit Visual Novel" Foreground="White" FontSize="18" FontWeight="Bold" Margin="0,0,0,20"/>
-                    <TextBlock Text="Executable Path" Foreground="#AAAAAA" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <TextBlock Text="{x:Static loc:Strings.LabelEditVn}" Foreground="White" FontSize="18" FontWeight="Bold" Margin="0,0,0,20"/>
+                    <TextBlock Text="{x:Static loc:Strings.LabelExecutablePath}" Foreground="#AAAAAA" FontWeight="SemiBold" Margin="0,0,0,5"/>
                     <TextBox Text="{Binding EditExecutablePath}" Background="#2D2D30" Foreground="White" BorderThickness="0" Padding="8" Margin="0,0,0,15"/>
-                    <TextBlock Text="VNDB ID (Ex: v1143)" Foreground="#AAAAAA" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <TextBlock Text="{x:Static loc:Strings.LabelVndbIdHint}" Foreground="#AAAAAA" FontWeight="SemiBold" Margin="0,0,0,5"/>
                     <TextBox Text="{Binding EditVndbId}" Background="#2D2D30" Foreground="White" BorderThickness="0" Padding="8" Margin="0,0,0,25"/>
                     <Grid>
                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Content="Cancel" Command="{Binding CloseEditModalCommand}" Background="Transparent" Foreground="#CCCCCC" BorderThickness="0" Padding="10" Margin="0,0,5,0" Cursor="Hand"/>
-                        <Button Grid.Column="1" Content="Save" Command="{Binding SaveEditCommand}" Background="#007ACC" Foreground="White" FontWeight="Bold" BorderThickness="0" Padding="10" Margin="5,0,0,0" Cursor="Hand"/>
+                        <Button Grid.Column="0" Content="{x:Static loc:Strings.LabelCancel}" Command="{Binding CloseEditModalCommand}" Background="Transparent" Foreground="#CCCCCC" BorderThickness="0" Padding="10" Margin="0,0,5,0" Cursor="Hand"/>
+                        <Button Grid.Column="1" Content="{x:Static loc:Strings.LabelSave}" Command="{Binding SaveEditCommand}" Background="#007ACC" Foreground="White" FontWeight="Bold" BorderThickness="0" Padding="10" Margin="5,0,0,0" Cursor="Hand"/>
                     </Grid>
                 </StackPanel>
             </Border>

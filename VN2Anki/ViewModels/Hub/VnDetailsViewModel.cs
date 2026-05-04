@@ -26,7 +26,7 @@ namespace VN2Anki.ViewModels.Hub
         private double _averageSpeed;
 
         [ObservableProperty]
-        private string _currentGraphType = "HeatMap";
+        private string _currentGraphType = Locales.Strings.LabelHeatMap;
 
         // === ESTADOS DO MODAL DE EDIÇÃO ===
         [ObservableProperty] private bool _isEditModalOpen;

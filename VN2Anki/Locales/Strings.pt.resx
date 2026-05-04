@@ -507,4 +507,47 @@
   <data name="MsgEmpty" xml:space="preserve">
     <value>Vazio!</value>
   </data>
+	<data name="MsgStatsRecalculatedSuccess" xml:space="preserve">  <value>Estatísticas recalculadas com sucesso!</value></data>
+	<data name="MsgConfirmSessionDelete" xml:space="preserve">  <value>Tem certeza de que deseja excluir esta sessão?</value></data>
+	<data name="LabelHeatMap" xml:space="preserve">  <value>Mapa de Calor</value></data>
+	<data name="LabelBack" xml:space="preserve">  <value>← Voltar</value></data>
+	<data name="LabelPlay" xml:space="preserve">  <value>▶ Iniciar</value></data>
+	<data name="LabelEdit" xml:space="preserve">  <value>⚙️ Editar</value></data>
+	<data name="LabelDelete" xml:space="preserve">  <value>🗑️ Excluir</value></data>
+	<data name="LabelHours" xml:space="preserve">  <value>⏱ HORAS</value></data>
+	<data name="LabelChars" xml:space="preserve">  <value>🅰 CARACTERES</value></data>
+	<data name="LabelSpeed" xml:space="preserve">  <value>🚀 VELOCIDADE</value></data>
+	<data name="LabelCharsPerHourSuffix" xml:space="preserve">  <value> c/h</value></data>
+	<data name="LabelRecentSessions" xml:space="preserve">  <value>SESSÕES RECENTES</value></data>
+	<data name="ToolTipHeatMap" xml:space="preserve">  <value>Mapa de Calor da Sessão</value></data>
+	<data name="ToolTipCharsProgress" xml:space="preserve">  <value>Progresso de Caracteres</value></data>
+	<data name="ToolTipTimeProgress" xml:space="preserve">  <value>Progresso de Horas Jogadas</value></data>
+	<data name="LabelEditVn" xml:space="preserve">  <value>Editar Visual Novel</value></data>
+	<data name="LabelExecutablePath" xml:space="preserve">  <value>Caminho do Executável</value></data>
+	<data name="LabelVndbIdHint" xml:space="preserve">  <value>ID do VNDB (Ex: v1143)</value></data>
+	<data name="LabelCancel" xml:space="preserve">  <value>Cancelar</value></data>
+	<data name="LabelSave" xml:space="preserve">  <value>Salvar</value></data>
+	<data name="LabelSummary" xml:space="preserve">  <value>Resumo</value></data>
+	<data name="LabelSentences" xml:space="preserve">  <value>Sentenças</value></data>
+	<data name="LabelTotalTime" xml:space="preserve">  <value>Tempo Total</value></data>
+	<data name="LabelCharacters" xml:space="preserve">  <value>Caracteres</value></data>
+	<data name="LabelNumSentences" xml:space="preserve">  <value>Nº de Sentenças</value></data>
+	<data name="LabelReadingPaceGaussian" xml:space="preserve">  <value>Ritmo de Leitura (Gaussiano)</value></data>
+	<data name="LabelAfkTime" xml:space="preserve">  <value>Tempo AFK</value></data>
+	<data name="LabelOverhead" xml:space="preserve">  <value>Overhead</value></data>
+	<data name="LabelLookups" xml:space="preserve">  <value>Consultas</value></data>
+	<data name="LabelMined" xml:space="preserve">  <value>Minerados</value></data>
+	<data name="LabelFrequency" xml:space="preserve">  <value>Frequência</value></data>
+	<data name="LabelInsufficientGraphData" xml:space="preserve">  <value>Dados insuficientes para o gráfico.</value></data>
+	<data name="LabelMinedWords" xml:space="preserve">  <value>Palavras Mineradas</value></data>
+	<data name="LabelNoMinedWords" xml:space="preserve">  <value>Nenhuma palavra minerada nesta sessão.</value></data>
+	<data name="LabelSentenceHistory" xml:space="preserve">  <value>Histórico de Sentenças</value></data>
+	<data name="LabelTime" xml:space="preserve">  <value>Tempo</value></data>
+	<data name="LabelEvent" xml:space="preserve">  <value>Evento</value></data>
+	<data name="LabelActiveTime" xml:space="preserve">  <value>Tempo Ativo</value></data>
+	<data name="LabelWastedTime" xml:space="preserve">  <value>Tempo Desperdiçado</value></data>
+	<data name="LabelContent" xml:space="preserve">  <value>Conteúdo</value></data>
+	<data name="LabelGraphTypeFormat" xml:space="preserve">  <value>Gráfico: {0}</value></data>
+	<data name="LabelCharsReadFormat" xml:space="preserve">  <value>{0} chars</value></data>
+	<data name="LabelSecondsSuffix" xml:space="preserve">  <value>s</value></data>
 </root>
