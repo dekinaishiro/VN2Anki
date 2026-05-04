@@ -330,6 +330,73 @@ namespace VN2Anki
             ApplySettings();
             this.Close();
         }
+
+        private void HotkeyTextBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            e.Handled = true; // Prevent default textbox behavior
+            if (sender is TextBox txt && txt.DataContext is HotkeyItem hk)
+            {
+                var key = e.Key == System.Windows.Input.Key.System ? e.SystemKey : e.Key;
+                
+                // Ignore if only a modifier key is pressed (wait for actual key)
+                if (key == System.Windows.Input.Key.LeftCtrl || key == System.Windows.Input.Key.RightCtrl ||
+                    key == System.Windows.Input.Key.LeftAlt || key == System.Windows.Input.Key.RightAlt ||
+                    key == System.Windows.Input.Key.LeftShift || key == System.Windows.Input.Key.RightShift ||
+                    key == System.Windows.Input.Key.LWin || key == System.Windows.Input.Key.RWin ||
+                    key == System.Windows.Input.Key.ImeProcessed)
+                {
+                    return; 
+                }
+
+                if (key == System.Windows.Input.Key.Escape || key == System.Windows.Input.Key.Delete)
+                {
+                    hk.Key = 0;
+                    hk.Modifiers = 0;
+                    txt.Text = "None";
+                    return;
+                }
+
+                int modifiers = 0;
+                if ((System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Control) == System.Windows.Input.ModifierKeys.Control) modifiers |= 0x0002;
+                if ((System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Shift) == System.Windows.Input.ModifierKeys.Shift) modifiers |= 0x0004;
+                if ((System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Alt) == System.Windows.Input.ModifierKeys.Alt) modifiers |= 0x0001;
+
+                hk.Key = System.Windows.Input.KeyInterop.VirtualKeyFromKey(key);
+                hk.Modifiers = modifiers;
+
+                string modStr = "";
+                if ((modifiers & 0x0002) != 0) modStr += "Ctrl + ";
+                if ((modifiers & 0x0004) != 0) modStr += "Shift + ";
+                if ((modifiers & 0x0001) != 0) modStr += "Alt + ";
+                
+                txt.Text = modStr + key.ToString();
+            }
+        }
+    }
+
+    public class HotkeyConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is HotkeyItem hk)
+            {
+                if (hk.Key == 0) return "None";
+                
+                string mod = "";
+                if ((hk.Modifiers & 0x0002) != 0) mod += "Ctrl + "; // MOD_CONTROL
+                if ((hk.Modifiers & 0x0004) != 0) mod += "Shift + "; // MOD_SHIFT
+                if ((hk.Modifiers & 0x0001) != 0) mod += "Alt + "; // MOD_ALT
+                
+                var key = System.Windows.Input.KeyInterop.KeyFromVirtualKey(hk.Key);
+                return mod + key.ToString();
+            }
+            return "None";
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     // --- Converters from ExtensionsWindow ---

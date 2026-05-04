@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 using VN2Anki.Locales;
 using VN2Anki.Messages;
 using VN2Anki.Services;
@@ -16,13 +17,15 @@ namespace VN2Anki
         private readonly MainWindowViewModel _viewModel;
         private readonly ISessionManagerService _sessionManager;
         private readonly IConfigurationService _configService;
+        private readonly IHotkeyService _hotkeyService;
 
-        public MainWindow(MainWindowViewModel viewModel, ISessionManagerService sessionManager, IConfigurationService configService)
+        public MainWindow(MainWindowViewModel viewModel, ISessionManagerService sessionManager, IConfigurationService configService, IHotkeyService hotkeyService)
         {
             InitializeComponent();
             _viewModel = viewModel;
             _sessionManager = sessionManager;
             _configService = configService;
+            _hotkeyService = hotkeyService;
 
             this.DataContext = _viewModel;
             WeakReferenceMessenger.Default.Register(this);
@@ -30,6 +33,16 @@ namespace VN2Anki
             this.Loaded += Window_Loaded;
             this.Closing += Window_Closing;
             this.KeyDown += MainWindow_KeyDown;
+        }
+
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            var hwndSource = PresentationSource.FromVisual(this) as HwndSource;
+            if (hwndSource != null)
+            {
+                _hotkeyService.Initialize(hwndSource);
+            }
         }
 
         private void MainWindow_KeyDown(object sender, KeyEventArgs e)

@@ -19,7 +19,7 @@ using VN2Anki.Services.Interfaces;
 
 namespace VN2Anki.ViewModels
 {
-    public partial class MainWindowViewModel : ObservableObject, IDisposable, IRecipient<StatusMessage>, IRecipient<BufferStoppedMessage>, IRecipient<SessionEndedMessage>, IRecipient<SlotCapturedMessage>, IRecipient<SlotRemovedMessage>, IRecipient<HistoryClearedMessage>, IRecipient<CurrentVnChangedMessage>, IRecipient<CurrentVnUnlinkedMessage>, IRecipient<AppConfigChangedMessage>
+    public partial class MainWindowViewModel : ObservableObject, IDisposable, IRecipient<StatusMessage>, IRecipient<BufferStoppedMessage>, IRecipient<SessionEndedMessage>, IRecipient<SlotCapturedMessage>, IRecipient<SlotRemovedMessage>, IRecipient<HistoryClearedMessage>, IRecipient<CurrentVnChangedMessage>, IRecipient<CurrentVnUnlinkedMessage>, IRecipient<AppConfigChangedMessage>, IRecipient<HotkeyActionMessage>
     {
         private readonly IConfigurationService _configService;
         private readonly IWindowService _windowService;
@@ -371,6 +371,44 @@ namespace VN2Anki.ViewModels
             _dispatcher.Invoke(() =>
             {
                 MiningHistory.Clear();
+            });
+        }
+
+        public void Receive(HotkeyActionMessage message)
+        {
+            _dispatcher.Invoke(() =>
+            {
+                switch (message.ActionName)
+                {
+                    case "ToggleMainWindow":
+                        var mw = System.Windows.Application.Current.MainWindow;
+                        if (mw != null)
+                        {
+                            if (mw.WindowState == WindowState.Minimized || !mw.IsVisible)
+                            {
+                                mw.Show();
+                                mw.WindowState = WindowState.Normal;
+                                mw.Activate();
+                            }
+                            else
+                            {
+                                mw.WindowState = WindowState.Minimized;
+                            }
+                        }
+                        break;
+                    case "OpenHub":
+                        OpenHubCommand.Execute(null);
+                        break;
+                    case "OpenSettings":
+                        OpenSettingsCommand.Execute(null);
+                        break;
+                    case "OpenHistory":
+                        OpenHistoryCommand.Execute(null);
+                        break;
+                    case "ToggleBuffer":
+                        ToggleBufferCommand.Execute(null);
+                        break;
+                }
             });
         }
     }

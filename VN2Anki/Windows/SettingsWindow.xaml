@@ -17,6 +17,7 @@
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
             <local:StatusConverter x:Key="StatusConverter" />
             <local:StatusColorConverter x:Key="StatusColorConverter" />
+            <local:HotkeyConverter x:Key="HotkeyConverter" />
 
             <Style x:Key="StandardTextBlock" TargetType="TextBlock">
                 <Setter Property="Foreground" Value="#EAEAEA"/>
@@ -351,6 +352,52 @@
                     </Grid>
                 </ScrollViewer>
             </TabItem>
+            <TabItem Header="Hotkeys">
+                <Grid Margin="15">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <TextBlock Text="Click on the textbox and press a key combination to bind. Press ESC or DEL to clear." Foreground="#AAAAAA" Margin="0,0,0,15" TextWrapping="Wrap"/>
+                    
+                    <ItemsControl Grid.Row="1" ItemsSource="{Binding Config.Hotkeys}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="200"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <TextBlock Text="{Binding ActionName}" Foreground="#EAEAEA" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                    
+                                    <TextBox Grid.Column="1" 
+                                             Margin="10,0" 
+                                             Padding="5" 
+                                             Text="{Binding Converter={StaticResource HotkeyConverter}, Mode=OneWay}" 
+                                             IsReadOnly="True" 
+                                             PreviewKeyDown="HotkeyTextBox_PreviewKeyDown"
+                                             Background="#333" 
+                                             Foreground="White" 
+                                             BorderThickness="1" 
+                                             BorderBrush="#555"
+                                             HorizontalContentAlignment="Center"/>
+                                             
+                                    <ToggleButton Grid.Column="2" 
+                                                  Content="{Binding IsEnabled, Converter={StaticResource StatusConverter}}"
+                                                  IsChecked="{Binding IsEnabled}"
+                                                  Padding="10,2"
+                                                  Width="80"
+                                                  Background="{Binding IsEnabled, Converter={StaticResource StatusColorConverter}}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </TabItem>
+
             <TabItem Header="Extensions" x:Name="TabExtensions">
                 <Grid Margin="15">
                     <Grid.RowDefinitions>

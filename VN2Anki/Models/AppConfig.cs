@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace VN2Anki.Models
 {
@@ -10,6 +11,15 @@ namespace VN2Anki.Models
         public SessionConfig Session { get; set; } = new SessionConfig();
         public HookConfig Hook { get; set; } = new HookConfig();
         public OverlayConfig Overlay { get; set; } = new OverlayConfig();
+        public List<HotkeyItem> Hotkeys { get; set; } = new List<HotkeyItem>();
+    }
+
+    public class HotkeyItem
+    {
+        public string ActionName { get; set; } = string.Empty;
+        public int Key { get; set; } = 0; // Virtual Key Code
+        public int Modifiers { get; set; } = 0; // Win32 MOD_ALT = 0x0001, MOD_CONTROL = 0x0002, MOD_SHIFT = 0x0004
+        public bool IsEnabled { get; set; } = true;
     }
 
     public class GeneralConfig

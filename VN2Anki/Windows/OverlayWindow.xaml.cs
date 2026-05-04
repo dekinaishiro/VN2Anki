@@ -16,7 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace VN2Anki
 {
-    public partial class OverlayWindow : Window, IRecipient<OverlayConfigUpdatedMessage>, IRecipient<SlotCapturedMessage>, IRecipient<BrowserExtensionUpdatedMessage>
+    public partial class OverlayWindow : Window, IRecipient<OverlayConfigUpdatedMessage>, IRecipient<SlotCapturedMessage>, IRecipient<BrowserExtensionUpdatedMessage>, IRecipient<HotkeyActionMessage>
     {
         private readonly IConfigurationService _configService;
         private readonly VN2Anki.Services.Interfaces.IWindowService _windowService;
@@ -508,6 +508,21 @@ namespace VN2Anki
 
                 webView.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(payload));
             }, System.Windows.Threading.DispatcherPriority.Normal);
+        }
+
+        public void Receive(HotkeyActionMessage message)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (message.ActionName == "ToggleOverlayTransparency")
+                {
+                    BtnTransparency_Click(this, new RoutedEventArgs());
+                }
+                else if (message.ActionName == "ToggleOverlayPassThrough")
+                {
+                    BtnPassThrough_Click(this, new RoutedEventArgs());
+                }
+            });
         }
     }
 }

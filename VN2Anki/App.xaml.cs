@@ -111,6 +111,7 @@ namespace VN2Anki
             services.AddSingleton<IUserActivityService, UserActivityService>();
             services.AddSingleton<IWindowFocusMonitorService, WindowFocusMonitorService>();
             services.AddSingleton<IInputMonitorService, InputMonitorService>();
+            services.AddSingleton<IHotkeyService, HotkeyService>();
 
             services.AddTransient<VN2Anki.ViewModels.MainWindowViewModel>();
             services.AddTransient<ViewModels.SettingsViewModel>();
