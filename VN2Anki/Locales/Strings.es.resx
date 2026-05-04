@@ -159,15 +159,6 @@
   <data name="HeaderControls" xml:space="preserve">
     <value>Controles</value>
   </data>
-  <data name="BtnRecord" xml:space="preserve">
-    <value>GRABAR</value>
-  </data>
-  <data name="BtnStartBuffer" xml:space="preserve">
-    <value>INICIAR BUFFER</value>
-  </data>
-  <data name="BtnStopBuffer" xml:space="preserve">
-    <value>DETENER BUFFER</value>
-  </data>
   <data name="BtnHistory" xml:space="preserve">
     <value>HISTORIAL</value>
   </data>
@@ -189,23 +180,8 @@
   <data name="StatusStopped" xml:space="preserve">
     <value>Buffer detenido.</value>
   </data>
-  <data name="StatusPreparing" xml:space="preserve">
-    <value>Preparando archivo...</value>
-  </data>
-  <data name="MsgSuccess" xml:space="preserve">
-    <value>¡Archivo multimedia añadido con éxito!</value>
-  </data>
-  <data name="MsgCardUpdated" xml:space="preserve">
-    <value>¡Tarjeta actualizada!</value>
-  </data>
-  <data name="MsgError" xml:space="preserve">
-    <value>¡ERROR!</value>
-  </data>
   <data name="MsgAttention" xml:space="preserve">
     <value>Atención</value>
-  </data>
-  <data name="MsgEmpty" xml:space="preserve">
-    <value>¡Vacío!</value>
   </data>
   <data name="LblOpenSettingsOnStartup" xml:space="preserve">
     <value>Abrir opciones al iniciar</value>
@@ -267,97 +243,268 @@
   <data name="TitleWarning" xml:space="preserve">
     <value>Aviso</value>
   </data>
-	<data name="StatusVideoConnected" xml:space="preserve">
+  <data name="StatusVideoConnected" xml:space="preserve">
     <value>¡Video conectado! Listo para reproducir.</value>
   </data>
-	<data name="StatusVideoDisconnected" xml:space="preserve">
+  <data name="StatusVideoDisconnected" xml:space="preserve">
     <value>⚠️ ¡Video desconectado! Búfer pausado.</value>
   </data>
-	<data name="MsgExeNotFound" xml:space="preserve">
+  <data name="MsgExeNotFound" xml:space="preserve">
     <value>¡No se encontró el ejecutable!</value>
   </data>
-	<data name="MsgWindowTimeout" xml:space="preserve">
+  <data name="MsgWindowTimeout" xml:space="preserve">
     <value>Tiempo agotado: La ventana no apareció.</value>
   </data>
-	<data name="MsgActionBlockedSession" xml:space="preserve">
+  <data name="MsgActionBlockedSession" xml:space="preserve">
     <value>No puedes cambiar o desvincular la VN mientras hay una sesión en curso.\nFinaliza la sesión actual primero.</value>
   </data>
-	<data name="MsgActionBlockedAutoSync" xml:space="preserve">
+  <data name="MsgActionBlockedAutoSync" xml:space="preserve">
     <value>No puedes realizar la Sincronización Automática mientras hay una sesión en curso.\nFinaliza la sesión actual primero.</value>
   </data>
-	<data name="MsgConfirmVnDelete" xml:space="preserve">
+  <data name="MsgConfirmVnDelete" xml:space="preserve">
     <value>Estás a punto de eliminar '{0}'.\nEsto borrará permanentemente {1} sesiones grabadas.\n\n¿Deseas continuar?</value>
   </data>
-	<data name="MsgConfirmChangeSession" xml:space="preserve">
+  <data name="MsgConfirmChangeSession" xml:space="preserve">
     <value>Hay una sesión activa con '{0}'.\n¿Quieres finalizarla e iniciar otra con '{1}'?</value>
   </data>
-	<data name="MsgConfirmVnDetected" xml:space="preserve">
+  <data name="MsgConfirmVnDetected" xml:space="preserve">
     <value>Detectamos que '{0}' se está ejecutando.\n¿Quieres vincularlo e iniciar la sesión ahora?</value>
   </data>
-	<data name="MsgConfirmSaveOrphanSession" xml:space="preserve">
+  <data name="MsgConfirmSaveOrphanSession" xml:space="preserve">
     <value>Has leído algunos caracteres, pero no hay ninguna Novela Visual seleccionada.\n¿Quieres guardar este progreso en el historial para vincularlo a un juego más tarde?</value>
   </data>
-	<data name="MsgConfirmStartTrackingWithoutVn" xml:space="preserve">
+  <data name="MsgConfirmStartTrackingWithoutVn" xml:space="preserve">
     <value>No hay ninguna Novela Visual vinculada a esta sesión.\n¿Quieres empezar el seguimiento de todos modos?</value>
   </data>
-	<data name="TitleEmptySessionWarning" xml:space="preserve">
+  <data name="TitleEmptySessionWarning" xml:space="preserve">
     <value>Advertencia de Sesión Vacía</value>
   </data>
-	<data name="TitleSaveOrphanSession" xml:space="preserve">
+  <data name="TitleSaveOrphanSession" xml:space="preserve">
     <value>¿Guardar Sesión Huérfana?</value>
   </data>
-	<data name="TitleMultipleVnsDetected" xml:space="preserve">
+  <data name="TitleMultipleVnsDetected" xml:space="preserve">
     <value>Múltiples VN Detectadas</value>
   </data>
-	<data name="MsgMultipleVnsDetected" xml:space="preserve">
+  <data name="MsgMultipleVnsDetected" xml:space="preserve">
     <value>Se detectaron varias VN en ejecución.\nSelecciona cuál quieres vincular:</value>
   </data>
-	<data name="MsgInvalidExtensionPath" xml:space="preserve">
+  <data name="MsgInvalidExtensionPath" xml:space="preserve">
     <value>Ruta de extensión no válida o no encontrada.</value>
   </data>
-	<data name="MsgVideoSourceEmpty" xml:space="preserve">
+  <data name="MsgVideoSourceEmpty" xml:space="preserve">
     <value>¡Fuente de video vacía! Selecciona el video.</value>
   </data>
-	<data name="MsgTargetWindowClosed" xml:space="preserve">
+  <data name="MsgTargetWindowClosed" xml:space="preserve">
     <value>¡La ventana de destino está cerrada! Abre el juego e inténtalo de nuevo.</value>
   </data>
-	<data name="MsgConfigureAudioFirst" xml:space="preserve">
+  <data name="MsgConfigureAudioFirst" xml:space="preserve">
     <value>¡Configura el audio primero!</value>
   </data>
-	<data name="MsgSessionLinked" xml:space="preserve">
+  <data name="MsgSessionLinked" xml:space="preserve">
     <value>Sesión vinculada: {0}</value>
   </data>
-	<data name="MsgExeAlreadyRegistered" xml:space="preserve">
+  <data name="MsgExeAlreadyRegistered" xml:space="preserve">
     <value>⚠️ Este ejecutable ya está registrado como '{0}'.</value>
   </data>
-	<data name="BtnProcessAlreadyRegistered" xml:space="preserve">
+  <data name="BtnProcessAlreadyRegistered" xml:space="preserve">
     <value>Proceso ya Registrado</value>
   </data>
-	<data name="BtnBindCurrentSession" xml:space="preserve">
+  <data name="BtnBindCurrentSession" xml:space="preserve">
     <value>Vincular Sesión Actual</value>
   </data>
-	<data name="HeaderTotalStats" xml:space="preserve">
+  <data name="HeaderTotalStats" xml:space="preserve">
     <value>Estadísticas Totales</value>
   </data>
-	<data name="HeaderLastSessions" xml:space="preserve">
+  <data name="HeaderLastSessions" xml:space="preserve">
     <value>Últimas Sesiones</value>
   </data>
-	<data name="LblExePath" xml:space="preserve">
+  <data name="LblExePath" xml:space="preserve">
     <value>Ruta del Ejecutable (.exe)</value>
   </data>
-	<data name="LblDuration" xml:space="preserve">
+  <data name="LblDuration" xml:space="preserve">
     <value>DURACIÓN</value>
   </data>
-	<data name="StatusRecordingAudio" xml:space="preserve">
+  <data name="StatusRecordingAudio" xml:space="preserve">
     <value>🔴 Grabando audio...</value>
   </data>
-	<data name="ToolTipPlayAudio" xml:space="preserve">
+  <data name="ToolTipPlayAudio" xml:space="preserve">
     <value>Escuchar audio</value>
   </data>
-	<data name="LblWindowPreview" xml:space="preserve">
+  <data name="LblWindowPreview" xml:space="preserve">
     <value>Vista previa de la ventana:</value>
   </data>
-	<data name="LblVndbSearch" xml:space="preserve">
+  <data name="LblVndbSearch" xml:space="preserve">
     <value>2. Búsqueda en VNDB (Romaji/Inglés):</value>
+  </data>
+  <data name="LblSilentSync" xml:space="preserve">
+    <value>Vincular sesiones automáticamente (Silent Sync)</value>
+  </data>
+  <data name="TabHook" xml:space="preserve">
+    <value>Hook</value>
+  </data>
+  <data name="LblAutoLaunchHooker" xml:space="preserve">
+    <value>Lanzamiento automático de Hooker:</value>
+  </data>
+  <data name="LblNone" xml:space="preserve">
+    <value>Ninguno</value>
+  </data>
+  <data name="LblTextractorPath" xml:space="preserve">
+    <value>Ruta base de Textractor:</value>
+  </data>
+  <data name="LblLunaPath" xml:space="preserve">
+    <value>Ruta de LunaTranslator:</value>
+  </data>
+  <data name="LblHookSource" xml:space="preserve">
+    <value>Fuente del Hook de texto:</value>
+  </data>
+  <data name="LblClipboard" xml:space="preserve">
+    <value>Portapapeles</value>
+  </data>
+  <data name="LblWsLuna" xml:space="preserve">
+    <value>WebSocket (Luna)</value>
+  </data>
+  <data name="LblWsTextractor" xml:space="preserve">
+    <value>WebSocket (Textractor)</value>
+  </data>
+  <data name="LblWsUrl" xml:space="preserve">
+    <value>URL de WebSocket:</value>
+  </data>
+  <data name="LblFilterSimilar" xml:space="preserve">
+    <value>Ignorar frases muy similares (Anti-spam)</value>
+  </data>
+  <data name="LblSimilarityThreshold" xml:space="preserve">
+    <value>Umbral de similitud:</value>
+  </data>
+  <data name="LblAnkiUrl" xml:space="preserve">
+    <value>URL de AnkiConnect:</value>
+  </data>
+  <data name="TabOverlay" xml:space="preserve">
+    <value>Overlay</value>
+  </data>
+  <data name="LblOverlayBg" xml:space="preserve">
+    <value>Fondo de caja de texto:</value>
+  </data>
+  <data name="LblOverlayFontColor" xml:space="preserve">
+    <value>Color de fuente:</value>
+  </data>
+  <data name="LblOverlayOutlineColor" xml:space="preserve">
+    <value>Color de contorno de texto:</value>
+  </data>
+  <data name="LblThickness" xml:space="preserve">
+    <value>Grosor:</value>
+  </data>
+  <data name="LblOverlayFontFamily" xml:space="preserve">
+    <value>Familia de fuentes:</value>
+  </data>
+  <data name="LblOverlayFontSize" xml:space="preserve">
+    <value>Tamaño de fuente:</value>
+  </data>
+  <data name="LblUseTextBoxMode" xml:space="preserve">
+    <value>Usar modo de caja de texto (Masking)</value>
+  </data>
+  <data name="LblBoxMinHeight" xml:space="preserve">
+    <value>Altura mín. de caja (px):</value>
+  </data>
+  <data name="LblBoxWidth" xml:space="preserve">
+    <value>Ancho de caja (%):</value>
+  </data>
+  <data name="LblDisplacementMargins" xml:space="preserve">
+    <value>Desplazamiento y márgenes:</value>
+  </data>
+  <data name="LblHorizX" xml:space="preserve">
+    <value>X (Horiz):</value>
+  </data>
+  <data name="LblVertY" xml:space="preserve">
+    <value>Y (Vert):</value>
+  </data>
+  <data name="LblTextVerticalAlign" xml:space="preserve">
+    <value>Alineación vertical de texto:</value>
+  </data>
+  <data name="LblTop" xml:space="preserve">
+    <value>Superior</value>
+  </data>
+  <data name="LblCenter" xml:space="preserve">
+    <value>Centro</value>
+  </data>
+  <data name="LblBottom" xml:space="preserve">
+    <value>Inferior</value>
+  </data>
+  <data name="TabHotkeys" xml:space="preserve">
+    <value>Atajos</value>
+  </data>
+  <data name="LblHotkeyHint" xml:space="preserve">
+    <value>Haga clic en el cuadro de texto y presione una combinación de teclas para vincular. Presione ESC o DEL para borrar.</value>
+  </data>
+  <data name="TabExtensions" xml:space="preserve">
+    <value>Extensiones</value>
+  </data>
+  <data name="LblBrowser" xml:space="preserve">
+    <value>Navegador:</value>
+  </data>
+  <data name="LblPath" xml:space="preserve">
+    <value>Ruta:</value>
+  </data>
+  <data name="HeaderIcon" xml:space="preserve">
+    <value>Icono</value>
+  </data>
+  <data name="HeaderName" xml:space="preserve">
+    <value>Nombre</value>
+  </data>
+  <data name="HeaderSettings" xml:space="preserve">
+    <value>Ajustes</value>
+  </data>
+  <data name="HeaderStatus" xml:space="preserve">
+    <value>Estado</value>
+  </data>
+  <data name="BtnApplySettings" xml:space="preserve">
+    <value>Aplicar ajustes</value>
+  </data>
+  <data name="StatusAdded" xml:space="preserve">
+    <value>Añadido</value>
+  </data>
+  <data name="StatusNotAdded" xml:space="preserve">
+    <value>No añadido</value>
+  </data>
+  <data name="TitleSelectExtensionFolder" xml:space="preserve">
+    <value>Seleccionar carpeta de extensión</value>
+  </data>
+  <data name="LblOriginal" xml:space="preserve">
+    <value>Original</value>
+  </data>
+  <data name="TipTextractorPath" xml:space="preserve">
+    <value>Folder containing x86 and x64 subfolders</value>
+  </data>
+  <data name="TipLunaPath" xml:space="preserve">
+    <value>Direct path to LunaTranslator.exe</value>
+  </data>
+  <data name="TipHorizX" xml:space="preserve">
+    <value>Positive = Right, Negative = Left</value>
+  </data>
+  <data name="TipVertY" xml:space="preserve">
+    <value>Margin relative to Top or Bottom</value>
+  </data>
+  <data name="BtnRecord" xml:space="preserve">
+    <value>GRABAR</value>
+  </data>
+  <data name="BtnStartBuffer" xml:space="preserve">
+    <value>INICIAR BUFFER</value>
+  </data>
+  <data name="BtnStopBuffer" xml:space="preserve">
+    <value>DETENER BUFFER</value>
+  </data>
+  <data name="StatusPreparing" xml:space="preserve">
+    <value>Preparando archivo...</value>
+  </data>
+  <data name="MsgSuccess" xml:space="preserve">
+    <value>¡Archivo multimedia añadido con éxito!</value>
+  </data>
+  <data name="MsgCardUpdated" xml:space="preserve">
+    <value>¡Tarjeta actualizada!</value>
+  </data>
+  <data name="MsgError" xml:space="preserve">
+    <value>¡ERROR!</value>
+  </data>
+  <data name="MsgEmpty" xml:space="preserve">
+    <value>¡Vacío!</value>
   </data>
 </root>

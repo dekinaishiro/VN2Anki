@@ -244,7 +244,7 @@ namespace VN2Anki
         {
             var dialog = new Microsoft.Win32.OpenFileDialog
             {
-                Title = "Select Extension Folder",
+                Title = Locales.Strings.TitleSelectExtensionFolder,
                 ValidateNames = false,
                 CheckFileExists = false,
                 CheckPathExists = true,
@@ -352,7 +352,7 @@ namespace VN2Anki
                 {
                     hk.Key = 0;
                     hk.Modifiers = 0;
-                    txt.Text = "None";
+                    txt.Text = Locales.Strings.LblNone;
                     return;
                 }
 
@@ -380,7 +380,7 @@ namespace VN2Anki
         {
             if (value is HotkeyItem hk)
             {
-                if (hk.Key == 0) return "None";
+                if (hk.Key == 0) return Locales.Strings.LblNone;
                 
                 string mod = "";
                 if ((hk.Modifiers & 0x0002) != 0) mod += "Ctrl + "; // MOD_CONTROL
@@ -390,7 +390,7 @@ namespace VN2Anki
                 var key = System.Windows.Input.KeyInterop.KeyFromVirtualKey(hk.Key);
                 return mod + key.ToString();
             }
-            return "None";
+            return Locales.Strings.LblNone;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -405,7 +405,7 @@ namespace VN2Anki
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return (bool)value ? "Added" : "Not Added";
+            return (bool)value ? Locales.Strings.StatusAdded : Locales.Strings.StatusNotAdded;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

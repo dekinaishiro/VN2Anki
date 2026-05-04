@@ -336,4 +336,175 @@
   <data name="LblVndbSearch" xml:space="preserve">
     <value>2. VNDB Search (Romaji/English):</value>
   </data>
+  <data name="LblSilentSync" xml:space="preserve">
+    <value>Silent Sync sessions automatically</value>
+  </data>
+  <data name="TabHook" xml:space="preserve">
+    <value>Hook</value>
+  </data>
+  <data name="LblAutoLaunchHooker" xml:space="preserve">
+    <value>Auto Launch Hooker:</value>
+  </data>
+  <data name="LblNone" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="LblTextractorPath" xml:space="preserve">
+    <value>Textractor Base Path:</value>
+  </data>
+  <data name="LblLunaPath" xml:space="preserve">
+    <value>LunaTranslator Path:</value>
+  </data>
+  <data name="LblHookSource" xml:space="preserve">
+    <value>Text Hook Source:</value>
+  </data>
+  <data name="LblClipboard" xml:space="preserve">
+    <value>Clipboard</value>
+  </data>
+  <data name="LblWsLuna" xml:space="preserve">
+    <value>WebSocket (Luna)</value>
+  </data>
+  <data name="LblWsTextractor" xml:space="preserve">
+    <value>WebSocket (Textractor)</value>
+  </data>
+  <data name="LblWsUrl" xml:space="preserve">
+    <value>WebSocket URL:</value>
+  </data>
+  <data name="LblFilterSimilar" xml:space="preserve">
+    <value>Ignore similar phrases (Anti-spam)</value>
+  </data>
+  <data name="LblSimilarityThreshold" xml:space="preserve">
+    <value>Similarity Threshold:</value>
+  </data>
+  <data name="LblAnkiUrl" xml:space="preserve">
+    <value>AnkiConnect URL:</value>
+  </data>
+  <data name="TabOverlay" xml:space="preserve">
+    <value>Overlay</value>
+  </data>
+  <data name="LblOverlayBg" xml:space="preserve">
+    <value>Text Box BG:</value>
+  </data>
+  <data name="LblOverlayFontColor" xml:space="preserve">
+    <value>Font Color:</value>
+  </data>
+  <data name="LblOverlayOutlineColor" xml:space="preserve">
+    <value>Text Outline Color:</value>
+  </data>
+  <data name="LblThickness" xml:space="preserve">
+    <value>Thickness:</value>
+  </data>
+  <data name="LblOverlayFontFamily" xml:space="preserve">
+    <value>Font Family:</value>
+  </data>
+  <data name="LblOverlayFontSize" xml:space="preserve">
+    <value>Font Size:</value>
+  </data>
+  <data name="LblUseTextBoxMode" xml:space="preserve">
+    <value>Use Text Box Mode (Masking)</value>
+  </data>
+  <data name="LblBoxMinHeight" xml:space="preserve">
+    <value>Box Min-Height (px):</value>
+  </data>
+  <data name="LblBoxWidth" xml:space="preserve">
+    <value>Box Width (%):</value>
+  </data>
+  <data name="LblDisplacementMargins" xml:space="preserve">
+    <value>Displacement &amp; Margins:</value>
+  </data>
+  <data name="LblHorizX" xml:space="preserve">
+    <value>X (Horiz):</value>
+  </data>
+  <data name="LblVertY" xml:space="preserve">
+    <value>Y (Vert):</value>
+  </data>
+  <data name="LblTextVerticalAlign" xml:space="preserve">
+    <value>Text Vertical Align:</value>
+  </data>
+  <data name="LblTop" xml:space="preserve">
+    <value>Top</value>
+  </data>
+  <data name="LblCenter" xml:space="preserve">
+    <value>Center</value>
+  </data>
+  <data name="LblBottom" xml:space="preserve">
+    <value>Bottom</value>
+  </data>
+  <data name="TabHotkeys" xml:space="preserve">
+    <value>Hotkeys</value>
+  </data>
+  <data name="LblHotkeyHint" xml:space="preserve">
+    <value>Click on the textbox and press a key combination to bind. Press ESC or DEL to clear.</value>
+  </data>
+  <data name="TabExtensions" xml:space="preserve">
+    <value>Extensions</value>
+  </data>
+  <data name="LblBrowser" xml:space="preserve">
+    <value>Browser:</value>
+  </data>
+  <data name="LblPath" xml:space="preserve">
+    <value>Path:</value>
+  </data>
+  <data name="HeaderIcon" xml:space="preserve">
+    <value>Icon</value>
+  </data>
+  <data name="HeaderName" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="HeaderSettings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="HeaderStatus" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="BtnApplySettings" xml:space="preserve">
+    <value>Apply Settings</value>
+  </data>
+  <data name="StatusAdded" xml:space="preserve">
+    <value>Added</value>
+  </data>
+  <data name="StatusNotAdded" xml:space="preserve">
+    <value>Not Added</value>
+  </data>
+  <data name="TitleSelectExtensionFolder" xml:space="preserve">
+    <value>Select Extension Folder</value>
+  </data>
+  <data name="LblOriginal" xml:space="preserve">
+    <value>Original</value>
+  </data>
+  <data name="TipTextractorPath" xml:space="preserve">
+    <value>Folder containing x86 and x64 subfolders</value>
+  </data>
+  <data name="TipLunaPath" xml:space="preserve">
+    <value>Direct path to LunaTranslator.exe</value>
+  </data>
+  <data name="TipHorizX" xml:space="preserve">
+    <value>Positive = Right, Negative = Left</value>
+  </data>
+  <data name="TipVertY" xml:space="preserve">
+    <value>Margin relative to Top or Bottom</value>
+  </data>
+  <data name="BtnRecord" xml:space="preserve">
+    <value>RECORD</value>
+  </data>
+  <data name="BtnStartBuffer" xml:space="preserve">
+    <value>START BUFFER</value>
+  </data>
+  <data name="BtnStopBuffer" xml:space="preserve">
+    <value>STOP BUFFER</value>
+  </data>
+  <data name="StatusPreparing" xml:space="preserve">
+    <value>Preparing media</value>
+  </data>
+  <data name="MsgSuccess" xml:space="preserve">
+    <value>Media successfully added</value>
+  </data>
+  <data name="MsgCardUpdated" xml:space="preserve">
+    <value>Card updated!</value>
+  </data>
+  <data name="MsgError" xml:space="preserve">
+    <value>ERROR!</value>
+  </data>
+  <data name="MsgEmpty" xml:space="preserve">
+    <value>Empty!</value>
+  </data>
 </root>

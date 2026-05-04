@@ -170,12 +170,12 @@
                         </ComboBox>
 
                         <CheckBox x:Name="ChkOpenSettings" Content="{x:Static loc:Strings.LblOpenSettingsOnStartup}" Foreground="White" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Margin="5,15,5,5" VerticalAlignment="Center" IsChecked="{Binding Config.General.OpenSettingsOnStartup}"/>
-                        <CheckBox x:Name="ChkSilentSync" Content="Vincular sessões automaticamente (Silent Sync)" Foreground="White" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2" Margin="5,0,5,0" VerticalAlignment="Center" IsChecked="{Binding Config.Session.SilentSync}"/>
+                        <CheckBox x:Name="ChkSilentSync" Content="{x:Static loc:Strings.LblSilentSync}" Foreground="White" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2" Margin="5,0,5,0" VerticalAlignment="Center" IsChecked="{Binding Config.Session.SilentSync}"/>
                     </Grid>
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem Header="Hook">
+            <TabItem Header="{x:Static loc:Strings.TabHook}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <Grid Margin="0,15,0,0">
                         <Grid.RowDefinitions>
@@ -191,37 +191,37 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Auto Launch Hooker:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblAutoLaunchHooker}" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
                         <ComboBox Style="{StaticResource StandardComboBox}" Grid.Row="0" Grid.Column="1" SelectedValuePath="Tag" SelectedValue="{Binding Config.Hook.AutoLaunchHooker}">
-                            <ComboBoxItem Content="None" Tag="None"/>
+                            <ComboBoxItem Content="{x:Static loc:Strings.LblNone}" Tag="None"/>
                             <ComboBoxItem Content="Textractor" Tag="Textractor"/>
                             <ComboBoxItem Content="LunaTranslator" Tag="LunaTranslator"/>
                         </ComboBox>
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Textractor Base Path:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblTextractorPath}" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
                         <TextBox Grid.Row="1" Grid.Column="1" Margin="5" Padding="5" Text="{Binding Config.Hook.TextractorBasePath}" ToolTip="Folder containing x86 and x64 subfolders"/>
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="LunaTranslator Path:" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblLunaPath}" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
                         <TextBox Grid.Row="2" Grid.Column="1" Margin="5" Padding="5" Text="{Binding Config.Hook.LunaTranslatorPath}" ToolTip="Direct path to LunaTranslator.exe"/>
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Text Hook Source:" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblHookSource}" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
                         <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboHookType" Grid.Row="3" Grid.Column="1" SelectedValuePath="Tag" SelectedValue="{Binding Config.Hook.ActiveHookType}" SelectionChanged="ComboHookType_SelectionChanged">
-                            <ComboBoxItem Content="Clipboard" Tag="0"/>
-                            <ComboBoxItem Content="WebSocket (Luna)" Tag="1"/>
-                            <ComboBoxItem Content="WebSocket (Textractor)" Tag="2"/>
+                            <ComboBoxItem Content="{x:Static loc:Strings.LblClipboard}" Tag="0"/>
+                            <ComboBoxItem Content="{x:Static loc:Strings.LblWsLuna}" Tag="1"/>
+                            <ComboBoxItem Content="{x:Static loc:Strings.LblWsTextractor}" Tag="2"/>
                         </ComboBox>
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" x:Name="LblWsUrl" Text="WebSocket URL:" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <TextBlock Style="{StaticResource StandardTextBlock}" x:Name="LblWsUrl" Text="{x:Static loc:Strings.LblWsUrl}" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
                         <TextBox x:Name="TxtWsUrl" Grid.Row="4" Grid.Column="1" Margin="5" Padding="5" Text="{Binding Config.Hook.WebSocketUrl}" ToolTip="Luna: ws://localhost:2333/api/ws/text/origin | Textractor: ws://localhost:6677"/>
 
                         <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Vertical" Margin="5,15,5,5">
                             <CheckBox x:Name="ChkFilterSimilar" 
-                                      Content="Ignorar frases muito similares (Anti-spam)" 
+                                      Content="{x:Static loc:Strings.LblFilterSimilar}" 
                                       IsChecked="{Binding Config.Session.FilterSimilarPhrases}" 
                                       Foreground="White"/>
                             <StackPanel Orientation="Horizontal" Margin="0,5,0,0" 
                                         Visibility="{Binding IsChecked, ElementName=ChkFilterSimilar, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <TextBlock Text="Limiar de Similaridade:" Foreground="#EAEAEA" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <TextBlock Text="{x:Static loc:Strings.LblSimilarityThreshold}" Foreground="#EAEAEA" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                 <Slider Minimum="0.5" Maximum="1.0" Width="100" 
                                         Value="{Binding Config.Session.SimilarityThreshold}" 
                                         TickFrequency="0.05" IsSnapToTickEnabled="True"/>
@@ -268,7 +268,7 @@
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblImageField}" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
                         <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboFieldImage" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" SelectedValue="{Binding Config.Anki.ImageField}"/>
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="AnkiConnect URL:" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblAnkiUrl}" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
                         <TextBox x:Name="TxtAnkiUrl" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5" Text="{Binding Config.Anki.Url, UpdateSourceTrigger=PropertyChanged}"/>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblTimeout}" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
@@ -283,7 +283,7 @@
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem Header="Overlay">
+            <TabItem Header="{x:Static loc:Strings.TabOverlay}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <Grid Margin="0,15,0,0" ClipToBounds="False">
                         <Grid.RowDefinitions>
@@ -305,46 +305,46 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Text Box BG:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblOverlayBg}" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
                         <colorpicker:PortableColorPicker x:Name="PickerBgColor" Style="{StaticResource DefaultColorPickerStyle}" Grid.Row="0" Grid.Column="1" Margin="5" HorizontalAlignment="Left" Width="60" Height="30" />
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Font Color:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"/>
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblOverlayFontColor}" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"/>
                         <colorpicker:PortableColorPicker x:Name="PickerFontColor" Style="{StaticResource DefaultColorPickerStyle}" Grid.Row="1" Grid.Column="1" Margin="5" HorizontalAlignment="Left" Width="60" Height="30" />
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Text Outline Color:" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"/>
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblOverlayOutlineColor}" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"/>
                         <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="5">
                             <colorpicker:PortableColorPicker x:Name="PickerOutlineColor" Style="{StaticResource DefaultColorPickerStyle}" HorizontalAlignment="Left" Width="60" Height="30" Margin="0,0,10,0"/>
-                            <TextBlock Text="Thickness:" VerticalAlignment="Center" Foreground="#EAEAEA" Margin="0,0,5,0"/>
+                            <TextBlock Text="{x:Static loc:Strings.LblThickness}" VerticalAlignment="Center" Foreground="#EAEAEA" Margin="0,0,5,0"/>
                             <TextBox Text="{Binding Config.Overlay.OutlineThickness, UpdateSourceTrigger=PropertyChanged}" Width="40" Padding="5" TextAlignment="Center"/>
                         </StackPanel>
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Font Family:" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center"/>
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblOverlayFontFamily}" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center"/>
                         <TextBox Grid.Row="3" Grid.Column="1" Margin="5" Padding="5" Text="{Binding Config.Overlay.FontFamily, UpdateSourceTrigger=PropertyChanged}" ToolTip="Ex: Meiryo, MS Gothic, Yu Gothic, Segoe UI"/>
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Font Size:" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center"/>
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblOverlayFontSize}" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center"/>
                         <TextBox Grid.Row="4" Grid.Column="1" Margin="5" Padding="5" Text="{Binding Config.Overlay.FontSize, UpdateSourceTrigger=PropertyChanged}"/>
 
-                        <CheckBox Content="Use Text Box Mode (Masking)" Grid.Row="5" Grid.Column="1" Margin="5,15,5,5" IsChecked="{Binding Config.Overlay.UseTextBoxMode}" Foreground="White" FontWeight="SemiBold"/>
+                        <CheckBox Content="{x:Static loc:Strings.LblUseTextBoxMode}" Grid.Row="5" Grid.Column="1" Margin="5,15,5,5" IsChecked="{Binding Config.Overlay.UseTextBoxMode}" Foreground="White" FontWeight="SemiBold"/>
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Box Min-Height (px):" Grid.Row="6" Grid.Column="0" VerticalAlignment="Center"/>
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblBoxMinHeight}" Grid.Row="6" Grid.Column="0" VerticalAlignment="Center"/>
                         <TextBox Grid.Row="6" Grid.Column="1" Margin="5" Padding="5" Text="{Binding Config.Overlay.TextBoxMinHeight, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding Config.Overlay.UseTextBoxMode}"/>
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Box Width (%):" Grid.Row="7" Grid.Column="0" VerticalAlignment="Center"/>
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblBoxWidth}" Grid.Row="7" Grid.Column="0" VerticalAlignment="Center"/>
                         <TextBox Grid.Row="7" Grid.Column="1" Margin="5" Padding="5" Text="{Binding Config.Overlay.TextBoxWidthPercentage, UpdateSourceTrigger=PropertyChanged}"/>
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Displacement &amp; Margins:" Grid.Row="8" Grid.Column="0" VerticalAlignment="Center"/>
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblDisplacementMargins}" Grid.Row="8" Grid.Column="0" VerticalAlignment="Center"/>
                         <StackPanel Grid.Row="8" Grid.Column="1" Orientation="Horizontal" Margin="5">
-                            <TextBlock Text="X (Horiz):" VerticalAlignment="Center" Foreground="#EAEAEA" Margin="0,0,5,0"/>
+                            <TextBlock Text="{x:Static loc:Strings.LblHorizX}" VerticalAlignment="Center" Foreground="#EAEAEA" Margin="0,0,5,0"/>
                             <TextBox Text="{Binding Config.Overlay.HorizontalDisplacement, UpdateSourceTrigger=PropertyChanged}" Width="50" Padding="5" TextAlignment="Center" Margin="0,0,10,0" ToolTip="Positivo = Direita, Negativo = Esquerda"/>
-                            <TextBlock Text="Y (Vert):" VerticalAlignment="Center" Foreground="#EAEAEA" Margin="0,0,5,0"/>
+                            <TextBlock Text="{x:Static loc:Strings.LblVertY}" VerticalAlignment="Center" Foreground="#EAEAEA" Margin="0,0,5,0"/>
                             <TextBox Text="{Binding Config.Overlay.VerticalMargin, UpdateSourceTrigger=PropertyChanged}" Width="50" Padding="5" TextAlignment="Center" ToolTip="Margem em relação ao Topo ou Fundo"/>
                         </StackPanel>
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="Text Vertical Align:" Grid.Row="9" Grid.Column="0" VerticalAlignment="Center"/>
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblTextVerticalAlign}" Grid.Row="9" Grid.Column="0" VerticalAlignment="Center"/>
                         <ComboBox Style="{StaticResource StandardComboBox}" Grid.Row="9" Grid.Column="1" Margin="5" Padding="5" SelectedValuePath="Tag" SelectedValue="{Binding Config.Overlay.TextVerticalAlignment}">
-                            <ComboBoxItem Content="Top" Tag="flex-start"/>
-                            <ComboBoxItem Content="Center" Tag="center"/>
-                            <ComboBoxItem Content="Bottom" Tag="flex-end"/>
+                            <ComboBoxItem Content="{x:Static loc:Strings.LblTop}" Tag="flex-start"/>
+                            <ComboBoxItem Content="{x:Static loc:Strings.LblCenter}" Tag="center"/>
+                            <ComboBoxItem Content="{x:Static loc:Strings.LblBottom}" Tag="flex-end"/>
                         </ComboBox>
 
                         <Border Grid.Row="10" Grid.ColumnSpan="2" BorderBrush="#333333" BorderThickness="0,1,0,0" Margin="0,15,0,15" />
@@ -352,14 +352,14 @@
                     </Grid>
                 </ScrollViewer>
             </TabItem>
-            <TabItem Header="Hotkeys">
+            <TabItem Header="{x:Static loc:Strings.TabHotkeys}">
                 <Grid Margin="15">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     
-                    <TextBlock Text="Click on the textbox and press a key combination to bind. Press ESC or DEL to clear." Foreground="#AAAAAA" Margin="0,0,0,15" TextWrapping="Wrap"/>
+                    <TextBlock Text="{x:Static loc:Strings.LblHotkeyHint}" Foreground="#AAAAAA" Margin="0,0,0,15" TextWrapping="Wrap"/>
                     
                     <ItemsControl Grid.Row="1" ItemsSource="{Binding Config.Hotkeys}">
                         <ItemsControl.ItemTemplate>
@@ -398,7 +398,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="Extensions" x:Name="TabExtensions">
+            <TabItem Header="{x:Static loc:Strings.TabExtensions}" x:Name="TabExtensions">
                 <Grid Margin="15">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -407,7 +407,7 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-                        <TextBlock Text="Browser:" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="#EAEAEA"/>
+                        <TextBlock Text="{x:Static loc:Strings.LblBrowser}" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="#EAEAEA"/>
                         <ComboBox x:Name="ComboBrowser" Width="150" SelectionChanged="ComboBrowser_SelectionChanged">
                             <ComboBoxItem Content="Chrome" Tag="Chrome"/>
                             <ComboBoxItem Content="Edge" Tag="Edge"/>
@@ -423,7 +423,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="Path:" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="#EAEAEA"/>
+                        <TextBlock Text="{x:Static loc:Strings.LblPath}" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="#EAEAEA"/>
                         <TextBox x:Name="TxtCustomPath" Grid.Column="1" Padding="5" Background="#333" Foreground="White" BorderThickness="1" BorderBrush="#555"/>
                         <Button Grid.Column="2" Content="..." Width="30" Margin="5,0,0,0" Click="BtnBrowse_Click" Background="#3F3F46" Foreground="White" BorderThickness="0"/>
                     </Grid>
@@ -431,15 +431,15 @@
                     <ListView x:Name="ListExtensions" Grid.Row="2" Background="#1E1E1E" BorderThickness="0" Foreground="White">
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Header="Icon" Width="50">
+                                <GridViewColumn Header="{x:Static loc:Strings.HeaderIcon}" Width="50">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <Image Source="{Binding IconPath}" Width="24" Height="24" Stretch="Uniform"/>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}" Width="250"/>
-                                <GridViewColumn Header="Settings" Width="50">
+                                <GridViewColumn Header="{x:Static loc:Strings.HeaderName}" DisplayMemberBinding="{Binding Name}" Width="250"/>
+                                <GridViewColumn Header="{x:Static loc:Strings.HeaderSettings}" Width="50">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <Button Content="⚙️" 
@@ -449,7 +449,7 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="Status" Width="100">
+                                <GridViewColumn Header="{x:Static loc:Strings.HeaderStatus}" Width="100">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <ToggleButton Content="{Binding IsEnabled, Converter={StaticResource StatusConverter}}" 
@@ -479,7 +479,7 @@
         </TabControl>
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
-            <Button Content="Apply Settings" Style="{StaticResource StandardButton}" Height="40" FontSize="14" Margin="0,0,10,0" Padding="15,0" Click="BtnApply_Click" Background="#007ACC"/>
+            <Button Content="{x:Static loc:Strings.BtnApplySettings}" Style="{StaticResource StandardButton}" Height="40" FontSize="14" Margin="0,0,10,0" Padding="15,0" Click="BtnApply_Click" Background="#007ACC"/>
             <Button Content="{x:Static loc:Strings.BtnSaveClose}" Style="{StaticResource SaveButton}" Margin="0" Padding="15,0" Click="BtnSave_Click"/>
         </StackPanel>
     </Grid>
