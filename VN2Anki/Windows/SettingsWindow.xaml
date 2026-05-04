@@ -69,7 +69,7 @@
                 <Style TargetType="TabItem">
                     <Setter Property="Background" Value="#3F3F46"/>
                     <Setter Property="Foreground" Value="#EAEAEA"/>
-                    <Setter Property="Padding" Value="20,10"/>
+                    <Setter Property="Padding" Value="12,10"/>
                     <Setter Property="Margin" Value="0,0,2,0"/>
                     <Setter Property="FontSize" Value="14"/>
                     <Setter Property="FontWeight" Value="SemiBold"/>
@@ -144,39 +144,16 @@
                         <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblSlotLimit}" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
                         <TextBox x:Name="TxtMaxSlots" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="5" Padding="5" Text="{Binding Config.Session.MaxSlots, UpdateSourceTrigger=PropertyChanged}"/>
 
-                        <StackPanel Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Orientation="Vertical" Margin="5,15,5,5">
-                            <CheckBox x:Name="ChkFilterSimilar" 
-                                      Content="Ignorar frases muito similares (Anti-spam)" 
-                                      IsChecked="{Binding Config.Session.FilterSimilarPhrases}" 
-                                      Foreground="White"/>
-                            <StackPanel Orientation="Horizontal" Margin="0,5,0,0" 
-                                        Visibility="{Binding IsChecked, ElementName=ChkFilterSimilar, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <TextBlock Text="Limiar de Similaridade:" Foreground="#EAEAEA" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <Slider Minimum="0.5" Maximum="1.0" Width="100" 
-                                        Value="{Binding Config.Session.SimilarityThreshold}" 
-                                        TickFrequency="0.05" IsSnapToTickEnabled="True"/>
-                                <TextBlock Text="{Binding Config.Session.SimilarityThreshold, StringFormat={}{0:P0}}" 
-                                           Foreground="#EAEAEA" Margin="10,0,0,0" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </StackPanel>
-
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblLanguage}" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboLanguage" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="ComboLanguage_SelectionChanged" SelectedValuePath="Tag" SelectedValue="{Binding Config.General.Language}">
-                            <ComboBoxItem Content="English" Tag="en-US"/>
-                            <ComboBoxItem Content="Español" Tag="es-ES"/>
-                            <ComboBoxItem Content="Português" Tag="pt-BR"/>
-                        </ComboBox>
-
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblAudioQuality}" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboAudioRes" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" SelectedValuePath="Tag" SelectedValue="{Binding Config.Media.AudioBitrate}">
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblAudioQuality}" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboAudioRes" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" SelectedValuePath="Tag" SelectedValue="{Binding Config.Media.AudioBitrate}">
                             <ComboBoxItem Content="MP3 192 kbps (HQ)" Tag="192"/>
                             <ComboBoxItem Content="MP3 128 kbps (Default)" Tag="128"/>
                             <ComboBoxItem Content="MP3 96 kbps (Small)" Tag="96"/>
                             <ComboBoxItem Content="MP3 64 kbps (Tiny)" Tag="64"/>
                         </ComboBox>
 
-                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblImageQuality}" Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
-                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboImageRes" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" SelectedValuePath="Tag" SelectedValue="{Binding Config.Media.MaxImageWidth}">
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblImageQuality}" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboImageRes" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" SelectedValuePath="Tag" SelectedValue="{Binding Config.Media.MaxImageWidth}">
                             <ComboBoxItem Content="Original" Tag="0"/>
                             <ComboBoxItem Content="1280px (720p/HQ)" Tag="1280"/>
                             <ComboBoxItem Content="720px (Standard)" Tag="720"/>
@@ -184,8 +161,15 @@
                             <ComboBoxItem Content="480px (Tiny)" Tag="480"/>
                         </ComboBox>
 
-                        <CheckBox x:Name="ChkOpenSettings" Content="{x:Static loc:Strings.LblOpenSettingsOnStartup}" Foreground="White" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2" Margin="5,15,5,5" VerticalAlignment="Center" IsChecked="{Binding Config.General.OpenSettingsOnStartup}"/>
-                        <CheckBox x:Name="ChkSilentSync" Content="Vincular sessões automaticamente (Silent Sync)" Foreground="White" Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2" Margin="5,0,5,0" HorizontalAlignment="Right" VerticalAlignment="Center" IsChecked="{Binding Config.Session.SilentSync}"/>
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblLanguage}" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
+                        <ComboBox Style="{StaticResource StandardComboBox}" x:Name="ComboLanguage" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" SelectionChanged="ComboLanguage_SelectionChanged" SelectedValuePath="Tag" SelectedValue="{Binding Config.General.Language}">
+                            <ComboBoxItem Content="English" Tag="en-US"/>
+                            <ComboBoxItem Content="Español" Tag="es-ES"/>
+                            <ComboBoxItem Content="Português" Tag="pt-BR"/>
+                        </ComboBox>
+
+                        <CheckBox x:Name="ChkOpenSettings" Content="{x:Static loc:Strings.LblOpenSettingsOnStartup}" Foreground="White" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Margin="5,15,5,5" VerticalAlignment="Center" IsChecked="{Binding Config.General.OpenSettingsOnStartup}"/>
+                        <CheckBox x:Name="ChkSilentSync" Content="Vincular sessões automaticamente (Silent Sync)" Foreground="White" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2" Margin="5,0,5,0" VerticalAlignment="Center" IsChecked="{Binding Config.Session.SilentSync}"/>
                     </Grid>
                 </ScrollViewer>
             </TabItem>
@@ -194,6 +178,7 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <Grid Margin="0,15,0,0">
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
@@ -227,6 +212,22 @@
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" x:Name="LblWsUrl" Text="WebSocket URL:" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
                         <TextBox x:Name="TxtWsUrl" Grid.Row="4" Grid.Column="1" Margin="5" Padding="5" Text="{Binding Config.Hook.WebSocketUrl}" ToolTip="Luna: ws://localhost:2333/api/ws/text/origin | Textractor: ws://localhost:6677"/>
+
+                        <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Vertical" Margin="5,15,5,5">
+                            <CheckBox x:Name="ChkFilterSimilar" 
+                                      Content="Ignorar frases muito similares (Anti-spam)" 
+                                      IsChecked="{Binding Config.Session.FilterSimilarPhrases}" 
+                                      Foreground="White"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,5,0,0" 
+                                        Visibility="{Binding IsChecked, ElementName=ChkFilterSimilar, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <TextBlock Text="Limiar de Similaridade:" Foreground="#EAEAEA" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <Slider Minimum="0.5" Maximum="1.0" Width="100" 
+                                        Value="{Binding Config.Session.SimilarityThreshold}" 
+                                        TickFrequency="0.05" IsSnapToTickEnabled="True"/>
+                                <TextBlock Text="{Binding Config.Session.SimilarityThreshold, StringFormat={}{0:P0}}" 
+                                           Foreground="#EAEAEA" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </StackPanel>
                     </Grid>
                 </ScrollViewer>
             </TabItem>
