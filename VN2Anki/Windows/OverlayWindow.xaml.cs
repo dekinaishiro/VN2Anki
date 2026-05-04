@@ -48,11 +48,9 @@ namespace VN2Anki
 
             _win32Manager = new OverlayWin32Manager(
                 this,
-                0xA2,
                 () => _isPassThroughToggled,
                 (finalPassThrough) => UpdatePassThroughVisuals(finalPassThrough)
             );
-            UpdateModifierKey();
 
             InitializeWebViewAsync();
 
@@ -94,18 +92,6 @@ namespace VN2Anki
                 BtnPassThrough.Foreground = new SolidColorBrush(Colors.White);
                 IconPassThrough.Kind = MahApps.Metro.IconPacks.PackIconMaterialKind.Wall;
             }
-        }
-
-        private void UpdateModifierKey()
-        {
-            string mod = _configService.CurrentConfig.Overlay.PassThroughModifier;
-            int vk = mod switch
-            {
-                "Alt" => 0xA4,
-                "Shift" => 0xA0,
-                _ => 0xA2
-            };
-            _win32Manager.SetModifierKey(vk);
         }
 
         private void ApplyPositionState()
@@ -227,7 +213,7 @@ namespace VN2Anki
 
         private void ApplyPassThroughState()
         {
-            bool finalPassThrough = _isPassThroughToggled ^ (_win32Manager?.IsHoldActive ?? false);
+            bool finalPassThrough = _isPassThroughToggled;
             UpdatePassThroughVisuals(finalPassThrough);
             _win32Manager?.ApplyWindowExStyle();
         }

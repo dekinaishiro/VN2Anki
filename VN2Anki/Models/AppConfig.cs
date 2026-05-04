@@ -89,7 +89,6 @@ namespace VN2Anki.Models
         public int OutlineThickness { get; set; } = 2;
 
         public int FontSize { get; set; } = 32;
-        public string PassThroughModifier { get; set; } = "Ctrl";
         public List<string> CustomExtensions { get; set; } = new List<string>();
         public ExtensionSettings Extensions { get; set; } = new ExtensionSettings();
 

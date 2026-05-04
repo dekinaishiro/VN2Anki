@@ -13,25 +13,19 @@ namespace VN2Anki.Services
         private IntPtr _windowHandle;
         private IntPtr _webViewHandle;
         private SUBCLASSPROC _webViewSubclassProc;
-        private DispatcherTimer _holdTimer;
+        private DispatcherTimer _headerCheckTimer;
 
         private Func<bool> _getIsPassThroughToggled;
         private Action<bool> _onPassThroughStateChanged;
-        private int _modifierKeyVk;
         
-        private bool _isHoldActive = false;
         private bool _isMouseOverHeader = false;
-
-        public bool IsHoldActive => _isHoldActive;
 
         public OverlayWin32Manager(
             Window window, 
-            int modifierKeyVk, 
             Func<bool> getIsPassThroughToggled, 
             Action<bool> onPassThroughStateChanged)
         {
             _window = window;
-            _modifierKeyVk = modifierKeyVk;
             _getIsPassThroughToggled = getIsPassThroughToggled;
             _onPassThroughStateChanged = onPassThroughStateChanged;
 
@@ -44,12 +38,7 @@ namespace VN2Anki.Services
             var source = HwndSource.FromHwnd(_windowHandle);
             source?.AddHook(WndProc);
 
-            SetupHoldTimer();
-        }
-
-        public void SetModifierKey(int modifierKeyVk)
-        {
-            _modifierKeyVk = modifierKeyVk;
+            SetupHeaderCheckTimer();
         }
 
         public void InstallWebViewSubclass(IntPtr webViewHandle)
@@ -132,29 +121,19 @@ namespace VN2Anki.Services
         {
             if (uMsg == WM_NCHITTEST)
             {
-                bool finalPassThrough = _getIsPassThroughToggled() ^ _isHoldActive;
-                if (finalPassThrough && !_isMouseOverHeader) return (IntPtr)HTTRANSPARENT;
+                bool isPassThrough = _getIsPassThroughToggled();
+                if (isPassThrough && !_isMouseOverHeader) return (IntPtr)HTTRANSPARENT;
             }
             return DefSubclassProc(hWnd, uMsg, wParam, lParam);
         }
 
-        private void SetupHoldTimer()
+        private void SetupHeaderCheckTimer()
         {
-            _holdTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
-            _holdTimer.Tick += (s, e) =>
+            _headerCheckTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+            _headerCheckTimer.Tick += (s, e) =>
             {
-                bool isKeyDown = (GetAsyncKeyState(_modifierKeyVk) & 0x8000) != 0;
-                
-                if (isKeyDown != _isHoldActive)
-                {
-                    _isHoldActive = isKeyDown;
-                    bool finalPassThrough = _getIsPassThroughToggled() ^ _isHoldActive;
-                    _onPassThroughStateChanged(finalPassThrough);
-                    ApplyWindowExStyle();
-                }
-
-                bool finalPassThroughNow = _getIsPassThroughToggled() ^ _isHoldActive;
-                if (finalPassThroughNow)
+                bool isPassThrough = _getIsPassThroughToggled();
+                if (isPassThrough)
                 {
                     GetCursorPos(out POINT p);
 
@@ -175,10 +154,14 @@ namespace VN2Anki.Services
                 }
                 else
                 {
-                    _isMouseOverHeader = false;
+                    if (_isMouseOverHeader)
+                    {
+                        _isMouseOverHeader = false;
+                        ApplyWindowExStyle();
+                    }
                 }
             };
-            _holdTimer.Start();
+            _headerCheckTimer.Start();
         }
 
         public void ApplyWindowExStyle()
@@ -186,9 +169,9 @@ namespace VN2Anki.Services
             if (_windowHandle == IntPtr.Zero) return;
 
             int extendedStyle = GetWindowLong(_windowHandle, GWL_EXSTYLE);
-            bool finalPassThrough = _getIsPassThroughToggled() ^ _isHoldActive;
+            bool isPassThrough = _getIsPassThroughToggled();
 
-            if (finalPassThrough && !_isMouseOverHeader)
+            if (isPassThrough && !_isMouseOverHeader)
             {
                 SetWindowLong(_windowHandle, GWL_EXSTYLE, extendedStyle | WS_EX_TRANSPARENT);
             }
@@ -200,7 +183,7 @@ namespace VN2Anki.Services
 
         public void Dispose()
         {
-            _holdTimer?.Stop();
+            _headerCheckTimer?.Stop();
             if (_webViewHandle != IntPtr.Zero)
             {
                 RemoveWindowSubclass(_webViewHandle, _webViewSubclassProc, 0);
