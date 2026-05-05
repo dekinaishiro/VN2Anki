@@ -10,7 +10,7 @@
         </Grid.RowDefinitions>
         
         <Grid Grid.Row="0" Margin="0,0,0,10">
-            <Button Content="Recalcular Estatísticas" Command="{Binding ReapplyAllAnalyticsCommand}" 
+            <Button Content="Recalculate Stats" Command="{Binding ReapplyAllAnalyticsCommand}" 
                     HorizontalAlignment="Right" Padding="15,8" Background="#007ACC" Foreground="White" BorderThickness="0" Cursor="Hand" />
         </Grid>
 

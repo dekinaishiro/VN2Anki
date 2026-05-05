@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using VN2Anki.Models.Entities;
 using VN2Anki.Models;
+using VN2Anki.Locales;
 namespace VN2Anki.Services.Interfaces
 {
     public interface IWindowService

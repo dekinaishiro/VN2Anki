@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using VN2Anki.Messages;
 using VN2Anki.Models.Entities;
 using VN2Anki.Services.Interfaces;
+using VN2Anki.Locales;
 
 namespace VN2Anki.ViewModels.Hub
 {

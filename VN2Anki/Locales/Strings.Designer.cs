@@ -178,7 +178,7 @@ namespace VN2Anki.Locales {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Settings.
+        ///   Looks up a localized string similar to Main.
         /// </summary>
         public static string HeaderConfig {
             get {
@@ -246,6 +246,348 @@ namespace VN2Anki.Locales {
         public static string HeaderTotalStats {
             get {
                 return ResourceManager.GetString("HeaderTotalStats", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Active Time.
+        /// </summary>
+        public static string LabelActiveTime {
+            get {
+                return ResourceManager.GetString("LabelActiveTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to AFK Time.
+        /// </summary>
+        public static string LabelAfkTime {
+            get {
+                return ResourceManager.GetString("LabelAfkTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to ← Back.
+        /// </summary>
+        public static string LabelBack {
+            get {
+                return ResourceManager.GetString("LabelBack", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cancel.
+        /// </summary>
+        public static string LabelCancel {
+            get {
+                return ResourceManager.GetString("LabelCancel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Characters.
+        /// </summary>
+        public static string LabelCharacters {
+            get {
+                return ResourceManager.GetString("LabelCharacters", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 🅰 CHARS.
+        /// </summary>
+        public static string LabelChars {
+            get {
+                return ResourceManager.GetString("LabelChars", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to  c/h.
+        /// </summary>
+        public static string LabelCharsPerHourSuffix {
+            get {
+                return ResourceManager.GetString("LabelCharsPerHourSuffix", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} chars.
+        /// </summary>
+        public static string LabelCharsReadFormat {
+            get {
+                return ResourceManager.GetString("LabelCharsReadFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Content.
+        /// </summary>
+        public static string LabelContent {
+            get {
+                return ResourceManager.GetString("LabelContent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 🗑️ Delete.
+        /// </summary>
+        public static string LabelDelete {
+            get {
+                return ResourceManager.GetString("LabelDelete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to ⚙️ Edit.
+        /// </summary>
+        public static string LabelEdit {
+            get {
+                return ResourceManager.GetString("LabelEdit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Edit Visual Novel.
+        /// </summary>
+        public static string LabelEditVn {
+            get {
+                return ResourceManager.GetString("LabelEditVn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Event.
+        /// </summary>
+        public static string LabelEvent {
+            get {
+                return ResourceManager.GetString("LabelEvent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Executable Path.
+        /// </summary>
+        public static string LabelExecutablePath {
+            get {
+                return ResourceManager.GetString("LabelExecutablePath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Frequency.
+        /// </summary>
+        public static string LabelFrequency {
+            get {
+                return ResourceManager.GetString("LabelFrequency", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Graph: {0}.
+        /// </summary>
+        public static string LabelGraphTypeFormat {
+            get {
+                return ResourceManager.GetString("LabelGraphTypeFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to HeatMap.
+        /// </summary>
+        public static string LabelHeatMap {
+            get {
+                return ResourceManager.GetString("LabelHeatMap", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to ⏱ HOURS.
+        /// </summary>
+        public static string LabelHours {
+            get {
+                return ResourceManager.GetString("LabelHours", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Insufficient data for the graph..
+        /// </summary>
+        public static string LabelInsufficientGraphData {
+            get {
+                return ResourceManager.GetString("LabelInsufficientGraphData", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Lookups.
+        /// </summary>
+        public static string LabelLookups {
+            get {
+                return ResourceManager.GetString("LabelLookups", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Mined.
+        /// </summary>
+        public static string LabelMined {
+            get {
+                return ResourceManager.GetString("LabelMined", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Mined Words.
+        /// </summary>
+        public static string LabelMinedWords {
+            get {
+                return ResourceManager.GetString("LabelMinedWords", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No words mined in this session..
+        /// </summary>
+        public static string LabelNoMinedWords {
+            get {
+                return ResourceManager.GetString("LabelNoMinedWords", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No. of Sentences.
+        /// </summary>
+        public static string LabelNumSentences {
+            get {
+                return ResourceManager.GetString("LabelNumSentences", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Overhead.
+        /// </summary>
+        public static string LabelOverhead {
+            get {
+                return ResourceManager.GetString("LabelOverhead", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to ▶ Play.
+        /// </summary>
+        public static string LabelPlay {
+            get {
+                return ResourceManager.GetString("LabelPlay", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Reading Pace (Gaussian).
+        /// </summary>
+        public static string LabelReadingPaceGaussian {
+            get {
+                return ResourceManager.GetString("LabelReadingPaceGaussian", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to RECENT SESSIONS.
+        /// </summary>
+        public static string LabelRecentSessions {
+            get {
+                return ResourceManager.GetString("LabelRecentSessions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Save.
+        /// </summary>
+        public static string LabelSave {
+            get {
+                return ResourceManager.GetString("LabelSave", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to s.
+        /// </summary>
+        public static string LabelSecondsSuffix {
+            get {
+                return ResourceManager.GetString("LabelSecondsSuffix", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Sentence History.
+        /// </summary>
+        public static string LabelSentenceHistory {
+            get {
+                return ResourceManager.GetString("LabelSentenceHistory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Sentences.
+        /// </summary>
+        public static string LabelSentences {
+            get {
+                return ResourceManager.GetString("LabelSentences", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 🚀 SPEED.
+        /// </summary>
+        public static string LabelSpeed {
+            get {
+                return ResourceManager.GetString("LabelSpeed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Summary.
+        /// </summary>
+        public static string LabelSummary {
+            get {
+                return ResourceManager.GetString("LabelSummary", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Time.
+        /// </summary>
+        public static string LabelTime {
+            get {
+                return ResourceManager.GetString("LabelTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Total Time.
+        /// </summary>
+        public static string LabelTotalTime {
+            get {
+                return ResourceManager.GetString("LabelTotalTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to VNDB ID (Ex: v1143).
+        /// </summary>
+        public static string LabelVndbIdHint {
+            get {
+                return ResourceManager.GetString("LabelVndbIdHint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Wasted Time.
+        /// </summary>
+        public static string LabelWastedTime {
+            get {
+                return ResourceManager.GetString("LabelWastedTime", resourceCulture);
             }
         }
         
@@ -808,6 +1150,15 @@ namespace VN2Anki.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Are you sure you want to delete this session?.
+        /// </summary>
+        public static string MsgConfirmSessionDelete {
+            get {
+                return ResourceManager.GetString("MsgConfirmSessionDelete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to No Visual Novel is bound to this session.\nDo you want to start tracking anyway?.
         /// </summary>
         public static string MsgConfirmStartTrackingWithoutVn {
@@ -912,6 +1263,15 @@ namespace VN2Anki.Locales {
         public static string MsgSessionLinked {
             get {
                 return ResourceManager.GetString("MsgSessionLinked", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Statistics recalculated successfully!.
+        /// </summary>
+        public static string MsgStatsRecalculatedSuccess {
+            get {
+                return ResourceManager.GetString("MsgStatsRecalculatedSuccess", resourceCulture);
             }
         }
         
@@ -1222,11 +1582,38 @@ namespace VN2Anki.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Characters Progress.
+        /// </summary>
+        public static string ToolTipCharsProgress {
+            get {
+                return ResourceManager.GetString("ToolTipCharsProgress", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Session HeatMap.
+        /// </summary>
+        public static string ToolTipHeatMap {
+            get {
+                return ResourceManager.GetString("ToolTipHeatMap", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Listen to Audio.
         /// </summary>
         public static string ToolTipPlayAudio {
             get {
                 return ResourceManager.GetString("ToolTipPlayAudio", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Hours Played Progress.
+        /// </summary>
+        public static string ToolTipTimeProgress {
+            get {
+                return ResourceManager.GetString("ToolTipTimeProgress", resourceCulture);
             }
         }
     }

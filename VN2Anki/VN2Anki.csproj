@@ -62,13 +62,10 @@
 
   <ItemGroup>
     <EmbeddedResource Update="Locales\Strings.pt.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Strings.pt.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <EmbeddedResource Update="Locales\Strings.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
-
 </Project>
