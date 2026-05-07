@@ -17,12 +17,14 @@ namespace VN2Anki.Services
         private const string AppId = "1478238502486540288";
 
         private readonly SessionTracker _tracker;
+        private readonly IConfigurationService _configService;
         private VisualNovel? _currentVn;
         private bool _isBufferActive;
 
-        public DiscordRpcService(SessionTracker tracker)
+        public DiscordRpcService(SessionTracker tracker, IConfigurationService configService)
         {
             _tracker = tracker;
+            _configService = configService;
             _tracker.PropertyChanged += Tracker_PropertyChanged;
 
             WeakReferenceMessenger.Default.RegisterAll(this);
@@ -81,6 +83,12 @@ namespace VN2Anki.Services
 
         private void UpdatePresence()
         {
+            if (_configService.CurrentConfig.Hook.ActiveHookType == 3)
+            {
+                _ = ClearPresenceAsync();
+                return;
+            }
+
             string vnTitle = "Reading a VN";
             if (_currentVn != null)
             {

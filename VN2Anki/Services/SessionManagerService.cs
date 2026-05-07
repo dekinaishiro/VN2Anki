@@ -347,7 +347,8 @@ namespace VN2Anki.Services
         public async Task EndSessionAsync(VisualNovel? currentVN = null)
         {
             var vn = currentVN ?? _currentVN;
-            bool hasProgress = _tracker.Elapsed.TotalSeconds > 0 || _tracker.ValidCharacterCount > 0;
+            bool isMpvMode = _configService.CurrentConfig.Hook.ActiveHookType == 3;
+            bool hasProgress = !isMpvMode && (_tracker.Elapsed.TotalSeconds > 0 || _tracker.ValidCharacterCount > 0);
             bool saved = false;
             SessionRecord? savedRecord = null;
 

@@ -17,14 +17,16 @@ namespace VN2Anki.Services
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
         private string _sessionId = string.Empty;
         private readonly JsonSerializerOptions _jsonOptions;
+        private readonly IConfigurationService _configService;
 
         public string CurrentLogPath => _currentLogPath;
         public string SessionId => _sessionId;
 
         public event EventHandler<string> OnLogWritten;
 
-        public SessionLoggerService()
+        public SessionLoggerService(IConfigurationService configService)
         {
+            _configService = configService;
             _jsonOptions = new JsonSerializerOptions
             {
                 Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
@@ -52,6 +54,8 @@ namespace VN2Anki.Services
 
         public async Task StartNewSessionAsync()
         {
+            if (_configService.CurrentConfig.Hook.ActiveHookType == 3) return;
+
             await _semaphore.WaitAsync();
             try
             {
@@ -78,6 +82,8 @@ namespace VN2Anki.Services
 
         public async Task LogEventAsync(string eventType, object data)
         {
+            if (_configService.CurrentConfig.Hook.ActiveHookType == 3) return;
+
             await _semaphore.WaitAsync();
             try
             {
