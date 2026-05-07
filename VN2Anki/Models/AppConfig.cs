@@ -65,11 +65,12 @@ namespace VN2Anki.Models
 
     public class HookConfig
     {
-        // 0 = Clipboard, 1 = WebSocket (Luna), 2 = Textractor
+        // 0 = Clipboard, 1 = WebSocket (Luna), 2 = Textractor, 3 = MPV
         public int ActiveHookType { get; set; } = 0;
         public string WebSocketUrl { get; set; } = "ws://localhost:2333/api/ws/text/origin";
         public string LunaWebSocketUrl { get; set; } = "ws://localhost:2333/api/ws/text/origin";
         public string TextractorWebSocketUrl { get; set; } = "ws://localhost:6677";
+        public string MpvPipeName { get; set; } = "mpv-ipc";
 
         // Hooker Automation
         public string AutoLaunchHooker { get; set; } = "None";

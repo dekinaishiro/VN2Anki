@@ -74,6 +74,7 @@ namespace VN2Anki
 
             services.AddSingleton<ClipboardHook>();
             services.AddSingleton<WebsocketHook>();
+            services.AddSingleton<MpvHook>();
             services.AddSingleton<ITextHook, HookManager>();
 
             services.AddSingleton<AnkiHandler>(sp =>

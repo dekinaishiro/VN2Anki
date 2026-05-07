@@ -185,6 +185,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -209,12 +210,16 @@
                             <ComboBoxItem Content="{x:Static loc:Strings.LblClipboard}" Tag="0"/>
                             <ComboBoxItem Content="{x:Static loc:Strings.LblWsLuna}" Tag="1"/>
                             <ComboBoxItem Content="{x:Static loc:Strings.LblWsTextractor}" Tag="2"/>
+                            <ComboBoxItem Content="MPV (IPC)" Tag="3"/>
                         </ComboBox>
 
                         <TextBlock Style="{StaticResource StandardTextBlock}" x:Name="LblWsUrl" Text="{x:Static loc:Strings.LblWsUrl}" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal"/>
                         <TextBox x:Name="TxtWsUrl" Grid.Row="4" Grid.Column="1" Margin="5" Padding="5" Text="{Binding Config.Hook.WebSocketUrl}" ToolTip="Luna: ws://localhost:2333/api/ws/text/origin | Textractor: ws://localhost:6677"/>
 
-                        <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Vertical" Margin="5,15,5,5">
+                        <TextBlock Style="{StaticResource StandardTextBlock}" x:Name="LblMpvPipe" Text="MPV Pipe Name" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" FontWeight="Normal" Visibility="Collapsed"/>
+                        <TextBox x:Name="TxtMpvPipe" Grid.Row="5" Grid.Column="1" Margin="5" Padding="5" Text="{Binding Config.Hook.MpvPipeName}" Visibility="Collapsed" ToolTip="Default: mpv-ipc. Start mpv with --input-ipc-server=mpv-ipc"/>
+
+                        <StackPanel Grid.Row="6" Grid.Column="1" Orientation="Vertical" Margin="5,15,5,5">
                             <CheckBox x:Name="ChkFilterSimilar" 
                                       Content="{x:Static loc:Strings.LblFilterSimilar}" 
                                       IsChecked="{Binding Config.Session.FilterSimilarPhrases}" 

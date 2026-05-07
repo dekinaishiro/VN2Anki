@@ -125,19 +125,32 @@ namespace VN2Anki
 
         private void ComboHookType_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (ComboHookType.SelectedItem is ComboBoxItem item && TxtWsUrl != null && LblWsUrl != null)
+            if (ComboHookType.SelectedItem is ComboBoxItem item && TxtWsUrl != null && LblWsUrl != null && TxtMpvPipe != null && LblMpvPipe != null)
             {
                 int tag = int.Parse(item.Tag.ToString());
+                
+                // Reset visibility/state
+                TxtWsUrl.Visibility = Visibility.Visible;
+                LblWsUrl.Visibility = Visibility.Visible;
+                TxtMpvPipe.Visibility = Visibility.Collapsed;
+                LblMpvPipe.Visibility = Visibility.Collapsed;
+                TxtWsUrl.IsEnabled = true;
+                LblWsUrl.Opacity = 1.0;
+
                 if (tag == 0) // Clipboard
                 {
                     TxtWsUrl.IsEnabled = false;
                     LblWsUrl.Opacity = 0.5;
                 }
+                else if (tag == 3) // MPV
+                {
+                    TxtWsUrl.Visibility = Visibility.Collapsed;
+                    LblWsUrl.Visibility = Visibility.Collapsed;
+                    TxtMpvPipe.Visibility = Visibility.Visible;
+                    LblMpvPipe.Visibility = Visibility.Visible;
+                }
                 else 
                 {
-                    TxtWsUrl.IsEnabled = true;
-                    LblWsUrl.Opacity = 1.0;
-                    
                     // Always pull from the specific saved field when switching
                     if (tag == 1) // Luna
                     {

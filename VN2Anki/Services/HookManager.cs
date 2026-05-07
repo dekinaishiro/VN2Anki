@@ -8,12 +8,14 @@ namespace VN2Anki.Services
 
         private readonly ClipboardHook _clipboardHook;
         private readonly WebsocketHook _websocketHook;
+        private readonly MpvHook _mpvHook;
         private readonly IConfigurationService _configService;
 
-        public HookManager(ClipboardHook clipboardHook, WebsocketHook websocketHook, IConfigurationService configService)
+        public HookManager(ClipboardHook clipboardHook, WebsocketHook websocketHook, MpvHook mpvHook, IConfigurationService configService)
         {
             _clipboardHook = clipboardHook;
             _websocketHook = websocketHook;
+            _mpvHook = mpvHook;
             _configService = configService;
 
         }
@@ -24,13 +26,18 @@ namespace VN2Anki.Services
 
             int hookType = _configService.CurrentConfig.Hook.ActiveHookType;
 
-            if (hookType == 0)
+            switch (hookType)
             {
-                _clipboardHook.Start();
-            }
-            else
-            {
-                _websocketHook.Start();
+                case 0:
+                    _clipboardHook.Start();
+                    break;
+                case 1:
+                case 2:
+                    _websocketHook.Start();
+                    break;
+                case 3:
+                    _mpvHook.Start();
+                    break;
             }
         }
 
@@ -38,6 +45,7 @@ namespace VN2Anki.Services
         {
             _clipboardHook.Stop();
             _websocketHook.Stop();
+            _mpvHook.Stop();
         }
     }
 }
