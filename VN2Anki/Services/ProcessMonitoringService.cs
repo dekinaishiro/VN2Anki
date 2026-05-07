@@ -38,6 +38,7 @@ namespace VN2Anki.Services
 
         public event EventHandler<VnProcessEventArgs>? VnProcessStarted;
         public event EventHandler<VnProcessEventArgs>? VnProcessStopped;
+        public event EventHandler<string>? GenericProcessStopped;
 
         public ProcessMonitoringService(IVnDatabaseService vnDatabaseService, ILogger<ProcessMonitoringService> logger)
         {
@@ -227,9 +228,11 @@ namespace VN2Anki.Services
              {
                  using var targetInstance = (ManagementBaseObject)e.NewEvent["TargetInstance"];
                  int processId = Convert.ToInt32(targetInstance["ProcessId"]);
+                 string stoppedProcessName = string.Empty;
 
-                 if (_activeProcessIds.ContainsKey(processId))
+                 if (_activeProcessIds.TryGetValue(processId, out var processName))
                  {
+                     stoppedProcessName = processName;
                      _activeProcessIds.Remove(processId);
                  }
 
@@ -244,6 +247,10 @@ namespace VN2Anki.Services
                          Process = null,
                          ProcessId = processId
                      });
+                 }
+                 else if (!string.IsNullOrEmpty(stoppedProcessName))
+                 {
+                     GenericProcessStopped?.Invoke(this, stoppedProcessName);
                  }
              }
              catch (Exception ex)

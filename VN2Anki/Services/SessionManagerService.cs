@@ -59,6 +59,7 @@ namespace VN2Anki.Services
 
             _processMonitor.VnProcessStarted += OnVnProcessStarted;
             _processMonitor.VnProcessStopped += OnVnProcessStopped;
+            _processMonitor.GenericProcessStopped += OnGenericProcessStopped;
 
             _lastVideoSource = _configService.CurrentConfig.Media.VideoWindow;
             WeakReferenceMessenger.Default.RegisterAll(this);
@@ -198,6 +199,34 @@ namespace VN2Anki.Services
                 config.Media.VideoWindow = string.Empty;
                 _configService.Save();
                 SetCurrentVN(null);
+            }
+        }
+
+        private async void OnGenericProcessStopped(object? s, string processName)
+        {
+            var config = _configService.CurrentConfig;
+            string videoWindow = config.Media.VideoWindow;
+
+            if (string.IsNullOrEmpty(videoWindow)) return;
+
+            if (string.Equals(processName, videoWindow, StringComparison.OrdinalIgnoreCase))
+            {
+                if (!_processMonitor.IsProcessRunning(videoWindow))
+                {
+                    if (_currentVN == null && HasUnsavedProgress)
+                    {
+                        await EndSessionAsync(null);
+                        WeakReferenceMessenger.Default.Send(new ShowFlashMessage(new FlashMessagePayload 
+                        { 
+                            Message = string.Format("Sessão salva! O processo {0} foi encerrado.", processName), 
+                            IsError = false 
+                        }));
+                    }
+
+                    config.Media.VideoWindow = string.Empty;
+                    _configService.Save();
+                    SetCurrentVN(null);
+                }
             }
         }
 
