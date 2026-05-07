@@ -100,49 +100,57 @@ namespace VN2Anki.Services
         private void IdleTimer_Tick(object? sender, ElapsedEventArgs e)
         {
             _idleTimer.Stop();
-
-            if (SealAllOpenSlots(DateTime.Now) > 0)
-            {
-                var slots = HistorySlots;
-                if (slots.Count > 0)
-                {
-                    SealSlotAudio(slots[0], DateTime.Now);
-                    SendStatus("Slot sealed due to inactivity.");
-                }
-            }
+            SealAllOpenSlots(DateTime.Now);
         }
 
         public void SealSlotAudio(MiningSlot slot, DateTime endTime)
         {
             if (!slot.IsOpen) return;
 
-            var sessionConfig = _configService.CurrentConfig.Session;
-            double paddingSeconds = sessionConfig.AudioPaddingSeconds;
-            DateTime startT = slot.Timestamp.AddSeconds(-paddingSeconds);
-
-            double startAgo = (DateTime.Now - startT).TotalSeconds;
-            double endAgo = (DateTime.Now - endTime).TotalSeconds;
-
-            if (endAgo < 0) endAgo = 0;
-            if (startAgo <= endAgo) startAgo = endAgo + sessionConfig.AudioFallbackSeconds;
-
-            byte[] wavBytes = _mediaService.GetAudioSegment(startAgo, endAgo);
-            int bitrate = _configService.CurrentConfig.Media.AudioBitrate;
-            
-            if (bitrate > 0)
+            try
             {
-                slot.AudioBytes = _mediaService.ConvertWavToMp3(wavBytes, bitrate);
+                var sessionConfig = _configService.CurrentConfig.Session;
+                double paddingSeconds = sessionConfig.AudioPaddingSeconds;
+                DateTime startT = slot.Timestamp.AddSeconds(-paddingSeconds);
+
+                double startAgo = (DateTime.Now - startT).TotalSeconds;
+                double endAgo = (DateTime.Now - endTime).TotalSeconds;
+
+                if (endAgo < 0) endAgo = 0;
+                if (startAgo <= endAgo) startAgo = endAgo + sessionConfig.AudioFallbackSeconds;
+
+                byte[] wavBytes = _mediaService.GetAudioSegment(startAgo, endAgo);
+                
+                if (wavBytes != null && wavBytes.Length > 0)
+                {
+                    int bitrate = _configService.CurrentConfig.Media.AudioBitrate;
+                    if (bitrate <= 0) bitrate = 128;
+                    
+                    slot.AudioBytes = _mediaService.ConvertWavToMp3(wavBytes, bitrate);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                // Fallback if somehow bitrate is 0, use 128 kbps
-                slot.AudioBytes = _mediaService.ConvertWavToMp3(wavBytes, 128);
+                DebugLogger.Log($"[ERROR-SEAL] Failed to seal slot {slot.Id}: {ex.Message}");
+            }
+            finally
+            {
+                // Ensure slot is NEVER left open if we attempted to seal it
+                if (slot.AudioBytes == null)
+                {
+                    slot.AudioBytes = Array.Empty<byte>(); 
+                }
             }
         }
 
         private int SealAllOpenSlots(DateTime endTime)
         {
-            var openSlots = HistorySlots.Where(s => s.IsOpen).ToList();
+            List<MiningSlot> openSlots;
+            lock (_slotsLock)
+            {
+                openSlots = _historySlots.Where(s => s.IsOpen).ToList();
+            }
+
             foreach (var slot in openSlots)
             {
                 SealSlotAudio(slot, endTime);
