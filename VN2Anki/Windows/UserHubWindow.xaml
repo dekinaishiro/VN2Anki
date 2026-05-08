@@ -55,7 +55,7 @@
             <VisualStateGroup x:Name="SidebarStates">
                 <VisualState x:Name="Expanded">
                     <Storyboard>
-                        <DoubleAnimation Storyboard.TargetName="SidebarBorder" Storyboard.TargetProperty="Width" To="200" Duration="0:0:0.2"/>
+                        <DoubleAnimation Storyboard.TargetName="SidebarBorder" Storyboard.TargetProperty="Width" To="180" Duration="0:0:0.2"/>
                     </Storyboard>
                 </VisualState>
                 <VisualState x:Name="Compact">

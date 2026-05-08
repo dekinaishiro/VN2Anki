@@ -67,16 +67,16 @@
             </Grid.ColumnDefinitions>
 
             <!-- Capa Portrait -->
-            <Border Grid.Column="0" Width="180" Height="250" CornerRadius="8" ClipToBounds="True" Background="#252526" Margin="0,0,30,0" VerticalAlignment="Top">
-                <Image Source="{Binding Vn.CoverImagePath, Converter={StaticResource ImgPathConverter}}" Stretch="UniformToFill" VerticalAlignment="Top"/>
+            <Border Grid.Column="0" Height="{Binding ActualHeight, ElementName=InfoPanel}" CornerRadius="8" ClipToBounds="True" Background="#252526" Margin="0,0,30,0" VerticalAlignment="Top">
+                <Image Source="{Binding Vn.CoverImagePath, Converter={StaticResource ImgPathConverter}}" Stretch="Uniform" VerticalAlignment="Top"/>
             </Border>
 
             <!-- Título e Stats -->
-            <StackPanel Grid.Column="1" VerticalAlignment="Top">
-                <TextBlock Foreground="White" FontWeight="Black" FontSize="44" 
+            <StackPanel x:Name="InfoPanel" Grid.Column="1" VerticalAlignment="Top">
+                <TextBlock Foreground="White" FontWeight="Black" FontSize="37" 
                            TextTrimming="CharacterEllipsis" 
                            Padding="0" Margin="0" 
-                           LineHeight="44"
+                           LineHeight="37"
                            LineStackingStrategy="BlockLineHeight"
                            VerticalAlignment="Top">
                     <TextBlock.Style>
@@ -96,7 +96,7 @@
                 </TextBlock>
                 
                 <TextBlock Text="{Binding Vn.Title}" 
-                           Foreground="#888888" FontSize="22" 
+                           Foreground="#888888" FontSize="20" 
                            Margin="0,8,0,25" 
                            VerticalAlignment="Top"/>
 
