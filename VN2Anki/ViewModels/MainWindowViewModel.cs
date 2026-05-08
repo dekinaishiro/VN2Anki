@@ -224,7 +224,7 @@ namespace VN2Anki.ViewModels
 
             if (CurrentVN != null)
             {
-                ConnectionState.DisplayVnTitle = CurrentVN.Title;
+                ConnectionState.DisplayVnTitle = !string.IsNullOrEmpty(CurrentVN.OriginalTitle) ? CurrentVN.OriginalTitle : CurrentVN.Title;
                 ConnectionState.VnTitleColor = isProcessRunning ? StateBrushes.Blue : Brushes.Crimson;
             }
             else if (string.IsNullOrEmpty(videoSource))
