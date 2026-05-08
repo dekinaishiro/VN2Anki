@@ -191,7 +191,11 @@
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0">
                                             <TextBlock Text="{Binding EndTime, StringFormat='{}{0:dd MMM yyyy}'}" Foreground="#666666" FontSize="11"/>
-                                            <TextBlock Text="{Binding FormattedDuration}" Foreground="White" FontWeight="SemiBold" FontSize="14"/>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding FormattedDuration}" Foreground="White" FontWeight="SemiBold" FontSize="14"/>
+                                                <TextBlock Text=" • " Foreground="#444444" VerticalAlignment="Center" Margin="5,0"/>
+                                                <TextBlock Text="{Binding FormattedEffectiveDuration}" Foreground="#3498DB" FontWeight="SemiBold" FontSize="14" ToolTip="Effective Time"/>
+                                            </StackPanel>
                                         </StackPanel>
                                         <TextBlock Grid.Column="1" Text="{Binding CharactersRead, StringFormat='{} {0} chars'}" Foreground="#28A745" FontWeight="Bold" VerticalAlignment="Center"/>
                                     </Grid>

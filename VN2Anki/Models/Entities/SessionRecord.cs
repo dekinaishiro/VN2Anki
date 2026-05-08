@@ -26,5 +26,8 @@ namespace VN2Anki.Models.Entities
 
         [NotMapped]
         public string FormattedDuration => TimeSpan.FromSeconds(DurationSeconds).ToString(@"hh\:mm\:ss");
+
+        [NotMapped]
+        public string FormattedEffectiveDuration => TimeSpan.FromSeconds(EffectiveDurationSeconds).ToString(@"hh\:mm\:ss");
     }
 }
