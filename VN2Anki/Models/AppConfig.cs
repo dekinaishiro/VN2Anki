@@ -11,7 +11,14 @@ namespace VN2Anki.Models
         public SessionConfig Session { get; set; } = new SessionConfig();
         public HookConfig Hook { get; set; } = new HookConfig();
         public OverlayConfig Overlay { get; set; } = new OverlayConfig();
-        public List<HotkeyItem> Hotkeys { get; set; } = new List<HotkeyItem>();
+        public List<HotkeyItem> Hotkeys { get; set; } = new List<HotkeyItem>
+        {
+            new HotkeyItem { ActionName = "ToggleMainWindow", Key = 0x4D, Modifiers = 0x0001 | 0x0002 }, // Alt+Ctrl+M
+            new HotkeyItem { ActionName = "ToggleOverlay", Key = 0x4F, Modifiers = 0x0001 | 0x0002 }, // Alt+Ctrl+O
+            new HotkeyItem { ActionName = "ToggleBuffer", Key = 0x42, Modifiers = 0x0001 | 0x0002 }, // Alt+Ctrl+B
+            new HotkeyItem { ActionName = "ToggleOverlayTransparency", Key = 0x54, Modifiers = 0x0001 | 0x0002 }, // Alt+Ctrl+T
+            new HotkeyItem { ActionName = "ToggleOverlayPassThrough", Key = 0x50, Modifiers = 0x0001 | 0x0002 } // Alt+Ctrl+P
+        };
     }
 
     public class HotkeyItem

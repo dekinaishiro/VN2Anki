@@ -67,6 +67,7 @@ namespace VN2Anki.ViewModels
             string[] predefinedActions = new[]
             {
                 "ToggleMainWindow",
+                "ToggleOverlay",
                 "OpenHub",
                 "OpenSettings",
                 "OpenHistory",

@@ -396,6 +396,26 @@ namespace VN2Anki.ViewModels
                             }
                         }
                         break;
+                    case "ToggleOverlay":
+                        var overlay = System.Windows.Application.Current.Windows.OfType<VN2Anki.OverlayWindow>().FirstOrDefault();
+                        if (overlay != null)
+                        {
+                            if (overlay.WindowState == WindowState.Minimized || !overlay.IsVisible)
+                            {
+                                overlay.Show();
+                                overlay.WindowState = WindowState.Normal;
+                                overlay.Activate();
+                            }
+                            else
+                            {
+                                overlay.WindowState = WindowState.Minimized;
+                            }
+                        }
+                        else
+                        {
+                            OpenOverlayCommand.Execute(null);
+                        }
+                        break;
                     case "OpenHub":
                         OpenHubCommand.Execute(null);
                         break;
