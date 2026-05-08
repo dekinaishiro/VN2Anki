@@ -236,7 +236,16 @@ namespace VN2Anki.ViewModels
             else
             {
                 ConnectionState.DisplayVnTitle = videoSource;
-                ConnectionState.VnTitleColor = Brushes.Crimson;
+                
+                // mpv special handling: if running as video source, show blue title
+                if (isProcessRunning && string.Equals(videoSource, "mpv", StringComparison.OrdinalIgnoreCase))
+                {
+                    ConnectionState.VnTitleColor = StateBrushes.Blue;
+                }
+                else
+                {
+                    ConnectionState.VnTitleColor = Brushes.Crimson;
+                }
             }
 
             UpdateSemaphoreState(isProcessRunning);
@@ -276,16 +285,29 @@ namespace VN2Anki.ViewModels
             {
                 ConnectionState.LinkIconKind = "LinkVariantOff";
                 ConnectionState.LinkIconColor = Brushes.White;
+                ConnectionState.CanLink = true;
             }
             else if (CurrentVN != null)
             {
                 ConnectionState.LinkIconKind = "LinkVariant";
                 ConnectionState.LinkIconColor = Brushes.LimeGreen;
+                ConnectionState.CanLink = true;
             }
             else
             {
-                ConnectionState.LinkIconKind = "LinkVariantOff";
-                ConnectionState.LinkIconColor = Brushes.Yellow;
+                // mpv special handling: disable linking if mpv is the active source
+                if (string.Equals(config.Media.VideoWindow, "mpv", StringComparison.OrdinalIgnoreCase))
+                {
+                    ConnectionState.LinkIconKind = "LinkVariantOff";
+                    ConnectionState.LinkIconColor = Brushes.Gray;
+                    ConnectionState.CanLink = false;
+                }
+                else
+                {
+                    ConnectionState.LinkIconKind = "LinkVariantOff";
+                    ConnectionState.LinkIconColor = Brushes.Yellow;
+                    ConnectionState.CanLink = true;
+                }
             }
         }
 

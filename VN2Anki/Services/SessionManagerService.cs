@@ -59,6 +59,7 @@ namespace VN2Anki.Services
 
             _processMonitor.VnProcessStarted += OnVnProcessStarted;
             _processMonitor.VnProcessStopped += OnVnProcessStopped;
+            _processMonitor.GenericProcessStarted += OnGenericProcessStarted;
             _processMonitor.GenericProcessStopped += OnGenericProcessStopped;
 
             _lastVideoSource = _configService.CurrentConfig.Media.VideoWindow;
@@ -95,10 +96,27 @@ namespace VN2Anki.Services
                         (!string.IsNullOrEmpty(_currentVN.ExecutablePath) && string.Equals(System.IO.Path.GetFileName(_currentVN.ExecutablePath), videoSource, StringComparison.OrdinalIgnoreCase))
                     );
 
-                    if (!alreadyLinked)
+                    if (!alreadyLinked && !string.Equals(videoSource, "mpv", StringComparison.OrdinalIgnoreCase))
                     {
                         await TryAutoLinkAsync(videoSource);
                     }
+                }
+            }
+        }
+
+        private void OnGenericProcessStarted(object? s, string processName)
+        {
+            if (string.Equals(processName, "mpv", StringComparison.OrdinalIgnoreCase))
+            {
+                // Auto-set mpv as video source if no session is active and no VN is linked
+                if (!HasUnsavedProgress && _currentVN == null)
+                {
+                    var config = _configService.CurrentConfig;
+                    config.Media.VideoWindow = "mpv";
+                    _configService.Save();
+
+                    // Refresh state to ensure UI updates to "blue" title mode
+                    _dispatcherService.Invoke(() => SetCurrentVN(null, forceNotify: true));
                 }
             }
         }

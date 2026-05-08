@@ -26,6 +26,7 @@ namespace VN2Anki.Services.Interfaces
     {
         event EventHandler<VnProcessEventArgs> VnProcessStarted;
         event EventHandler<VnProcessEventArgs> VnProcessStopped;
+        event EventHandler<string> GenericProcessStarted;
         event EventHandler<string> GenericProcessStopped;
 
         void StartMonitoring();

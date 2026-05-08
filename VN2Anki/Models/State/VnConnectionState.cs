@@ -16,6 +16,7 @@ namespace VN2Anki.Models.State
         
         [ObservableProperty] private string _linkIconKind = "LinkVariantOff";
         [ObservableProperty] private Brush _linkIconColor = Brushes.White;
+        [ObservableProperty] private bool _canLink = true;
 
     }
 }

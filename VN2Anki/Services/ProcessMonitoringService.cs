@@ -38,6 +38,7 @@ namespace VN2Anki.Services
 
         public event EventHandler<VnProcessEventArgs>? VnProcessStarted;
         public event EventHandler<VnProcessEventArgs>? VnProcessStopped;
+        public event EventHandler<string>? GenericProcessStarted;
         public event EventHandler<string>? GenericProcessStopped;
 
         public ProcessMonitoringService(IVnDatabaseService vnDatabaseService, ILogger<ProcessMonitoringService> logger)
@@ -214,6 +215,10 @@ namespace VN2Anki.Services
                         Process = process,
                         ProcessId = processId
                     });
+                }
+                else
+                {
+                    GenericProcessStarted?.Invoke(this, processNameWithoutExt);
                 }
             }
             catch (Exception ex)

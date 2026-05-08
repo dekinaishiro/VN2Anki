@@ -68,6 +68,7 @@
                         <iconPacks:PackIconMaterial Kind="{Binding ConnectionState.AudioIconKind}" Foreground="{Binding ConnectionState.AudioIconColor}" Width="16" Height="16"/>
                     </Button>
                     <Button Command="{Binding ManualLinkActionCommand}" 
+                            IsEnabled="{Binding ConnectionState.CanLink}"
                             Background="#444" BorderThickness="0" 
                             Cursor="Hand" Margin="0,0,0,0" Padding="5"
                             ToolTip="Vincular Jogo (Link)">
