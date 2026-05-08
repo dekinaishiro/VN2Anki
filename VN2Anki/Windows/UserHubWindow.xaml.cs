@@ -14,7 +14,7 @@ namespace VN2Anki
 
         private void UserHubWindow_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            if (e.NewSize.Width < 800)
+            if (e.NewSize.Width < 990)
             {
                 VisualStateManager.GoToElementState(RootGrid, "Compact", true);
             }
