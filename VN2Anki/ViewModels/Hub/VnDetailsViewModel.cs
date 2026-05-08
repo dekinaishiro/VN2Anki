@@ -27,6 +27,9 @@ namespace VN2Anki.ViewModels.Hub
         private double _averageSpeed;
 
         [ObservableProperty]
+        private bool _isEffectiveTimeMode = false;
+
+        [ObservableProperty]
         private string _currentGraphType = Locales.Strings.LabelHeatMap;
 
         // === ESTADOS DO MODAL DE EDIÇÃO ===
@@ -48,15 +51,31 @@ namespace VN2Anki.ViewModels.Hub
             _ = LoadRecentSessionsAsync();
         }
 
+        [RelayCommand]
+        private void ToggleTimeMode()
+        {
+            IsEffectiveTimeMode = !IsEffectiveTimeMode;
+            CalculateStats();
+        }
+
         private void CalculateStats()
         {
-            if (Vn == null || Vn.TotalTimePlayedSeconds <= 0)
+            if (Vn == null)
             {
                 AverageSpeed = 0;
                 return;
             }
+
+            int seconds = IsEffectiveTimeMode ? Vn.EffectiveTimePlayedSeconds : Vn.TotalTimePlayedSeconds;
+
+            if (seconds <= 0)
+            {
+                AverageSpeed = 0;
+                return;
+            }
+
             // Converte segundos para horas e calcula caracteres por hora
-            double totalHours = Vn.TotalTimePlayedSeconds / 3600.0;
+            double totalHours = seconds / 3600.0;
             AverageSpeed = (double)Vn.TotalCharactersRead / totalHours;
         }
 

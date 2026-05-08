@@ -18,6 +18,32 @@
 
         <!-- Barra de ferramentas superior: Ordenação -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,10,15">
+            <!-- Time Toggle -->
+            <Button Command="{Binding ToggleTimeModeCommand}" 
+                    Height="28" Margin="0,0,15,0" Padding="10,0"
+                    Background="#2D2D30" BorderThickness="1" BorderBrush="#3E3E42" Cursor="Hand">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="14">
+                            <StackPanel Orientation="Horizontal" Margin="2,0">
+                                <iconPacks:PackIconMaterial x:Name="TimeIcon" Kind="Clock" Width="12" Height="14" Foreground="#888888" VerticalAlignment="Center" Margin="5,0,8,0"/>
+                                <TextBlock x:Name="TimeLabel" Text="Total Time" Foreground="White" VerticalAlignment="Center" FontSize="11" Margin="0,0,5,0"/>
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsEffectiveTimeMode}" Value="True">
+                                <Setter TargetName="TimeIcon" Property="iconPacks:PackIconMaterial.Kind" Value="TimerSand"/>
+                                <Setter TargetName="TimeIcon" Property="iconPacks:PackIconMaterial.Foreground" Value="#3498DB"/>
+                                <Setter TargetName="TimeLabel" Property="TextBlock.Text" Value="Effective Time"/>
+                            </DataTrigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#3E3E42"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+
             <TextBlock Text="Sort by:" VerticalAlignment="Center" Foreground="#888888" Margin="0,0,8,0" FontSize="12"/>
             
             <ComboBox Width="130" Height="28" 
@@ -70,6 +96,31 @@
 
             <ListBox.ItemTemplate>
                 <DataTemplate>
+                    <DataTemplate.Resources>
+                        <Style x:Key="TimeHeaderStyle" TargetType="TextBlock">
+                            <Setter Property="Text" Value="TEMPO"/>
+                            <Setter Property="FontSize" Value="9"/>
+                            <Setter Property="Foreground" Value="#888888"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding DataContext.IsEffectiveTimeMode, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                    <Setter Property="Text" Value="EFETIVO"/>
+                                    <Setter Property="Foreground" Value="#3498DB"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                        <Style x:Key="TimeValueStyle" TargetType="TextBlock">
+                            <Setter Property="Text" Value="{Binding FormattedTotalTime}"/>
+                            <Setter Property="Foreground" Value="#CCCCCC"/>
+                            <Setter Property="FontSize" Value="11"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding DataContext.IsEffectiveTimeMode, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                    <Setter Property="Text" Value="{Binding FormattedEffectiveTime}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataTemplate.Resources>
+
                     <Border Background="#2D2D30" CornerRadius="8" Margin="10" Width="200" ClipToBounds="True" Cursor="Hand">
                         <Border.InputBindings>
                             <MouseBinding Gesture="LeftClick" Command="{Binding DataContext.GoToDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
@@ -118,8 +169,8 @@
                                     </Grid.ColumnDefinitions>
 
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Text="TEMPO" FontSize="9" Foreground="#888888" FontWeight="SemiBold"/>
-                                        <TextBlock Text="{Binding FormattedTotalTime}" Foreground="#CCCCCC" FontSize="11"/>
+                                        <TextBlock Style="{StaticResource TimeHeaderStyle}"/>
+                                        <TextBlock Style="{StaticResource TimeValueStyle}"/>
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="1">

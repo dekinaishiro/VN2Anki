@@ -25,6 +25,9 @@ namespace VN2Anki.ViewModels.Hub
         [ObservableProperty]
         private bool _isAscending = false;
 
+        [ObservableProperty]
+        private bool _isEffectiveTimeMode = false;
+
         public LibraryViewModel(IVnDatabaseService dbService, INavigationService navigation)
         {
             _dbService = dbService;
@@ -32,6 +35,12 @@ namespace VN2Anki.ViewModels.Hub
             _ = LoadLibraryAsync();
 
             WeakReferenceMessenger.Default.RegisterAll(this);
+        }
+
+        [RelayCommand]
+        private void ToggleTimeMode()
+        {
+            IsEffectiveTimeMode = !IsEffectiveTimeMode;
         }
 
         public async Task LoadLibraryAsync()

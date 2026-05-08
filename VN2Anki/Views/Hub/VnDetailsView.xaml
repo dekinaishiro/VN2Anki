@@ -35,6 +35,27 @@
     </UserControl.Resources>
 
     <Grid Margin="20">
+        <Grid.Resources>
+            <Style TargetType="TextBlock" x:Key="HoursHeaderStyle">
+                <Setter Property="Text" Value="{x:Static loc:Strings.LabelHours}"/>
+                <Setter Property="Foreground" Value="#888888"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsEffectiveTimeMode}" Value="True">
+                        <Setter Property="Text" Value="{x:Static loc:Strings.LabelActiveTime}"/>
+                        <Setter Property="Foreground" Value="#3498DB"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+            <Style TargetType="TextBlock" x:Key="HoursValueStyle">
+                <Setter Property="Text" Value="{Binding Vn.FormattedTotalTime}"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsEffectiveTimeMode}" Value="True">
+                        <Setter Property="Text" Value="{Binding Vn.FormattedEffectiveTime}"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Grid.Resources>
+
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/> <!-- 0: Navigation/Actions -->
             <RowDefinition Height="Auto"/> <!-- 1: Header (Capa + Info) -->
@@ -103,8 +124,8 @@
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
                     <Border Style="{StaticResource StatTileStyle}" VerticalAlignment="Top">
                         <StackPanel>
-                            <TextBlock Text="{x:Static loc:Strings.LabelHours}" Foreground="#888888" FontWeight="Bold" FontSize="11"/>
-                            <TextBlock Text="{Binding Vn.FormattedTotalTime}" Foreground="#007ACC" FontWeight="Black" FontSize="28" Margin="0,5,0,0"/>
+                            <TextBlock x:Name="HoursHeader" Style="{StaticResource HoursHeaderStyle}" FontWeight="Bold" FontSize="11"/>
+                            <TextBlock x:Name="HoursValue" Style="{StaticResource HoursValueStyle}" Foreground="#007ACC" FontWeight="Black" FontSize="28" Margin="0,5,0,0"/>
                         </StackPanel>
                     </Border>
                     <Border Style="{StaticResource StatTileStyle}" VerticalAlignment="Top">
@@ -122,6 +143,28 @@
                             </StackPanel>
                         </StackPanel>
                     </Border>
+
+                    <!-- Toggle Button -->
+                    <Button Command="{Binding ToggleTimeModeCommand}" 
+                            Width="36" Height="36" Margin="5,0,0,0" VerticalAlignment="Center"
+                            Background="#2D2D30" BorderThickness="1" BorderBrush="#3E3E42" Cursor="Hand" ToolTip="Toggle Total/Effective Time">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="18">
+                                    <iconPacks:PackIconMaterial x:Name="TimeIcon" Kind="Clock" Width="16" Height="16" Foreground="#888888" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding IsEffectiveTimeMode}" Value="True">
+                                        <Setter TargetName="TimeIcon" Property="Kind" Value="TimerSand"/>
+                                        <Setter TargetName="TimeIcon" Property="Foreground" Value="#3498DB"/>
+                                    </DataTrigger>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#3E3E42"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
                 </StackPanel>
             </StackPanel>
         </Grid>

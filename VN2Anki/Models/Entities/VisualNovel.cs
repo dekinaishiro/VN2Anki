@@ -36,6 +36,9 @@ namespace VN2Anki.Models.Entities
         public string FormattedTotalTime => TimeSpan.FromSeconds(TotalTimePlayedSeconds).ToString(@"hh\:mm\:ss");
 
         [NotMapped]
+        public string FormattedEffectiveTime => TimeSpan.FromSeconds(EffectiveTimePlayedSeconds).ToString(@"hh\:mm\:ss");
+
+        [NotMapped]
         public int SessionCount => Sessions?.Count ?? 0;
 
         public string? OverlayConfigJson { get; set; }
