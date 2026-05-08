@@ -34,7 +34,10 @@ namespace VN2Anki.Services
         }
 
         public Task<List<VisualNovel>> GetAllVisualNovelsAsync() =>
-            ExecuteWithDbAsync(db => db.VisualNovels.ToListAsync());
+            ExecuteWithDbAsync(db => db.VisualNovels
+                .OrderByDescending(v => v.LastPlayed ?? DateTime.MinValue)
+                .ThenBy(v => v.Title)
+                .ToListAsync());
 
         public Task AddVisualNovelAsync(VisualNovel vn) =>
             ExecuteWithDbAsync(async db =>
@@ -116,6 +119,13 @@ namespace VN2Anki.Services
                 vn.TotalTimePlayedSeconds = vn.Sessions.Sum(s => s.DurationSeconds);
                 vn.EffectiveTimePlayedSeconds = vn.Sessions.Sum(s => s.EffectiveDurationSeconds);
                 vn.TotalCharactersRead = vn.Sessions.Sum(s => s.CharactersRead);
+                vn.TotalCardsMined = vn.Sessions.Sum(s => s.CardsMined);
+                
+                // Update LastPlayed with the latest session's EndTime
+                vn.LastPlayed = vn.Sessions.Any() 
+                    ? vn.Sessions.Max(s => s.EndTime) 
+                    : null;
+
                 await db.SaveChangesAsync();
             }
         }
