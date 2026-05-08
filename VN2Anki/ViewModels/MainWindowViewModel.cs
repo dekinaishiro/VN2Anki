@@ -40,6 +40,7 @@ namespace VN2Anki.ViewModels
             public static readonly SolidColorBrush Blue = CreateFrozenBrush("#007ACC");
             public static readonly SolidColorBrush LimeGreen = CreateFrozenBrush("#32CD32");
             public static readonly SolidColorBrush White = CreateFrozenBrush("#FFFFFF");
+            public static readonly SolidColorBrush Yellow = CreateFrozenBrush("#E6BE10");
 
             private static SolidColorBrush CreateFrozenBrush(string hex)
             {
@@ -284,7 +285,7 @@ namespace VN2Anki.ViewModels
             else
             {
                 ConnectionState.LinkIconKind = "LinkVariantOff";
-                ConnectionState.LinkIconColor = Brushes.Crimson;
+                ConnectionState.LinkIconColor = Brushes.Yellow;
             }
         }
 
