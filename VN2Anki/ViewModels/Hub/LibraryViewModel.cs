@@ -19,6 +19,12 @@ namespace VN2Anki.ViewModels.Hub
         [ObservableProperty]
         private ObservableCollection<VisualNovel> _visualNovels = new();
 
+        [ObservableProperty]
+        private string _sortBy = "LastPlayed";
+
+        [ObservableProperty]
+        private bool _isAscending = false;
+
         public LibraryViewModel(IVnDatabaseService dbService, INavigationService navigation)
         {
             _dbService = dbService;
@@ -32,6 +38,39 @@ namespace VN2Anki.ViewModels.Hub
         {
             var vns = await _dbService.GetAllVisualNovelsAsync();
             VisualNovels.UpdateFromUIThread(vns);
+            SortLibrary();
+        }
+
+        [RelayCommand]
+        private void ToggleSortDirection()
+        {
+            IsAscending = !IsAscending;
+            SortLibrary();
+        }
+
+        partial void OnSortByChanged(string value) => SortLibrary();
+
+        private void SortLibrary()
+        {
+            if (VisualNovels == null || !VisualNovels.Any()) return;
+
+            IOrderedEnumerable<VisualNovel> sorted;
+
+            if (SortBy == "LastPlayed")
+            {
+                sorted = IsAscending 
+                    ? VisualNovels.OrderBy(v => v.LastPlayed ?? System.DateTime.MinValue) 
+                    : VisualNovels.OrderByDescending(v => v.LastPlayed ?? System.DateTime.MinValue);
+            }
+            else
+            {
+                sorted = IsAscending 
+                    ? VisualNovels.OrderBy(v => v.Title) 
+                    : VisualNovels.OrderByDescending(v => v.Title);
+            }
+
+            var sortedList = sorted.ToList();
+            VisualNovels.UpdateFromUIThread(sortedList);
         }
 
         [RelayCommand]

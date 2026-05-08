@@ -60,7 +60,7 @@
                 </VisualState>
                 <VisualState x:Name="Compact">
                     <Storyboard>
-                        <DoubleAnimation Storyboard.TargetName="SidebarBorder" Storyboard.TargetProperty="Width" To="60" Duration="0:0:0.2"/>
+                        <DoubleAnimation Storyboard.TargetName="SidebarBorder" Storyboard.TargetProperty="Width" To="84" Duration="0:0:0.2"/>
                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="LogoText" Storyboard.TargetProperty="Visibility">
                             <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Collapsed}"/>
                         </ObjectAnimationUsingKeyFrames>
