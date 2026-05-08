@@ -166,6 +166,16 @@
 
                     <Border Style="{StaticResource StatCard}">
                         <StackPanel>
+                            <TextBlock Text="{x:Static loc:Strings.LabelActiveTime}" Style="{StaticResource StatHeader}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial Kind="History" Width="18" Height="18" Foreground="#3498DB" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Session.EffectiveDurationSeconds, Converter={StaticResource SecondsToTimeConverter}}" Style="{StaticResource StatValue}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource StatCard}">
+                        <StackPanel>
                             <TextBlock Text="{x:Static loc:Strings.LabelLookups}" Style="{StaticResource StatHeader}"/>
                             <StackPanel Orientation="Horizontal">
                                 <iconPacks:PackIconMaterial Kind="BookSearchOutline" Width="18" Height="18" Foreground="#1ABC9C" Margin="0,0,8,0" VerticalAlignment="Center"/>
