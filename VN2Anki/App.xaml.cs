@@ -192,8 +192,37 @@ namespace VN2Anki
             using (var scope = Services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                dbContext.Database.EnsureCreated();
-                //dbContext.Database.Migrate();
+                try
+                {
+                    dbContext.Database.Migrate();
+                }
+                catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode == 1 && ex.Message.Contains("already exists"))
+                {
+                    // If migration fails because tables already exist, it means the DB was created with EnsureCreated
+                    // We need to manually add the migration history entry to prevent EF from trying to run it again.
+                    try
+                    {
+                        dbContext.Database.ExecuteSqlRaw(@"
+                            CREATE TABLE IF NOT EXISTS ""__EFMigrationsHistory"" (
+                                ""MigrationId"" TEXT NOT NULL CONSTRAINT ""PK___EFMigrationsHistory"" PRIMARY KEY,
+                                ""ProductVersion"" TEXT NOT NULL
+                            );
+                            INSERT INTO ""__EFMigrationsHistory"" (""MigrationId"", ""ProductVersion"")
+                            SELECT '20260508025531_InitialCreate', '8.0.2'
+                            WHERE NOT EXISTS (SELECT 1 FROM ""__EFMigrationsHistory"" WHERE ""MigrationId"" = '20260508025531_InitialCreate');
+                        ");
+                        // Try migrating again to ensure everything else is correct
+                        dbContext.Database.Migrate();
+                    }
+                    catch (Exception innerEx)
+                    {
+                        Log.Error(innerEx, "Failed to reconcile migration history.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Failed to migrate database.");
+                }
             }
 
             // Force initialization of background services
