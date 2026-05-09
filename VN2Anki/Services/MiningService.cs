@@ -254,16 +254,22 @@ namespace VN2Anki.Services
                         int spokenCharCount = CountJapaneseCharacters(safeText);
                         Tracker.AddCharacters(spokenCharCount);
 
+                        MiningSlot? slotToRemove = null;
                         lock (_slotsLock)
                         {
                             _historySlots.Insert(0, newSlot);
 
                             if (_historySlots.Count > config.Session.MaxSlots)
                             {
-                                var oldSlot = _historySlots[_historySlots.Count - 1];
-                                oldSlot.Dispose();
+                                slotToRemove = _historySlots[_historySlots.Count - 1];
                                 _historySlots.RemoveAt(_historySlots.Count - 1);
                             }
+                        }
+
+                        if (slotToRemove != null)
+                        {
+                            slotToRemove.Dispose();
+                            WeakReferenceMessenger.Default.Send(new SlotRemovedMessage(slotToRemove));
                         }
 
                         char[] pauseChars = new[] { '。', '、', '？', '！', '…', '　' };
