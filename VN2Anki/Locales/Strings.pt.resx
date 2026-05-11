@@ -429,6 +429,15 @@
   <data name="LblBottom" xml:space="preserve">
     <value>Fundo</value>
   </data>
+  <data name="LblTextHorizontalAlign" xml:space="preserve">
+    <value>Alinhamento Horiz. do Texto:</value>
+  </data>
+  <data name="LblLeft" xml:space="preserve">
+    <value>Esquerda</value>
+  </data>
+  <data name="LblRight" xml:space="preserve">
+    <value>Direita</value>
+  </data>
   <data name="TabHotkeys" xml:space="preserve">
     <value>Hotkeys</value>
   </data>

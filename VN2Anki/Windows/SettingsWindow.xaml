@@ -352,7 +352,14 @@
                             <ComboBoxItem Content="{x:Static loc:Strings.LblBottom}" Tag="flex-end"/>
                         </ComboBox>
 
-                        <Border Grid.Row="10" Grid.ColumnSpan="2" BorderBrush="#333333" BorderThickness="0,1,0,0" Margin="0,15,0,15" />
+                        <TextBlock Style="{StaticResource StandardTextBlock}" Text="{x:Static loc:Strings.LblTextHorizontalAlign}" Grid.Row="10" Grid.Column="0" VerticalAlignment="Center"/>
+                        <ComboBox Style="{StaticResource StandardComboBox}" Grid.Row="10" Grid.Column="1" Margin="5" Padding="5" SelectedValuePath="Tag" SelectedValue="{Binding Config.Overlay.TextHorizontalAlignment}">
+                            <ComboBoxItem Content="{x:Static loc:Strings.LblLeft}" Tag="left"/>
+                            <ComboBoxItem Content="{x:Static loc:Strings.LblCenter}" Tag="center"/>
+                            <ComboBoxItem Content="{x:Static loc:Strings.LblRight}" Tag="right"/>
+                        </ComboBox>
+
+                        <Border Grid.Row="11" Grid.ColumnSpan="2" BorderBrush="#333333" BorderThickness="0,1,0,0" Margin="0,15,0,15" />
 
                     </Grid>
                 </ScrollViewer>

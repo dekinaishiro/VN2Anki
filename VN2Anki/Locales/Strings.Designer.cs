@@ -961,6 +961,33 @@ namespace VN2Anki.Locales {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Left.
+        /// </summary>
+        public static string LblLeft {
+            get {
+                return ResourceManager.GetString("LblLeft", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Right.
+        /// </summary>
+        public static string LblRight {
+            get {
+                return ResourceManager.GetString("LblRight", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Text Horizontal Align:.
+        /// </summary>
+        public static string LblTextHorizontalAlign {
+            get {
+                return ResourceManager.GetString("LblTextHorizontalAlign", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Text Vertical Align:.
         /// </summary>
         public static string LblTextVerticalAlign {

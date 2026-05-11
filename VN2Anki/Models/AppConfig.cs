@@ -119,6 +119,7 @@ namespace VN2Anki.Models
         public double VerticalMargin { get; set; } = 15;
         public double HorizontalDisplacement { get; set; } = 0;
         public string TextVerticalAlignment { get; set; } = "center"; // "flex-start", "center", "flex-end"
+        public string TextHorizontalAlignment { get; set; } = "center"; // "left", "center", "right"
     }
 
     public class ExtensionSettings

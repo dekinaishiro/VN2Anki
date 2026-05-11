@@ -197,6 +197,7 @@ namespace VN2Anki
                     outlineColor = VN2Anki.Helpers.ColorHelper.WpfHexToCss(conf.OutlineColor),
                     useTextBoxMode = conf.UseTextBoxMode,
                     textVerticalAlignment = string.IsNullOrEmpty(conf.TextVerticalAlignment) ? "center" : conf.TextVerticalAlignment,
+                    textHorizontalAlignment = string.IsNullOrEmpty(conf.TextHorizontalAlignment) ? "center" : conf.TextHorizontalAlignment,
                     textBoxMinHeight = conf.TextBoxMinHeight,
                     textBoxWidthPercentage = conf.TextBoxWidthPercentage,
                     outlineThickness = conf.OutlineThickness,

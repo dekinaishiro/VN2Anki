@@ -75,14 +75,17 @@ function applyStyles(data) {
     // box styles
     let boxStyles = "";
     if (data.useTextBoxMode) {
-        let align = data.textVerticalAlignment || "center";
+        let alignV = data.textVerticalAlignment || "center";
+        let alignH = data.textHorizontalAlignment || "center";
+        let flexH = alignH === "left" ? "flex-start" : (alignH === "right" ? "flex-end" : "center");
+
         boxStyles = `
             min-height: ${data.textBoxMinHeight}px;
             width: ${data.textBoxWidthPercentage}vw;
             display: flex;
             flex-direction: column;
-            justify-content: ${align};
-            align-items: center; /* Centraliza horizontalmente o texto dentro da caixa */
+            justify-content: ${alignV};
+            align-items: ${flexH}; /* Alinhamento horizontal da caixa de texto */
             box-sizing: border-box;
             margin-left: auto;
             margin-right: auto;
@@ -125,7 +128,7 @@ function applyStyles(data) {
             background-color: ${data.bgColor} !important;
             border-radius: 8px;
             padding: 15px;
-            text-align: center;
+            text-align: ${data.textHorizontalAlignment || "center"};
             ${textOutline}
             ${boxStyles}
         }
