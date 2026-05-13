@@ -14,9 +14,9 @@ namespace VN2Anki.Services
             _video = video;
         }
 
-        public byte[] CaptureScreenshot(string processName, int maxWidth)
+        public async System.Threading.Tasks.Task<byte[]?> CaptureScreenshotAsync(string processName, int maxWidth)
         {
-            return string.IsNullOrEmpty(processName) ? null : _video.CaptureWindow(processName, maxWidth);
+            return string.IsNullOrEmpty(processName) ? null : await _video.CaptureWindowAsync(processName, maxWidth);
         }
 
         public byte[] GetAudioSegment(double startSecondsAgo, double endSecondsAgo)

@@ -200,9 +200,9 @@ namespace VN2Anki.Services
                 string targetWin = config.Media.VideoWindow;
                 int maxWidth = config.Media.MaxImageWidth;
 
-                Task<byte[]> screenshotTask = Task.Run(() =>
+                Task<byte[]?> screenshotTask = Task.Run(async () =>
                 {
-                    return string.IsNullOrEmpty(targetWin) ? null : _mediaService.CaptureScreenshot(targetWin, maxWidth);
+                    return string.IsNullOrEmpty(targetWin) ? null : await _mediaService.CaptureScreenshotAsync(targetWin, maxWidth);
                 });
 
                 DebugLogger.Log($"[4-CHANNEL-READER] Pulled from channel by background thread | Text: {message.Text}");
@@ -237,7 +237,7 @@ namespace VN2Anki.Services
                         _idleTimer.Stop();
                         SealAllOpenSlots(DateTime.Now);
 
-                        byte[] screenshot = await screenshotTask;
+                        byte[]? screenshot = await screenshotTask;
 
                         string safeText = message.Text.Length > 1000 ? message.Text.Substring(0, 1000) + " [...]" : message.Text;
 
