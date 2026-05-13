@@ -1,13 +1,26 @@
+let isDraggingBackground = false;
+
 function handleMouseEvent(e, isDown) {
-    let textBox = document.getElementById('text-box');
-    let insideTextBox = false;
-    if (textBox) {
-        let r = textBox.getBoundingClientRect();
-        insideTextBox = e.clientX >= r.left && e.clientX <= r.right &&
-                        e.clientY >= r.top  && e.clientY <= r.bottom;
+    // If the user clicks directly on the background (body or html), forward it.
+    // If they click on anything else (Yomitan popup, text box, etc.), don't forward.
+    const isBackgroundClick = e.target.tagName.toLowerCase() === 'body' || e.target.tagName.toLowerCase() === 'html';
+
+    if (isDown) {
+        isDraggingBackground = isBackgroundClick;
     }
 
-    if (!insideTextBox) {
+    let shouldForward = false;
+    if (isDown) {
+        shouldForward = isBackgroundClick;
+    } else {
+        // For mouseup, only forward if the mousedown also started on the background
+        shouldForward = isBackgroundClick && isDraggingBackground;
+        if (!isDown) {
+            isDraggingBackground = false; // reset on mouseup
+        }
+    }
+
+    if (shouldForward) {
         if (window.chrome && window.chrome.webview) {
             window.chrome.webview.postMessage(JSON.stringify({
                 forwardClick: true,
