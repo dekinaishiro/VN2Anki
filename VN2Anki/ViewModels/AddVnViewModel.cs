@@ -43,6 +43,12 @@ namespace VN2Anki.ViewModels.Hub
         private bool _isLoading = false;
 
         [ObservableProperty]
+        private bool _noResultsFound = false;
+
+        [ObservableProperty]
+        private string _errorMessage = string.Empty;
+
+        [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsVndbSearchEnabled))]
         private bool _isProcessAlreadyRegistered;
 
@@ -123,7 +129,15 @@ namespace VN2Anki.ViewModels.Hub
             {
                 TargetDisplayName = window.DisplayName;
                 TargetExecutablePath = window.ExecutablePath;
-                SearchQuery = window.Title;
+                
+                // Clean the title for search
+                string title = window.Title ?? "";
+                // remove common suffixes/prefixes in brackets or parentheses
+                title = System.Text.RegularExpressions.Regex.Replace(title, @"\s*[\(\[][^\]\)]*[\)\]]", "");
+                // remove common version patterns
+                title = System.Text.RegularExpressions.Regex.Replace(title, @"\s*v?\d+(\.\d+)*\s*", "");
+                
+                SearchQuery = title.Trim();
             }
             else
             {
@@ -169,7 +183,7 @@ namespace VN2Anki.ViewModels.Hub
                 ActionButtonText = Locales.Strings.BtnSaveClose;
                 if (!string.IsNullOrWhiteSpace(SearchQuery))
                 {
-                    _ = SearchVndbAsync();
+                    await SearchVndbAsync();
                 }
             }
         }
@@ -180,11 +194,42 @@ namespace VN2Anki.ViewModels.Hub
             if (string.IsNullOrWhiteSpace(SearchQuery) || IsProcessAlreadyRegistered) return;
 
             IsLoading = true;
+            NoResultsFound = false;
+            ErrorMessage = string.Empty;
             SearchResults.Clear();
-            var results = await _vndbService.SearchVisualNovelAsync(SearchQuery);
-            foreach (var r in results) SearchResults.Add(r);
-            if (SearchResults.Count > 0) SelectedVndbResult = SearchResults[0];
-            IsLoading = false;
+
+            try
+            {
+                var (results, error) = await _vndbService.SearchVisualNovelAsync(SearchQuery);
+                
+                if (!string.IsNullOrEmpty(error))
+                {
+                    ErrorMessage = error;
+                    NoResultsFound = true;
+                    return;
+                }
+
+                foreach (var r in results) SearchResults.Add(r);
+
+                if (SearchResults.Count > 0)
+                {
+                    SelectedVndbResult = SearchResults[0];
+                }
+                else
+                {
+                    NoResultsFound = true;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[SearchVndbAsync Error] {ex.Message}");
+                ErrorMessage = ex.Message;
+                NoResultsFound = true;
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
         [RelayCommand]

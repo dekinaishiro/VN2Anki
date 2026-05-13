@@ -24,9 +24,11 @@ namespace VN2Anki.Services
         }
 
         // searches the vndb api and returns a list of results with title and cover url (if available)
-        public async Task<List<VndbResult>> SearchVisualNovelAsync(string query)
+        public async Task<(List<VndbResult> Results, string? Error)> SearchVisualNovelAsync(string query)
         {
-            if (string.IsNullOrWhiteSpace(query)) return new List<VndbResult>();
+            if (string.IsNullOrWhiteSpace(query)) return (new List<VndbResult>(), null);
+
+            System.Diagnostics.Debug.WriteLine($"[VNDB] Searching for: {query}");
 
             var requestBody = new
             {
@@ -40,17 +42,25 @@ namespace VN2Anki.Services
             try
             {
                 var response = await _client.PostAsync("https://api.vndb.org/kana/vn", content);
-                response.EnsureSuccessStatusCode();
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    string errorContent = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"[VNDB API Error] Status: {response.StatusCode}, Content: {errorContent}");
+                    return (new List<VndbResult>(), $"VNDB API Error: {response.StatusCode}");
+                }
 
                 string responseJson = await response.Content.ReadAsStringAsync();
                 var vndbResponse = JsonSerializer.Deserialize<VndbResponse>(responseJson);
 
-                return vndbResponse?.Results ?? new List<VndbResult>();
+                var results = vndbResponse?.Results ?? new List<VndbResult>();
+                System.Diagnostics.Debug.WriteLine($"[VNDB] Found {results.Count} results.");
+                return (results, null);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[VNDB API Error] {ex.Message}");
-                return new List<VndbResult>();
+                System.Diagnostics.Debug.WriteLine($"[VNDB Exception] {ex.Message}");
+                return (new List<VndbResult>(), ex.Message);
             }
         }
 

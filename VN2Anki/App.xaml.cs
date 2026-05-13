@@ -87,6 +87,7 @@ namespace VN2Anki
             {
                 var factory = sp.GetRequiredService<IHttpClientFactory>();
                 var client = factory.CreateClient("VndbService");
+                client.Timeout = TimeSpan.FromSeconds(15);
                 client.DefaultRequestHeaders.UserAgent.ParseAdd("VN2Anki_DesktopApp/1.2");
                 return new VndbService(client);
             });
