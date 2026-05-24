@@ -15,6 +15,7 @@ using VN2Anki.Models.Entities;
 using VN2Anki.Models.State;
 using VN2Anki.Services;
 using VN2Anki.Services.Interfaces;
+using VN2Anki;
 
 
 namespace VN2Anki.ViewModels
@@ -420,39 +421,44 @@ namespace VN2Anki.ViewModels
                         }
                         break;
                     case "ToggleOverlay":
-                        var overlay = System.Windows.Application.Current.Windows.OfType<VN2Anki.OverlayWindow>().FirstOrDefault();
-                        if (overlay != null)
-                        {
-                            if (overlay.WindowState == WindowState.Minimized || !overlay.IsVisible)
-                            {
-                                overlay.Show();
-                                overlay.WindowState = WindowState.Normal;
-                                overlay.Activate();
-                            }
-                            else
-                            {
-                                overlay.WindowState = WindowState.Minimized;
-                            }
-                        }
-                        else
-                        {
-                            OpenOverlayCommand.Execute(null);
-                        }
+                        ToggleOrOpen<OverlayWindow>(() => OpenOverlayCommand.Execute(null));
                         break;
                     case "OpenHub":
-                        OpenHubCommand.Execute(null);
+                        ToggleOrOpen<UserHubWindow>(() => OpenHubCommand.Execute(null));
                         break;
                     case "OpenSettings":
-                        OpenSettingsCommand.Execute(null);
+                        ToggleOrOpen<SettingsWindow>(() => OpenSettingsCommand.Execute(null));
                         break;
                     case "OpenHistory":
-                        OpenHistoryCommand.Execute(null);
+                        ToggleOrOpen<MiningWindow>(() => OpenHistoryCommand.Execute(null));
                         break;
                     case "ToggleBuffer":
                         ToggleBufferCommand.Execute(null);
                         break;
                 }
             });
+        }
+
+        private void ToggleOrOpen<T>(Action openAction) where T : Window
+        {
+            var win = System.Windows.Application.Current.Windows.OfType<T>().FirstOrDefault();
+            if (win != null && win.IsVisible)
+            {
+                if (win.WindowState == WindowState.Minimized)
+                {
+                    win.Show();
+                    win.WindowState = WindowState.Normal;
+                    win.Activate();
+                }
+                else
+                {
+                    win.WindowState = WindowState.Minimized;
+                }
+            }
+            else
+            {
+                openAction();
+            }
         }
     }
 }
