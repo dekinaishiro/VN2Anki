@@ -11,6 +11,7 @@ namespace VN2Anki.Models
         public SessionConfig Session { get; set; } = new SessionConfig();
         public HookConfig Hook { get; set; } = new HookConfig();
         public OverlayConfig Overlay { get; set; } = new OverlayConfig();
+        public string MpvOverlayConfigJson { get; set; } = string.Empty;
         public List<HotkeyItem> Hotkeys { get; set; } = new List<HotkeyItem>
         {
             new HotkeyItem { ActionName = "ToggleMainWindow", Key = 0x4D, Modifiers = 0x0001 | 0x0002 }, // Alt+Ctrl+M

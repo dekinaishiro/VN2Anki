@@ -17,6 +17,7 @@ namespace VN2Anki.Services
         private readonly IVnDatabaseService _vnDatabaseService;
         private readonly IConfigurationService _configService;
         private VisualNovel? _activeVn;
+        private bool _isMpvProfileActive;
 
         public OverlayProfileService(IVnDatabaseService vnDatabaseService, IConfigurationService configService)
         {
@@ -52,11 +53,16 @@ namespace VN2Anki.Services
                     await _vnDatabaseService.UpdateVisualNovelAsync(latestVn);
                 }
             }
+            else if (_isMpvProfileActive)
+            {
+                _configService.CurrentConfig.MpvOverlayConfigJson = JsonSerializer.Serialize(_configService.CurrentConfig.Overlay);
+                _configService.Save();
+            }
         }
 
         private async Task SwitchProfileAsync(VisualNovel? newVn)
         {
-            // 1. Save current state to the previous VN before switching
+            // 1. Save current state to the previous VN or MPV before switching
             if (_activeVn != null)
             {
                 var vns = await _vnDatabaseService.GetAllVisualNovelsAsync();
@@ -67,8 +73,16 @@ namespace VN2Anki.Services
                     await _vnDatabaseService.UpdateVisualNovelAsync(latestVn);
                 }
             }
+            else if (_isMpvProfileActive)
+            {
+                _configService.CurrentConfig.MpvOverlayConfigJson = JsonSerializer.Serialize(_configService.CurrentConfig.Overlay);
+                _configService.Save();
+            }
 
-            // 2. Load the state for the new VN
+            // Determine if the new state is MPV
+            bool isMpvNext = newVn == null && string.Equals(_configService.CurrentConfig.Media.VideoWindow, "mpv", StringComparison.OrdinalIgnoreCase);
+
+            // 2. Load the state for the new VN or MPV
             if (newVn != null && !string.IsNullOrEmpty(newVn.OverlayConfigJson))
             {
                 try
@@ -79,14 +93,25 @@ namespace VN2Anki.Services
                 }
                 catch { /* Ignore and use current global if parsing fails */ }
             }
+            else if (isMpvNext && !string.IsNullOrEmpty(_configService.CurrentConfig.MpvOverlayConfigJson))
+            {
+                try
+                {
+                    var profile = JsonSerializer.Deserialize<OverlayConfig>(_configService.CurrentConfig.MpvOverlayConfigJson);
+                    if (profile != null)
+                        _configService.CurrentConfig.Overlay = profile;
+                }
+                catch { /* Ignore */ }
+            }
             else
             {
-                // If new game has no profile, reload global template from disk
+                // If new game/mode has no profile, reload global template from disk
                 _configService.Load();
             }
 
-            // Update the active reference
+            // Update the active references
             _activeVn = newVn;
+            _isMpvProfileActive = isMpvNext;
 
             // Notify OverlayWindow to physically resize with the new profile
             WeakReferenceMessenger.Default.Send(new OverlayConfigUpdatedMessage());
